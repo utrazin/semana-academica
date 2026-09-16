@@ -53,19 +53,28 @@
 
 - (nenhuma pendente por responder "consultar requisitos")
 
-## Fronteira: vazia ✅
+## Fronteira: vazia ✅ (reaberta na rodada 3 e fechada novamente)
+
+## Rodada 3 — buracos apontados depois da spec
+
+| # | Pergunta | Decisão |
+|---|---|---|
+| P18 | `salaId` inexistente em `POST /atividades` → qual retorno? (404 `NAO_ENCONTRADO` da existência × 422 `DADOS_INVALIDOS` do corpo) | 404 `NAO_ENCONTRADO` (todas as recomendadas). Existência (404) vem antes do corpo (422) na ordem geral do contrato. |
+| P19 | A regra "`vagas` de 1 até a capacidade" vale só no criar ou também no alterar? | Vale nos dois: piso 1 e teto = capacidade da sala em criar **e** alterar (todas as recomendadas). |
+| P20 | `vagas` veio 0 ou negativo → qual retorno? (não existe código específico) | 422 `DADOS_INVALIDOS` em criar e alterar — corpo fora do domínio (piso 1), antes das regras do recurso (todas as recomendadas). |
 
 ## Resumo das decisões (consolidado)
 
 1. **Escopo M1**: salas + grade (criar/alterar/cancelar/listar/filtrar). M2–M5 fora; `ocupadas`/`vagasRestantes`/`emEspera` no JSON com 0 sem inscrições.
 2. **Título**: obrigatório, 1–120 chars após trim; vazio/só espaços → 422.
-3. **`vagas`**: 1 até capacidade da sala.
+3. **`vagas`**: 1 até capacidade da sala, em **criar e alterar**; 0 ou negativo → 422 `DADOS_INVALIDOS`; teto → `VAGAS_ACIMA_DA_CAPACIDADE`.
 4. **Encontros**: palestra = 1; minicurso 2–5, cada um com duração de 1h a 4h inclusive, sem atravessar meia-noite, dentro de 19–23/10, sem sobreposição entre encontros da mesma atividade.
-5. **Conflito de sala**: mínimo 15 min entre encontros na mesma sala; atividades canceladas não bloqueiam.
-6. **Campos**: criar = título, tipo, salaId, vagas, encontros; PATCH = só título e vagas.
-7. **Ordem PATCH**: `ATIVIDADE_CANCELADA` → `CAMPO_NAO_EDITAVEL` → `VAGAS_ACIMA` → `VAGAS_ABAIXO_DOS_INSCRITOS`.
-8. **Ordem POST**: `QUANTIDADE_DE_ENCONTROS` → `ENCONTRO_INVALIDO` → `VAGAS_ACIMA` → `CONFLITO_DE_SALA`.
-9. **Cancelamento**: antes do início do 1º encontro; `ATIVIDADE_CANCELADA` precede `ATIVIDADE_JA_INICIADA`; irreversível; PATCH/recancelar em cancelada → 422.
-10. **`cargaHorariaMinutos`** = soma das durações; `situacao` calculada no relógio (`prevista`/`em_andamento`/`encerrada`; cancelada sobrepõe).
-11. **Lista**: todas as atividades, ordenadas por início do 1º encontro, empate por título; filtros `dia`/`tipo` AND; salas por nome.
-12. **Verificação**: cada RN vira cenário de aceite na spec (skill `to-spec`) coberto por teste.
+5. **`salaId` inexistente** no POST → 404 `NAO_ENCONTRADO` (checagem de existência antes do corpo).
+6. **Conflito de sala**: mínimo 15 min entre encontros na mesma sala; atividades canceladas não bloqueiam.
+7. **Campos**: criar = título, tipo, salaId, vagas, encontros; PATCH = só título e vagas.
+8. **Ordem PATCH**: `ATIVIDADE_CANCELADA` → `CAMPO_NAO_EDITAVEL` → `VAGAS_ACIMA` → `VAGAS_ABAIXO_DOS_INSCRITOS`.
+9. **Ordem POST**: `QUANTIDADE_DE_ENCONTROS` → `ENCONTRO_INVALIDO` → `VAGAS_ACIMA` → `CONFLITO_DE_SALA`.
+10. **Cancelamento**: antes do início do 1º encontro; `ATIVIDADE_CANCELADA` precede `ATIVIDADE_JA_INICIADA`; irreversível; PATCH/recancelar em cancelada → 422.
+11. **`cargaHorariaMinutos`** = soma das durações; `situacao` calculada no relógio (`prevista`/`em_andamento`/`encerrada`; cancelada sobrepõe).
+12. **Lista**: todas as atividades, ordenadas por início do 1º encontro, empate por título; filtros `dia`/`tipo` AND; salas por nome.
+13. **Verificação**: cada RN vira cenário de aceite na spec (skill `to-spec`) coberto por teste.
