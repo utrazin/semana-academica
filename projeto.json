@@ -1,9 +1,9 @@
 {
-  "stack": "PREENCHER — linguagem e framework da API; tipo e framework da interface",
+  "stack": "Node 22 + Express + SQLite (better-sqlite3); interface web em React (Vite)",
   "api": {
     "pasta": "api",
-    "instalar": "PREENCHER — por exemplo: npm install",
-    "iniciar": "PREENCHER — por exemplo: npm start"
+    "instalar": "npm install",
+    "iniciar": "npm start"
   },
-  "testes": []
+  "testes": ["npm --prefix api test", "npm --prefix web test"]
 }
