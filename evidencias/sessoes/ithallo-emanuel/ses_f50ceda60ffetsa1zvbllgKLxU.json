@@ -1,0 +1,1625 @@
+{
+ "info": {
+  "id": "ses_f50ceda60ffetsa1zvbllgKLxU",
+  "slug": "witty-cactus",
+  "projectID": "ef5c31e66779deb7b442cd2960ce806c7cc88c17",
+  "directory": "C:\\Users\\Ithallo Emanuel\\Desktop\\PROJETO FINAL — SEMANA ACADÊMICA\\semana-academica",
+  "path": "",
+  "title": "Criação da spec specs/M2-inscricoes.md",
+  "agent": "build",
+  "model": {
+   "id": "gemini-3.5-flash-lite",
+   "providerID": "google",
+   "variant": "default"
+  },
+  "version": "1.18.18",
+  "summary": {
+   "additions": 0,
+   "deletions": 0,
+   "files": 0
+  },
+  "cost": 0.11958105000000001,
+  "tokens": {
+   "input": 228644,
+   "output": 6316,
+   "reasoning": 10619,
+   "cache": {
+    "read": 288345,
+    "write": 0
+   }
+  },
+  "time": {
+   "created": 1789645628831,
+   "updated": 1789645877705
+  }
+ },
+ "messages": [
+  {
+   "info": {
+    "role": "user",
+    "time": {
+     "created": 1789645628958
+    },
+    "agent": "build",
+    "model": {
+     "providerID": "google",
+     "modelID": "gemini-3.5-flash-lite"
+    },
+    "summary": {
+     "diffs": [
+      {
+       "file": "specs/M2-inscricoes.md",
+       "patch": "Index: specs/M2-inscricoes.md\n===================================================================\n--- specs/M2-inscricoes.md\t\n+++ specs/M2-inscricoes.md\t\n@@ -0,0 +1,94 @@\n+# Spec — M2: Inscrições e lista de espera\n+\n+## 1. Objetivo\n+\n+Permitir que os participantes se inscrevam nas atividades da Semana Acadêmica 2026, gerenciem suas inscrições (cancelamento e confirmação de convocação) e acompanhem a lista de espera e atribuição automática de vagas. Participantes consultam as próprias inscrições e a organização lista todas; inscrições fecham 30 minutos antes do 1º encontro; vagas liberadas convocam automaticamente o próximo da espera com prazo de 2 horas; conflitos de horário e limite de 3 minicursos são respeitados.\n+\n+## 2. Fora de escopo\n+\n+M2 **não** faz:\n+- Presença por QR (M3).\n+- Certificados e extrato (M4).\n+- Painel da organização e bloqueios (M5) — exceto listagem geral de inscrições pela organização.\n+- Bloqueio por faltas (M5) / código `INSCRICAO_BLOQUEADA` fica inativo ou fora do escopo funcional de M2 (só ativado em grupos com M5).\n+- Criação de usuário ou atividade (vêm dos dados iniciais ou M1).\n+\n+## 3. Modelo\n+\n+**Inscrição**:\n+\n+| campo | tipo | origem |\n+|---|---|---|\n+| `id` | string (`ins_` + 8 hex) | gerado |\n+| `atividadeId` | string | informado |\n+| `participanteId` | string | informado (identificação) |\n+| `status` | `confirmada` \\| `em_espera` \\| `convocada` \\| `cancelada` \\| `expirada` | calculado / gerenciado |\n+| `posicaoNaEspera` | inteiro \\| null | calculado (só quando `em_espera`) |\n+| `convocadaAte` | ISO 8601 com fuso \\| null | calculado (só quando `convocada`) |\n+| `criadaEm` | ISO 8601 com fuso | gerado |\n+\n+## 4. Endpoints\n+\n+Identificação (`X-Usuario`) e ordem geral são do contrato: 401 (usuário desconhecido) → 403 (quem pode chamar) → 404 (recurso inexistente) → 422 (corpo) → regras do recurso.\n+\n+| Método | Rota | Quem | Sucesso |\n+|---|---|---|---|\n+| POST | `/atividades/:id/inscricoes` | participante | 201 `Inscricao` (sem corpo na entrada) |\n+| GET | `/inscricoes` | todos | 200 `[Inscricao]` — participante recebe só as próprias; organização recebe todas; filtro `?atividadeId=` |\n+| GET | `/inscricoes/:id` | todos | 200 `Inscricao` — participante só vê as próprias; de outro → 404 |\n+| POST | `/inscricoes/:id/cancelamento` | participante | 200 `Inscricao` |\n+| POST | `/inscricoes/:id/confirmacao` | participante | 200 `Inscricao` |\n+\n+## 5. Regras\n+\n+Cada regra cita a pergunta da entrevista (`P-xx`) que a originou e, quando existe, a regra do documento de requisitos (`RN-xxx`). Sem RN, a fonte é decisão do grupo ou contrato.\n+\n+- **R1** (P1, decisão do grupo): O escopo de M2 abrange inscrições, lista de espera, confirmação de convocação e cancelamento de inscrições.\n+- **R2** (P2, RN-202): As inscrições fecham 30 minutos antes do início do 1º encontro da atividade. Tentativa de inscrição a partir de 30 minutos antes do início ou depois → 422 `INSCRICOES_ENCERRADAS`.\n+- **R3** (P3, RN-205, RN-216): Atribuição de vagas na inscrição: havendo vaga na atividade (número de ocupadas < vagas), a inscrição nasce com status `confirmada` e `posicaoNaEspera: null`; sem vaga, nasce com status `em_espera` no fim da fila. Lotar a atividade ou entrar na espera não é erro. \"Ocupa vaga\" quem está com status `confirmada` ou `convocada`.\n+- **R4** (P3, RN-205): A posição na espera (`posicaoNaEspera`) é calculada dinamicamente, sendo 1 o próximo a ser convocado, ordenado pela ordem de chegada (`criadaEm`). Para status diferentes de `em_espera`, `posicaoNaEspera` é `null`.\n+- **R5** (P4, RN-211, RN-212, RN-213): Convocação e expiração da lista de espera: toda vaga liberada (por cancelamento de inscrição, convocação vencida ou aumento de vagas na atividade) convoca automaticamente o 1º da fila de espera, alterando seu status para `convocada` e definindo `convocadaAte` com prazo de 2 horas a partir da liberação. O prazo nunca ultrapassa o fecho das inscrições (30 min antes do 1º encontro); vaga liberada após o fecho não convoca ninguém. Convocação cujo `convocadaAte` venceu sem confirmação vira `expirada`, sai da fila e imediatamente convoca o próximo (em cascata), com novo prazo de 2h (respeitando o fecho das inscrições), calculado na leitura (mesmo sem acesso prévio).\n+- **R6** (P5, RN-206): Conflito de horário: participante que vai ocupar vaga (`confirmada` ou `convocada`) não pode ter outra inscrição que ocupe vaga (`confirmada` ou `convocada`) com encontro sobreposto. Encostar (um encontro termina exatamente no mesmo instante em que outro começa) não constitui conflito. Quem está apenas na espera (`em_espera`) não é verificado para conflito. Violação → 409 `CONFLITO_DE_HORARIO`.\n+- **R7** (P5, RN-207): Limite de minicursos: no máximo 3 minicursos ocupando vaga (`confirmada` ou `convocada`) por participante simultaneamente. Palestras não contam, e inscrições em espera (`em_espera`) não contam. Exceder o limite → 422 `LIMITE_DE_MINICURSOS`.\n+- **R8** (P6, RN-208): Ordem de precedência de erros na inscrição (`POST /atividades/:id/inscricoes`): quando mais de uma regra recusa a mesma inscrição, vale a primeira na ordem: atividade inexistente (404 `NAO_ENCONTRADO`) → atividade cancelada (422 `ATIVIDADE_CANCELADA`) → inscrições encerradas (422 `INSCRICOES_ENCERRADAS`) → bloqueio (422 `INSCRICAO_BLOQUEADA`, se aplicável) → já inscrito (409 `JA_INSCRITO`) → conflito de horário (409 `CONFLITO_DE_HORARIO`) → limite de minicursos (422 `LIMITE_DE_MINICURSOS`).\n+- **R9** (P7, RN-209, RN-210): Cancelamento de inscrição (`POST /inscricoes/:id/cancelamento`): o participante pode cancelar a própria inscrição enquanto o relógio estiver antes do início do 1º encontro da atividade. Se o relógio estiver no início do 1º encontro ou depois → 422 `ATIVIDADE_JA_INICIADA`. Inscrição que já esteja com status `cancelada` ou `expirada` não pode ser cancelada de novo → 422 `INSCRICAO_INATIVA`.\n+- **R10** (P7, decisão do grupo / RN-210): No cancelamento de inscrição, a verificação de `INSCRICAO_INATIVA` ocorre antes de `ATIVIDADE_JA_INICIADA`.\n+- **R11** (P8, RN-217): Cancelamento da atividade: quando uma atividade é cancelada (M1), todas as suas inscrições ativas (`confirmada`, `em_espera`, `convocada`) são automaticamente canceladas (status `cancelada`).\n+- **R12** (P9, RN-218): Privacidade e escopo de visualização/cancelamento/confirmação: o participante só pode visualizar, cancelar ou confirmar as próprias inscrições. Se um participante tentar acessar, cancelar ou confirmar uma inscrição pertencente a outro participante, a API responde 404 `NAO_ENCONTRADO` (e nunca 403), de forma a não revelar a existência da inscrição alheia.\n+- **R13** (P10, RN-201, RN-219): Participação da organização: apenas participantes podem se inscrever (`POST /atividades/:id/inscricoes`), cancelar inscrição (`POST /inscricoes/:id/cancelamento`) e confirmar convocação (`POST /inscricoes/:id/confirmacao`). A organização pode listar todas as inscrições (`GET /inscricoes`), mas não pode se inscrever, cancelar ou confirmar por ninguém. Tentativa da organização em rotas de escrita de inscrições responde 403 `SOMENTE_PARTICIPANTE`.\n+- **R14** (P11, RN-204): Reinscrição: é permitida uma única inscrição ativa (`confirmada`, `em_espera` ou `convocada`) por participante e atividade. Tentativa de nova inscrição enquanto já houver inscrição ativa → 409 `JA_INSCRITO`. Quem cancelou ou teve inscrição expirada/cancelada pode se inscrever novamente na mesma atividade, entrando ao final da fila de espera (ou confirmada, se houver vaga).\n+- **R15** (Contrato M2 / RN-215): Confirmação de convocação (`POST /inscricoes/:id/confirmacao`): o participante com inscrição em status `convocada` pode confirmar a vaga dentro do prazo (`convocadaAte`). Ao confirmar, o status muda para `confirmada`, e `convocadaAte` passa a ser `null`.\n+- **R16** (Contrato M2 / RN-215): Validações na confirmação de convocação:\n+  - Inscrição sem estar convocada (ex: já `confirmada`, `em_espera`, `cancelada`, `expirada`) → 422 `SEM_CONVOCACAO`.\n+  - Confirmação após o prazo (`convocadaAte` expirado pelo relógio) → 422 `CONVOCACAO_EXPIRADA` (e a vaga é liberada/repassada).\n+  - Confirmação que gere conflito de horário com outra inscrição confirmada/convocada → 409 `CONFLITO_DE_HORARIO`.\n+  - Confirmação que exceda o limite de 3 minicursos → 422 `LIMITE_DE_MINICURSOS`.\n+\n+## 6. Critérios de aceite\n+\n+1. (R3) Participante se inscreve em atividade com vagas disponíveis → 201 com status `confirmada`, `posicaoNaEspera: null`.\n+2. (R3, R4) Participante se inscreve em atividade lotada → 201 com status `em_espera`, `posicaoNaEspera` correspondente (1, 2, ...).\n+3. (R2) Participante tenta se inscrever em atividade a 29 minutos ou menos do início do 1º encontro → 422 `INSCRICOES_ENCERRADAS`.\n+4. (R5) Cancelamento de inscrição confirmada libera vaga e convoca automaticamente o 1º da espera com `convocadaAte` daqui a 2h; se vencer sem confirmação, vira `expirada` e convoca o próximo em cascata.\n+5. (R6) Participante com vaga ocupada em atividade com encontro sobreposto tenta se inscrever em outra → 409 `CONFLITO_DE_HORARIO`; encostar (fim = início) → 201 ok; quem está só na espera não gera conflito.\n+6. (R7) Participante com 3 minicursos ocupando vaga tenta se inscrever num 4º minicurso → 422 `LIMITE_DE_MINICURSOS`; palestras e espera não contam.\n+7. (R8) Inscrição que viole atividade inexistente (404), atividade cancelada (422 `ATIVIDADE_CANCELADA`) e inscrições encerradas (422) ao mesmo tempo respeita a ordem de precedência (404 primeiro, depois 422 `ATIVIDADE_CANCELADA`, etc.).\n+8. (R9, R10) Participante tenta cancelar inscrição após o início do 1º encontro → 422 `ATIVIDADE_JA_INICIADA`; tentar cancelar inscrição já inativa (cancelada/expirada) → 422 `INSCRICAO_INATIVA`, verificada antes de `ATIVIDADE_JA_INICIADA`.\n+9. (R11) Cancelamento da atividade cancela automaticamente todas as suas inscrições ativas (`confirmada`, `em_espera`, `convocada`).\n+10. (R12) Participante tenta acessar, cancelar ou confirmar inscrição de outro participante → 404 `NAO_ENCONTRADO` (nunca 403).\n+11. (R13) Organização tenta se inscrever, cancelar ou confirmar inscrição → 403 `SOMENTE_PARTICIPANTE`; organização lista todas com `GET /inscricoes`.\n+12. (R14) Participante com inscrição ativa tenta se inscrever novamente na mesma atividade → 409 `JA_INSCRITO`; após cancelar, pode se inscrever de novo entrando no fim da fila.\n+13. (R15, R16) Participante com status `convocada` confirma a tempo → 200 `confirmada`; confirmar sem convocação (`SEM_CONVOCACAO`), após o prazo (`CONVOCACAO_EXPIRADA`), com conflito de horário (`CONFLITO_DE_HORARIO`) ou limite de minicursos (`LIMITE_DE_MINICURSOS`) → respectivos erros.\n+\n+## 7. Como isto será verificado\n+\n+Pela costura mais externa que já existe: **HTTP**, na API subida por `npm start` dentro de `api/` (stack do `projeto.json`), com `MODO_TESTE=1`. Cada cenário começa com `POST /_teste/reset`, usa `PUT /_teste/relogio` para fixar o tempo e `X-Usuario` para autenticação. O juiz do contrato confere status, `erro` e corpo nas mesmas rotas, então o teste que exercita a rota real cobre automaticamente regra e contrato.\n+\n+## 8. Fatias de entrega\n+\n+1. **Inscrições básicas e listagem**: `POST /atividades/:id/inscricoes` (confirmada e em espera), `GET /inscricoes` e `GET /inscricoes/:id` com privacidade e papéis (R1, R3, R4, R12, R13, R14).\n+2. **Prazos e cancelamento de inscrição**: Fechamento 30 min antes (R2), cancelamento de inscrição e janela/inativa (R9, R10).\n+3. **Conflitos e limites**: Conflito de horário (R6) e limite de minicursos (R7), além da ordem de precedência de erros (R8).\n+4. **Lista de espera e convocação**: Convocação automática, prazo de 2h, expiração em cascata na leitura, aumento de vagas (R5).\n+5. **Confirmação de convocação**: `POST /inscricoes/:id/confirmacao` e suas regras (R15, R16).\n+6. **Efeito do cancelamento da atividade**: Cancelamento de atividade afetando inscrições ativas (R11).\n",
+       "additions": 94,
+       "deletions": 0,
+       "status": "added"
+      }
+     ]
+    },
+    "id": "msg_0af31260b001OaSP3Fs42wDqnA",
+    "sessionID": "ses_f50ceda60ffetsa1zvbllgKLxU"
+   },
+   "parts": [
+    {
+     "type": "text",
+     "text": "Use a skill to-spec. Escreva specs/M2-inscricoes.md a partir de\rentrevistas/M2-inscricoes.md, seguindo o mesmo formato de specs/M1-grade.md: as oito\r\nseções (Objetivo, Fora de escopo, Modelo, Endpoints, Regras, Critérios de aceite, Como\r\nserá verificado, Fatias de entrega) e regras numeradas R1..Rn. Cada regra cita a\r\npergunta de origem (P-xx) e, quando houver, a regra do documento (RN-xxx). Não invente\r\nregra que não esteja na entrevista. A verificação é por HTTP via criarServidor(), no\r\npadrão de api/verificacoes/, com POST /_teste/reset e PUT /_teste/relogio. Ao final,\r\nliste as regras numeradas (só número e uma linha cada) para eu conferir.\r\n\n",
+     "id": "prt_0af31260b002rek5Ssx5m3Y4jn",
+     "sessionID": "ses_f50ceda60ffetsa1zvbllgKLxU",
+     "messageID": "msg_0af31260b001OaSP3Fs42wDqnA"
+    }
+   ]
+  },
+  {
+   "info": {
+    "parentID": "msg_0af31260b001OaSP3Fs42wDqnA",
+    "role": "assistant",
+    "mode": "build",
+    "agent": "build",
+    "path": {
+     "cwd": "C:\\Users\\Ithallo Emanuel\\Desktop\\PROJETO FINAL — SEMANA ACADÊMICA\\semana-academica",
+     "root": "C:\\Users\\Ithallo Emanuel\\Desktop\\PROJETO FINAL — SEMANA ACADÊMICA\\semana-academica"
+    },
+    "cost": 0.0034854,
+    "tokens": {
+     "total": 10364,
+     "input": 10193,
+     "output": 16,
+     "reasoning": 155,
+     "cache": {
+      "write": 0,
+      "read": 0
+     }
+    },
+    "modelID": "gemini-3.5-flash-lite",
+    "providerID": "google",
+    "time": {
+     "created": 1789645628963,
+     "completed": 1789645631434
+    },
+    "finish": "tool-calls",
+    "id": "msg_0af312623001FUig361zpsCPqj",
+    "sessionID": "ses_f50ceda60ffetsa1zvbllgKLxU"
+   },
+   "parts": [
+    {
+     "snapshot": "b669d823e06686503fbfbcfc0e4750d23afbc8cd",
+     "type": "step-start",
+     "id": "prt_0af312ece001VsM814l8Bo20fF",
+     "sessionID": "ses_f50ceda60ffetsa1zvbllgKLxU",
+     "messageID": "msg_0af312623001FUig361zpsCPqj"
+    },
+    {
+     "type": "tool",
+     "tool": "skill",
+     "callID": "S9VHDqOm5vdJFsZd",
+     "state": {
+      "status": "completed",
+      "input": {
+       "name": "to-spec"
+      },
+      "output": "<skill_content name=\"to-spec\">\n# Skill: to-spec\n\n# A conversa vira contrato\r\n\r\nVocê já tem tudo o que precisa: está na conversa. **Não entreviste de novo.** Sua\r\ntarefa é escrever, num arquivo, o que já foi decidido — e nada além.\r\n\r\nRegra que ninguém decidiu **não entra**. Se faltar alguma coisa para a spec ficar de pé,\r\npare e pergunte só aquilo. Não preencha buraco com \"geralmente é assim\".\r\n\r\n## Onde escrever\r\n\r\n`spec-<recurso>.md`, na raiz do projeto. Um arquivo por recurso.\r\n\r\n## Antes de escrever\r\n\r\nLeia o repositório: convenções, vocabulário, nomes que já existem. A spec fala a língua\r\ndo projeto — se o código chama de `leitor`, a spec não inventa `usuário`.\r\n\r\nDecida também **onde isto vai ser verificado**. Prefira a costura mais externa que já\r\nexistir (aqui: HTTP, pelo `criarServidor()`). Quanto menos pontos de teste novos, melhor.\r\n\r\n## Modelo\r\n\r\n```markdown\r\n# Spec — <recurso>\r\n\r\n## 1. Objetivo\r\nUm parágrafo: que problema isto resolve, na visão de quem usa.\r\n\r\n## 2. Fora de escopo\r\nLista do que este recurso NÃO faz. Isto é tão contrato quanto o resto — é aqui que\r\nse recusa código que ninguém pediu.\r\n\r\n## 3. Modelo\r\nOs campos da entidade, com tipo e origem (informado pelo cliente / calculado / derivado).\r\nCampo derivado nunca é guardado.\r\n\r\n## 4. Endpoints\r\nMétodo, caminho, corpo esperado, status de sucesso.\r\n\r\n## 5. Regras\r\nNumeradas: R1, R2, R3… Uma regra por linha de decisão, cada uma com o número, o limite\r\nou o valor exato que foi decidido, e o status HTTP de recusa quando houver.\r\n\r\nToda regra precisa ser observável de fora. \"O sistema deve ser rápido\" não é regra.\r\n\"Devolver depois da data prevista cobra 1,50 por dia inteiro de atraso, teto de 30\" é.\r\n\r\nQuando duas regras podem recusar a mesma operação, diga qual vale primeiro.\r\n\r\n## 6. Critérios de aceite\r\nLista numerada de cenários concretos, cada um apontando a regra que ele prova:\r\n\r\n1. (R1, R3) POST /x com dados válidos → 201, campo `y` igual a Z.\r\n\r\nRegra sem pelo menos um critério é regra sem prova. Volte e escreva o critério.\r\n\r\n## 7. Como isto será verificado\r\nA costura (interface) usada nos testes e por quê.\r\n\r\n## 8. Fatias de entrega\r\nA ordem de implementação, em fatias verticais. Cada fatia é um conjunto pequeno de\r\nregras que já dá para rodar e verificar sozinho.\r\n```\r\n\r\n## Depois de escrever\r\n\r\nMostre ao usuário a lista das regras numeradas — só os números e uma linha cada — e\r\npergunte se falta alguma. É a última chance de corrigir barato.\n\nBase directory for this skill: C:\\Users\\Ithallo Emanuel\\Desktop\\PROJETO FINAL — SEMANA ACADÊMICA\\semana-academica\\.opencode\\skills\\to-spec\nRelative paths in this skill (e.g., scripts/, reference/) are relative to this base directory.\nNote: file list is sampled.\n\n<skill_files>\n\n</skill_files>\n</skill_content>",
+      "metadata": {
+       "name": "to-spec",
+       "dir": "C:\\Users\\Ithallo Emanuel\\Desktop\\PROJETO FINAL — SEMANA ACADÊMICA\\semana-academica\\.opencode\\skills\\to-spec",
+       "truncated": false
+      },
+      "title": "Loaded skill: to-spec",
+      "time": {
+       "start": 1789645631185,
+       "end": 1789645631227
+      }
+     },
+     "metadata": {
+      "google": {
+       "thoughtSignature": "ErEFCq4FARFNMg82oregAT1ddQNTuaFhJ1xGk8mPh/RNz47NoK6huj++htPH0QmDPbcKoKGa41QSMXjZMNH3/8n8XGBdd75Q0WYeeOMsFSdM5JmezBdo0Rz0KBekn9dH5jYc1hDZZBdBbnrIuY7SiKrQE6kApFM9LbU83klIy7PUmBGHF1NwExw7gOR8TCaN96d/5VXqxehEDQWnGBRFKWTwA6wMJZuLkTULHKscK0F45G7cvvZSLIrLB+zqIVuJ8UD96SyBLLRNaViHiZXRnqiYuLRAGptBgGrYv/PhUp/WPHyrevl9jpEyRDO+ZGGpSHoDoC1kx7bjMJJUitZXzY8Hz7taybCRKWj0oC3mh+6/Y1Zcd7w6/3LsPEBVrYK7DIZZkRPJWQJe5ywh9SukSXpYka2XVGO/gvgFpK9Cf2TlTR97rQa98HWBCU/PwxwF0A9JU5A5hhGxmrGx/3fDPfc4cjLJCiazjZtBIpy3GuOn0Dc8tjdsnuOZnfwvX4u7D5smL56wYorR9i0CCbmWBC6XiGFq6bt1Nn0tkPDwyODRLIz7ddeGTd2PU9FeWsWmDMIDbSFiBdJxtUhkAc5S2DaEf0dv04xGoInDU0bZAO97PRHBTCVKsxKBRU8nzCOT6fweQIfdiB3Yh4cIej8kYArtPeJ4qNeAvxbKV4fJRjs6jXOLPMPY3lxsuMwooLIZKOPGW94f8tWDDk839Sa4d7KFFOjWeClPoS+iGRPwdkvm6JbX+EqpWCu2vj+6nxzrgRyxEGSeMfGSw5zjVzBZt2zRfTOIoPOOOg8M4TLHPfIx9ChLliaf9Lq/s6VlWR65v8w3PXu7/YTHVelKnU/XTWy6qP2RC20aeDxCcYVP49eGOcmiz7QkbSm57/go2AozIZbDVq+IWWu75HMsdGoO5hdDQA0="
+      }
+     },
+     "id": "prt_0af312ecf001zBN5BtWHMRV2Bv",
+     "sessionID": "ses_f50ceda60ffetsa1zvbllgKLxU",
+     "messageID": "msg_0af312623001FUig361zpsCPqj"
+    },
+    {
+     "reason": "tool-calls",
+     "snapshot": "b669d823e06686503fbfbcfc0e4750d23afbc8cd",
+     "type": "step-finish",
+     "tokens": {
+      "total": 10364,
+      "input": 10193,
+      "output": 16,
+      "reasoning": 155,
+      "cache": {
+       "write": 0,
+       "read": 0
+      }
+     },
+     "cost": 0.0034854,
+     "id": "prt_0af312f64001sTflS0GPzSZ9sg",
+     "sessionID": "ses_f50ceda60ffetsa1zvbllgKLxU",
+     "messageID": "msg_0af312623001FUig361zpsCPqj"
+    }
+   ]
+  },
+  {
+   "info": {
+    "parentID": "msg_0af31260b001OaSP3Fs42wDqnA",
+    "role": "assistant",
+    "mode": "build",
+    "agent": "build",
+    "path": {
+     "cwd": "C:\\Users\\Ithallo Emanuel\\Desktop\\PROJETO FINAL — SEMANA ACADÊMICA\\semana-academica",
+     "root": "C:\\Users\\Ithallo Emanuel\\Desktop\\PROJETO FINAL — SEMANA ACADÊMICA\\semana-academica"
+    },
+    "cost": 0.0044265,
+    "tokens": {
+     "total": 11587,
+     "input": 11155,
+     "output": 108,
+     "reasoning": 324,
+     "cache": {
+      "write": 0,
+      "read": 0
+     }
+    },
+    "modelID": "gemini-3.5-flash-lite",
+    "providerID": "google",
+    "time": {
+     "created": 1789645631435,
+     "completed": 1789645633619
+    },
+    "finish": "tool-calls",
+    "id": "msg_0af312fcb0019tfCIZMjKp2wGj",
+    "sessionID": "ses_f50ceda60ffetsa1zvbllgKLxU"
+   },
+   "parts": [
+    {
+     "snapshot": "b669d823e06686503fbfbcfc0e4750d23afbc8cd",
+     "type": "step-start",
+     "id": "prt_0af3136f9001Jdsg2Acufz91rL",
+     "sessionID": "ses_f50ceda60ffetsa1zvbllgKLxU",
+     "messageID": "msg_0af312fcb0019tfCIZMjKp2wGj"
+    },
+    {
+     "type": "tool",
+     "tool": "read",
+     "callID": "KLZnOCse4plX9zom",
+     "state": {
+      "status": "completed",
+      "input": {
+       "filePath": "C:\\Users\\Ithallo Emanuel\\Desktop\\PROJETO FINAL — SEMANA ACADÊMICA\\semana-academica\\specs\\M1-grade.md"
+      },
+      "output": "[15156 caracteres omitidos]",
+      "title": "specs\\M1-grade.md",
+      "time": {
+       "start": 1789645633276,
+       "end": 1789645633280
+      }
+     },
+     "metadata": {
+      "google": {
+       "thoughtSignature": "EpILCo8LARFNMg9XRBTR2u1BQrvg1aYJJ8piTuAMtpJQmJQx4vUDS3G203suwCssHp4E23uPrqEz/tYKoCpOQ1LJbnEgYxiHXcjNVfwPGbdumnVoFehPkUzBNmYXLBt3UUePqxWu+9yN4h5+VdrDsXwBY57PqF3AAfaMdRf0DjEQZAmpX4PdcU8bS13htfxxbdnOE+2cdD4qz4j3p2+5gybBKtrQqPlCzmvovsEfzaJJEdjlJwyThBdK7ZVPPr494zOsu8grtyTacS9Mii4FuvZMDS+6sJRdWs4xlryc7qBqiYOnL5KmX591BDp9fo8SbqrVvnAmA3SKamEFhcHhtkJujQPJlnQ1d/UNDEqsKRnmlih4t/K2wuXL6WvB04uBAagHwjSY54wEyYxymGfSJ7PVkdiYl3M6a/GUwB5Zz1sZeX5XE759sQP2JBAO8zDh6TYy+q6BjXEJTYKKSx57Rk+rhtVFNw/W2FtGhZRfsMAgHNSLZG+1+E1htI1CtXkS9GFxrRvMNorxp6LIEkz7GKAu3BppLgdIYbrhuMBh9/sYK/Zh9PAMwMpTDYFhmQZkegSxP+etSK41Dzo1LkaIsO1QBg+Z6HFBVDi3uaHuErZDV/e4h2hwrEr2zBgRUj6HKSdZG8FCNvseNvk/4X4E/32KGxHhewsEYgNENA5bjhHWl9cXzyCh+jHFDdTkFkpIieaz05Twdttsi2A+NP2JgljcGy3Gb2hlDEV41Zs6cilkd2wrQNP3VFy0i4Nhp4OwHDcNtSpA2/KK77u2iF3zaYPwz4C1UhSmyVC3OUNKWIkSGlQi6lHtZF/57sviCVy9NsAZx8D54Qu3IoYivvY1Y1OdBm9ifMT4Ig1rCurhwWF/3eg4wKEOZSzkxva9fpUAwjURqDPN6eWPSax4fXnNQ92q8cJ6Tux/gpLtAcc4SHyLzLhhwbqXZFIsr/vN5VqJCRVJUvdXDH66kyrTHA0n8Wh2ZGGBaEUP98nZpYzE5IKkJI3nAIrbylUtl72KuL6xmvzLg+0LCQxGHuZipGnn0W9O1fLuLVW5SiFsFhnie3+1AGyHlinRYQiU/Y7H213HELoQznwGEKWTBOCM6fQSSIFVpNzdZ+cMJ11sGVvbty4X0LsROYVN39vgfAAleFIORr7t/TcEvjIwZX26bYcRg24/ZwvnCBoxHUvQU5jWPiWFCVED5Vet0u7xrAMWoZTMGJDyZ5HwnMZj0iaZajCil73ytrAKVTekOJC7wPRT98JH5SmIe9Sio5gApPBm9TuFhUWZC9MVzb6qLAQvvNin7w3a2r1LzEtwGVt2nM+mgmC2YTcUt7H+QVxp+IeZd+TZ+hwAF2hjQu6lq9opDCYnnfc9X9l9DJPwU4OP5C03x/PUn/yWWhEqByvVlkf6FV0rOk/rju8ydXBNFXCQaMLfma+VMqCXdYonh8v1cLQ3mtbYi6HpC5axCNFxjZPtLIWCYFCZXBwExRNnQxV1oukoFlUStK/80qpqEPMiQea40xJSFivrL8qOArI2kYoMpnfKvdIFT4dJMKSiXHqEerMkUZzT4yCbptuFG7JOBr5UyAuyaltMZA72yUyxHCI338hGlmln5OfJDB90aVyrDuQgJZVogycYCfFjpaqK5bdQ4ct1JqAJkm3UK+x34x+UHKzfCMLRBKFQHul8NcugLcuU93TNRfxFOCUEQfGvDmtx7eCuvReLvyEW0ov7zt5HiA1sXvMCMvWLnOvS6Vb0ArJqOYpE2T0lgJtpORPuq8MHTe25GYNVvSqKkLA3PDfoE90nrZc2KUQybaRhnUcUSYZAZF0OVg/sWW8iheXkvA04LnNfN9tPXC/RbdaD+pBj8SPKnTT7lZV5F9oaS4TEyFPS2c930EatXTZnR63aDhZP6Y4n0Pg+iw=="
+      }
+     },
+     "id": "prt_0af3136fa001wTW24TlxQRvKUR",
+     "sessionID": "ses_f50ceda60ffetsa1zvbllgKLxU",
+     "messageID": "msg_0af312fcb0019tfCIZMjKp2wGj"
+    },
+    {
+     "type": "tool",
+     "tool": "read",
+     "callID": "tD9a1kNsO0bWIQuA",
+     "state": {
+      "status": "completed",
+      "input": {
+       "filePath": "C:\\Users\\Ithallo Emanuel\\Desktop\\PROJETO FINAL — SEMANA ACADÊMICA\\semana-academica\\entrevistas\\M2-inscricoes.md"
+      },
+      "output": "[5344 caracteres omitidos]",
+      "title": "entrevistas\\M2-inscricoes.md",
+      "time": {
+       "start": 1789645633389,
+       "end": 1789645633394
+      }
+     },
+     "id": "prt_0af31376a0010gY6fM7POo9B6f",
+     "sessionID": "ses_f50ceda60ffetsa1zvbllgKLxU",
+     "messageID": "msg_0af312fcb0019tfCIZMjKp2wGj"
+    },
+    {
+     "reason": "tool-calls",
+     "snapshot": "b669d823e06686503fbfbcfc0e4750d23afbc8cd",
+     "type": "step-finish",
+     "tokens": {
+      "total": 11587,
+      "input": 11155,
+      "output": 108,
+      "reasoning": 324,
+      "cache": {
+       "write": 0,
+       "read": 0
+      }
+     },
+     "cost": 0.0044265,
+     "id": "prt_0af3137f1001JNgNa1z7AnpOuA",
+     "sessionID": "ses_f50ceda60ffetsa1zvbllgKLxU",
+     "messageID": "msg_0af312fcb0019tfCIZMjKp2wGj"
+    }
+   ]
+  },
+  {
+   "info": {
+    "parentID": "msg_0af31260b001OaSP3Fs42wDqnA",
+    "role": "assistant",
+    "mode": "build",
+    "agent": "build",
+    "path": {
+     "cwd": "C:\\Users\\Ithallo Emanuel\\Desktop\\PROJETO FINAL — SEMANA ACADÊMICA\\semana-academica",
+     "root": "C:\\Users\\Ithallo Emanuel\\Desktop\\PROJETO FINAL — SEMANA ACADÊMICA\\semana-academica"
+    },
+    "cost": 0.0060374,
+    "tokens": {
+     "total": 19582,
+     "input": 19508,
+     "output": 18,
+     "reasoning": 56,
+     "cache": {
+      "write": 0,
+      "read": 0
+     }
+    },
+    "modelID": "gemini-3.5-flash-lite",
+    "providerID": "google",
+    "time": {
+     "created": 1789645633621,
+     "completed": 1789645635257
+    },
+    "finish": "tool-calls",
+    "id": "msg_0af313855001NweOBQVPFH7esM",
+    "sessionID": "ses_f50ceda60ffetsa1zvbllgKLxU"
+   },
+   "parts": [
+    {
+     "snapshot": "b669d823e06686503fbfbcfc0e4750d23afbc8cd",
+     "type": "step-start",
+     "id": "prt_0af313dd0001DpBbAb3jb2hygv",
+     "sessionID": "ses_f50ceda60ffetsa1zvbllgKLxU",
+     "messageID": "msg_0af313855001NweOBQVPFH7esM"
+    },
+    {
+     "type": "tool",
+     "tool": "glob",
+     "callID": "RJVJdMtetM9jmMWq",
+     "state": {
+      "status": "completed",
+      "input": {
+       "pattern": "*contrato*.md"
+      },
+      "output": "[98 caracteres omitidos]",
+      "title": "",
+      "time": {
+       "start": 1789645635027,
+       "end": 1789645635059
+      }
+     },
+     "metadata": {
+      "google": {
+       "thoughtSignature": "ErwCCrkCARFNMg8Id5u4JqsFe/8ovtYGjExLvMHQxUpPYMA+uXHBdz9Dl8RV14KT8Iy+rOPWd5S59bXSSxlpBVVvFadNwjSU/flV5JIl8X7NSmL92fxSUJzcKY3bhSPtJa3KOmu+Rh+AlfLdcJTCnPchGGQMHJUlFN5SBUKfSP2wtRxe0VW9Ckw87dIAWpSWBSisHIyfMHJhYEyp3ryux1wCcZxHChjVY04DO1JcUw1GMoUVVcWJSr2uvDknhU2Z4ImZtIz3z4e7TPubh/MxkFiImyEV6hHMnbqFm7aIqj66Yt0Q/hQrlmP7EGxc75zwdOJPD+2JDNWB1sLplrUIoNnkINRFmjdEtGNSnr/EyE0E/DNfu9H/xVNvQW+U3v3ceRizrirvEJKJSWhpeDvlUsWhNXwc3bWdA3/R4o11ow=="
+      }
+     },
+     "id": "prt_0af313dd1001S1fQrkGDa78qId",
+     "sessionID": "ses_f50ceda60ffetsa1zvbllgKLxU",
+     "messageID": "msg_0af313855001NweOBQVPFH7esM"
+    },
+    {
+     "reason": "tool-calls",
+     "snapshot": "b669d823e06686503fbfbcfc0e4750d23afbc8cd",
+     "type": "step-finish",
+     "tokens": {
+      "total": 19582,
+      "input": 19508,
+      "output": 18,
+      "reasoning": 56,
+      "cache": {
+       "write": 0,
+       "read": 0
+      }
+     },
+     "cost": 0.0060374,
+     "id": "prt_0af313e58001LpcA05rkolkDnR",
+     "sessionID": "ses_f50ceda60ffetsa1zvbllgKLxU",
+     "messageID": "msg_0af313855001NweOBQVPFH7esM"
+    }
+   ]
+  },
+  {
+   "info": {
+    "parentID": "msg_0af31260b001OaSP3Fs42wDqnA",
+    "role": "assistant",
+    "mode": "build",
+    "agent": "build",
+    "path": {
+     "cwd": "C:\\Users\\Ithallo Emanuel\\Desktop\\PROJETO FINAL — SEMANA ACADÊMICA\\semana-academica",
+     "root": "C:\\Users\\Ithallo Emanuel\\Desktop\\PROJETO FINAL — SEMANA ACADÊMICA\\semana-academica"
+    },
+    "cost": 0.00174538,
+    "tokens": {
+     "total": 19754,
+     "input": 3190,
+     "output": 61,
+     "reasoning": 57,
+     "cache": {
+      "write": 0,
+      "read": 16446
+     }
+    },
+    "modelID": "gemini-3.5-flash-lite",
+    "providerID": "google",
+    "time": {
+     "created": 1789645635258,
+     "completed": 1789645637045
+    },
+    "finish": "tool-calls",
+    "id": "msg_0af313eba0012RmpfnXdJpf3Ua",
+    "sessionID": "ses_f50ceda60ffetsa1zvbllgKLxU"
+   },
+   "parts": [
+    {
+     "snapshot": "b669d823e06686503fbfbcfc0e4750d23afbc8cd",
+     "type": "step-start",
+     "id": "prt_0af3144d30012Wj4Y4dPPkYnu7",
+     "sessionID": "ses_f50ceda60ffetsa1zvbllgKLxU",
+     "messageID": "msg_0af313eba0012RmpfnXdJpf3Ua"
+    },
+    {
+     "type": "tool",
+     "tool": "read",
+     "callID": "hukqjlhZXTAgcxlw",
+     "state": {
+      "status": "completed",
+      "input": {
+       "limit": 2000,
+       "filePath": "C:\\Users\\Ithallo Emanuel\\Desktop\\PROJETO FINAL — SEMANA ACADÊMICA\\semana-academica\\contrato-api.md",
+       "offset": 1
+      },
+      "output": "[13929 caracteres omitidos]",
+      "title": "contrato-api.md",
+      "time": {
+       "start": 1789645636822,
+       "end": 1789645636826
+      }
+     },
+     "metadata": {
+      "google": {
+       "thoughtSignature": "EsoCCscCARFNMg9iR2LeT/0V/LcNHtPO5hXPCFpE7Dzpm8QJrEeW3YRcD5ERBDFQBiYICYmMpjIY/QUexoElYk++kHq0aK2p8kosrxO8l6JZBC2Jpj3jy9k3MK+LGaUT51jXFW8H/aEUvc9qmgyo/GiVqyraR2WNOZswCFaMcLWmg6Qv5+uVr23p3LueXccVHsoGBwmx1LT3oe3UB4AAtBO+oo5iOTYa4BJE1w6yZlRpW26ujWqVHWKHQLkbswX79UUK9yC4MlAc1C3aCTdBy+dHzu0xKaxCYPKXdnndpgcQZa9XsOd2kgps5Or101Hy1igaGtc6kTF5guGQ8nEIsxidReOQxYRTBy5uaB4tCxT/FwjtEm8uITfe4ii3ugUt7u2F+FvLHLKF2o25L3QoDJk00Iw9IKdaZfqgr9MJ50HZnbuFSD7/G1Ed+QbN"
+      }
+     },
+     "id": "prt_0af3144d40019aKDE77maaObU2",
+     "sessionID": "ses_f50ceda60ffetsa1zvbllgKLxU",
+     "messageID": "msg_0af313eba0012RmpfnXdJpf3Ua"
+    },
+    {
+     "reason": "tool-calls",
+     "snapshot": "b669d823e06686503fbfbcfc0e4750d23afbc8cd",
+     "type": "step-finish",
+     "tokens": {
+      "total": 19754,
+      "input": 3190,
+      "output": 61,
+      "reasoning": 57,
+      "cache": {
+       "write": 0,
+       "read": 16446
+      }
+     },
+     "cost": 0.00174538,
+     "id": "prt_0af3145520011rbo1Ip9A5Zh8s",
+     "sessionID": "ses_f50ceda60ffetsa1zvbllgKLxU",
+     "messageID": "msg_0af313eba0012RmpfnXdJpf3Ua"
+    }
+   ]
+  },
+  {
+   "info": {
+    "parentID": "msg_0af31260b001OaSP3Fs42wDqnA",
+    "role": "assistant",
+    "mode": "build",
+    "agent": "build",
+    "path": {
+     "cwd": "C:\\Users\\Ithallo Emanuel\\Desktop\\PROJETO FINAL — SEMANA ACADÊMICA\\semana-academica",
+     "root": "C:\\Users\\Ithallo Emanuel\\Desktop\\PROJETO FINAL — SEMANA ACADÊMICA\\semana-academica"
+    },
+    "cost": 0.00415725,
+    "tokens": {
+     "total": 25956,
+     "input": 9165,
+     "output": 25,
+     "reasoning": 341,
+     "cache": {
+      "write": 0,
+      "read": 16425
+     }
+    },
+    "modelID": "gemini-3.5-flash-lite",
+    "providerID": "google",
+    "time": {
+     "created": 1789645637046,
+     "completed": 1789645639601
+    },
+    "finish": "tool-calls",
+    "id": "msg_0af3145b6001A2uE3Kgm2VvvlI",
+    "sessionID": "ses_f50ceda60ffetsa1zvbllgKLxU"
+   },
+   "parts": [
+    {
+     "snapshot": "b669d823e06686503fbfbcfc0e4750d23afbc8cd",
+     "type": "step-start",
+     "id": "prt_0af314df0001UZHCjPxedCZMYa",
+     "sessionID": "ses_f50ceda60ffetsa1zvbllgKLxU",
+     "messageID": "msg_0af3145b6001A2uE3Kgm2VvvlI"
+    },
+    {
+     "type": "reasoning",
+     "text": "**Revisiting Prompt Requirements**\n\nOkay, I'm reviewing the prompt's requirements to ensure I'm clear on the steps. I need to use a specified skill, then write a file based on another file. I'm focusing on the input and output file paths now. I am also making sure I understand the requirements of the skill that I need to utilize.\n\n\n",
+     "time": {
+      "start": 1789645639153,
+      "end": 1789645639391
+     },
+     "id": "prt_0af314df1001V5I7AFZH4wVUpw",
+     "sessionID": "ses_f50ceda60ffetsa1zvbllgKLxU",
+     "messageID": "msg_0af3145b6001A2uE3Kgm2VvvlI"
+    },
+    {
+     "type": "tool",
+     "tool": "glob",
+     "callID": "9geEX7ka6FdlNLZY",
+     "state": {
+      "status": "completed",
+      "input": {
+       "pattern": "api/**/*verif*.{js,ts,md}"
+      },
+      "output": "[14 caracteres omitidos]",
+      "title": "",
+      "time": {
+       "start": 1789645639367,
+       "end": 1789645639402
+      }
+     },
+     "metadata": {
+      "google": {
+       "thoughtSignature": "ErQLCrELARFNMg8/I217kpaTyIJyNpUbiaPstR4vJkiSXPIzhRjIOyjqMGAi3dz9Z0O7DyKQCHjP5UOfrl1mZ/K8ZFbTKs+kvyyj7e0j1Y6WSaUFUxNhK5uNhJRLJHPUMhHJxPbC3H9AahROeWjT93X+N2Q8UhNFz4VDgaf3cUKgLIbAImSuHVWeP1CBUEpwcMU96acnU60p3CPJu6mEOMZMl/6Zfv7KnI0GHUm5yv1jeC+1kt4cIz0fWiJGqN5DbNbIhOWl0MAKRcDm+CjVIzFexs2eE7wur7Yr8YL3Fe+kvmF1m89FEQKmcSuag5Xa8BOlT4AaVNV+1QSJC3DA79ShSPTP7tZLLAqZb1s0TT0z7Cbu1CJf2hpPtEVT5u1z4vDvOoPsl+wfhi9ykkjmQaJY5ezzTADp1XT94VLbj37wVN62JS1OUpYhQ0IstMN1oLvv0BsAtunYSYncO8NjxyqKTfbqp+rhMR4lqbYY3Goc2PS0R3RqhJvfnKWvaJdCnmC6RjTBlYYoOIvyJT+M0gNSWIN9OAkm96bXs+28g6dlvRpAmQTw6XS5cYRr0Wm/yCyPOaM6XLP87m9dG24uHTtbG/y/uu9BakMQuGwfup5W0/JvLjNZqgo9NJRHJ4Ot/j76P/WYLprvn8+Cf599cYARn3609yNjgmJ7pvI5SX5PlNbbND63S5af95w6Cuk7WMCl9N+7SQimXVBxRO3kG6fNTPyRfKP2JLLhEKdtE7bl8Q4z5aslXQLcO/M/lyKPYn3IWCEHwBpU4NSdeqqrweWsdRa0BreVFRH7dhob+wK91nAfKCawFuMUIpU9W43Hy07VW62OzFUY3S+vcbna3RcIZmvAaQEzQ2K0Z2Pva3wBVi8Fymurh64PN4JLY2Wj4YK4nqB/EOfit9L0yHYXhdvxA3/kqYdcaWo1TugfBdDWLwZzdUzw7viiwcxwDVHXln9dptQYFEn4QNTUgs9ALReEtwvp1yVOVDCU+w8ryVasG+jo6oYxImm/99b1gXGDPYESdCe8dZyC7uYsZ1vCicDsNPZkt9EESsPYWMJcyTuGIfylKT6XN9Q3nPF2MpfHIImrxWW0Qtlp9wpHKd3dMYpeVooyVhMYYhssx1NedFsENofXmC3F33B7OSFlO+OMWpPkggKqT+6Smz55HLcz7BdGxqkIlAD1DacMAA4IWYTpROLYWNSb4Qtml3jBIvX+dQ8ECMISXlU3Kq2IFXXUf7yqWkHT0X1g9jOxWL8tCvKf3XDG3F+Y3XAdKp1nqUDkJZTeOE8RXCEdQAMNnmgcUCg++k2Noos9hb3D+5Plnu7uJdPIGlG6vHueE1DrN8b8UCW7Pycrnbz8jivBR42qhTQw4iYImIK6FUWh/B5RBAZdNGFj6aMCBp7QHjbkZ4hEtuZGymbMGMGRu3/Yh6EMZ/44sjiADiohBHbfICRzhPAM3+xy/C8oU+197vVLjd/Dl51J8XkeZF+mVdR70XFVq82E24EuyowB9fRGBwV+CJ2BBuGeENH5HalL0l0uSUxtGfaTRj2+T6QIhOWacNr9oKrsnRKD1wBnwKPFRHOon2ufMWZK8qo6dCciHciTSvkg+0nDHDOGoHlnzzRu+yopc65OMplm0xZlyn3cR4sVBeJTUzNGOlFiClaVB1QRbY2zpBdnb/U131a4VXyVxJ1Wq+myBfvqJDXnKVcLliw/AJTfJrXigMtZa1ZOFT7D9feCH8davFq7v3eaBrGMuE8m8CtIMHXho8bCYvh3untA7ZSjM9sS6d9r0Z9Rc9NnkDnHQmp3a07rAh6zSp3qYmjXITp/Mv67MFkAVvvUQwGRb64Nejmr8rgxa6tIjeB6iLFpsHkvUy1Bog2GfSeyvsL2CsbA06VRg/UJ3ozBS6IbYYhdUMQvyYcNc/3EA/DglZF76I7yzAULXWNtsi/Ja+myoezSXuO+KKI="
+      }
+     },
+     "id": "prt_0af314ec4001B27LIaW24GQshH",
+     "sessionID": "ses_f50ceda60ffetsa1zvbllgKLxU",
+     "messageID": "msg_0af3145b6001A2uE3Kgm2VvvlI"
+    },
+    {
+     "reason": "tool-calls",
+     "snapshot": "b669d823e06686503fbfbcfc0e4750d23afbc8cd",
+     "type": "step-finish",
+     "tokens": {
+      "total": 25956,
+      "input": 9165,
+      "output": 25,
+      "reasoning": 341,
+      "cache": {
+       "write": 0,
+       "read": 16425
+      }
+     },
+     "cost": 0.00415725,
+     "id": "prt_0af314f4f001gFfI4AaBrFcoT6",
+     "sessionID": "ses_f50ceda60ffetsa1zvbllgKLxU",
+     "messageID": "msg_0af3145b6001A2uE3Kgm2VvvlI"
+    }
+   ]
+  },
+  {
+   "info": {
+    "parentID": "msg_0af31260b001OaSP3Fs42wDqnA",
+    "role": "assistant",
+    "mode": "build",
+    "agent": "build",
+    "path": {
+     "cwd": "C:\\Users\\Ithallo Emanuel\\Desktop\\PROJETO FINAL — SEMANA ACADÊMICA\\semana-academica",
+     "root": "C:\\Users\\Ithallo Emanuel\\Desktop\\PROJETO FINAL — SEMANA ACADÊMICA\\semana-academica"
+    },
+    "cost": 0.00346734,
+    "tokens": {
+     "total": 26093,
+     "input": 9586,
+     "output": 18,
+     "reasoning": 21,
+     "cache": {
+      "write": 0,
+      "read": 16468
+     }
+    },
+    "modelID": "gemini-3.5-flash-lite",
+    "providerID": "google",
+    "time": {
+     "created": 1789645639603,
+     "completed": 1789645641607
+    },
+    "finish": "tool-calls",
+    "id": "msg_0af314fb30010BsLL36nLINN9N",
+    "sessionID": "ses_f50ceda60ffetsa1zvbllgKLxU"
+   },
+   "parts": [
+    {
+     "snapshot": "b669d823e06686503fbfbcfc0e4750d23afbc8cd",
+     "type": "step-start",
+     "id": "prt_0af3156950018U5hslK6Nt7Ypo",
+     "sessionID": "ses_f50ceda60ffetsa1zvbllgKLxU",
+     "messageID": "msg_0af314fb30010BsLL36nLINN9N"
+    },
+    {
+     "type": "tool",
+     "tool": "glob",
+     "callID": "o9u5YJtYjnnmUKih",
+     "state": {
+      "status": "completed",
+      "input": {
+       "pattern": "**/*verif*"
+      },
+      "output": "[14 caracteres omitidos]",
+      "title": "",
+      "time": {
+       "start": 1789645641368,
+       "end": 1789645641396
+      }
+     },
+     "metadata": {
+      "google": {
+       "thoughtSignature": "EsMBCsABARFNMg8v+kUH5yPGplUma1EY98x4bH1S7wVESd8Usqq4DGykIpNyLW3QuQmyiGMj11aHqz1PBSc5fGVuG/ZrHoIVarNRhtph6qztscHsqAHObmthWum+F0Dj5Jms8x3LvzxT/Cx8hTOIKtxAPPmCLaFiyFPcU1mG6cZRZ6looRp5jcxUZhfjfJYtbXZYRp80zqMuy6D6CBuqVlb7RH8axI0sLDKTre/NqSlJ4VU8sHK+CpnW2xsxAAbT7YOhFcFx"
+      }
+     },
+     "id": "prt_0af315696001FMnOtt85Qul01O",
+     "sessionID": "ses_f50ceda60ffetsa1zvbllgKLxU",
+     "messageID": "msg_0af314fb30010BsLL36nLINN9N"
+    },
+    {
+     "reason": "tool-calls",
+     "snapshot": "b669d823e06686503fbfbcfc0e4750d23afbc8cd",
+     "type": "step-finish",
+     "tokens": {
+      "total": 26093,
+      "input": 9586,
+      "output": 18,
+      "reasoning": 21,
+      "cache": {
+       "write": 0,
+       "read": 16468
+      }
+     },
+     "cost": 0.00346734,
+     "id": "prt_0af315720001XrBONKRh6hCXDP",
+     "sessionID": "ses_f50ceda60ffetsa1zvbllgKLxU",
+     "messageID": "msg_0af314fb30010BsLL36nLINN9N"
+    }
+   ]
+  },
+  {
+   "info": {
+    "parentID": "msg_0af31260b001OaSP3Fs42wDqnA",
+    "role": "assistant",
+    "mode": "build",
+    "agent": "build",
+    "path": {
+     "cwd": "C:\\Users\\Ithallo Emanuel\\Desktop\\PROJETO FINAL — SEMANA ACADÊMICA\\semana-academica",
+     "root": "C:\\Users\\Ithallo Emanuel\\Desktop\\PROJETO FINAL — SEMANA ACADÊMICA\\semana-academica"
+    },
+    "cost": 0.00345693,
+    "tokens": {
+     "total": 26140,
+     "input": 9652,
+     "output": 15,
+     "reasoning": 12,
+     "cache": {
+      "write": 0,
+      "read": 16461
+     }
+    },
+    "modelID": "gemini-3.5-flash-lite",
+    "providerID": "google",
+    "time": {
+     "created": 1789645641609,
+     "completed": 1789645643684
+    },
+    "finish": "tool-calls",
+    "id": "msg_0af315789001WQfwBWRJ64BWim",
+    "sessionID": "ses_f50ceda60ffetsa1zvbllgKLxU"
+   },
+   "parts": [
+    {
+     "snapshot": "b669d823e06686503fbfbcfc0e4750d23afbc8cd",
+     "type": "step-start",
+     "id": "prt_0af315e8a001gF69lhGKLCVJ6P",
+     "sessionID": "ses_f50ceda60ffetsa1zvbllgKLxU",
+     "messageID": "msg_0af315789001WQfwBWRJ64BWim"
+    },
+    {
+     "type": "tool",
+     "tool": "glob",
+     "callID": "LhWRQvV7yepULvid",
+     "state": {
+      "status": "completed",
+      "input": {
+       "pattern": "api/**/*"
+      },
+      "output": "[1566 caracteres omitidos]",
+      "title": "",
+      "time": {
+       "start": 1789645643405,
+       "end": 1789645643435
+      }
+     },
+     "metadata": {
+      "google": {
+       "thoughtSignature": "EoQBCoEBARFNMg8SUTvmB/y/qIeKGBZzadaJcPPVTCMcZr0ZfqGu4kjR8J4/Pqpk5ZKpdrgpk1fM5e4w5xBKKcGdCyPHYzWBp5cJex9IRx5Lazy2RAnnvC5BktaYULMq72mc+aWgxEwWMuAzib1juROJwF4FQgWtYwg3yERHbQV2knIDrH6d"
+      }
+     },
+     "id": "prt_0af315e8b001tuS0yWykYLB5qu",
+     "sessionID": "ses_f50ceda60ffetsa1zvbllgKLxU",
+     "messageID": "msg_0af315789001WQfwBWRJ64BWim"
+    },
+    {
+     "reason": "tool-calls",
+     "snapshot": "b669d823e06686503fbfbcfc0e4750d23afbc8cd",
+     "type": "step-finish",
+     "tokens": {
+      "total": 26140,
+      "input": 9652,
+      "output": 15,
+      "reasoning": 12,
+      "cache": {
+       "write": 0,
+       "read": 16461
+      }
+     },
+     "cost": 0.00345693,
+     "id": "prt_0af315f1a0018IFYgq06TzLIMO",
+     "sessionID": "ses_f50ceda60ffetsa1zvbllgKLxU",
+     "messageID": "msg_0af315789001WQfwBWRJ64BWim"
+    }
+   ]
+  },
+  {
+   "info": {
+    "parentID": "msg_0af31260b001OaSP3Fs42wDqnA",
+    "role": "assistant",
+    "mode": "build",
+    "agent": "build",
+    "path": {
+     "cwd": "C:\\Users\\Ithallo Emanuel\\Desktop\\PROJETO FINAL — SEMANA ACADÊMICA\\semana-academica",
+     "root": "C:\\Users\\Ithallo Emanuel\\Desktop\\PROJETO FINAL — SEMANA ACADÊMICA\\semana-academica"
+    },
+    "cost": 0.00402439,
+    "tokens": {
+     "total": 26939,
+     "input": 10311,
+     "output": 71,
+     "reasoning": 104,
+     "cache": {
+      "write": 0,
+      "read": 16453
+     }
+    },
+    "modelID": "gemini-3.5-flash-lite",
+    "providerID": "google",
+    "time": {
+     "created": 1789645643686,
+     "completed": 1789645645650
+    },
+    "finish": "tool-calls",
+    "id": "msg_0af315fa6001AiSw3Cp141FcRx",
+    "sessionID": "ses_f50ceda60ffetsa1zvbllgKLxU"
+   },
+   "parts": [
+    {
+     "snapshot": "b669d823e06686503fbfbcfc0e4750d23afbc8cd",
+     "type": "step-start",
+     "id": "prt_0af31665a00162e4CcOKODbGte",
+     "sessionID": "ses_f50ceda60ffetsa1zvbllgKLxU",
+     "messageID": "msg_0af315fa6001AiSw3Cp141FcRx"
+    },
+    {
+     "type": "tool",
+     "tool": "read",
+     "callID": "EwYgXrmizm22WERS",
+     "state": {
+      "status": "completed",
+      "input": {
+       "filePath": "C:\\Users\\Ithallo Emanuel\\Desktop\\PROJETO FINAL — SEMANA ACADÊMICA\\semana-academica\\api\\verificacoes\\m1-grade-contrato.spec.js",
+       "offset": 1,
+       "limit": 100
+      },
+      "output": "[2591 caracteres omitidos]",
+      "title": "api\\verificacoes\\m1-grade-contrato.spec.js",
+      "time": {
+       "start": 1789645645407,
+       "end": 1789645645412
+      }
+     },
+     "metadata": {
+      "google": {
+       "thoughtSignature": "Er8DCrwDARFNMg/ZC4IG/ya840g3SEpWT1+5ebMwWjq6wTIZ9okJvXSKfFlVPaHurlsE1LmVdSemDih05+0dQd0q4GsszuEEQBE1vFWlR2upl6KfPeSxI+rnqaKHT1yzX1lxnrOp9tWeN9Z+1repnVzvEolynLaF9Cqt0OCeeusRzrEZKwZj7lFHlO+cPboPMpIkqiesCetEXf5C5HG3xhVKco0f8F1gF6Nkw46AjUvJuG91po7CacBR5BJgOn11HclEVFQX7Xky5npPGJ8ql3tALiO+a6aKW6/zmeolvKiH/pP9nAc5we3PIr3f7iRVBzZj29fh26t5W0yN1clitbJSjqwLmihmp5hCqy7x84UWghC5FBbxv64rwSxv58rTKoj2PPSoVjwvhWpHs6pa4FtW8G7h9EWYYQ2xIeT1zNaXnE8drTIru6rOzZ+ch5wcJEOr/PrFDiY3m/UarXm5XczSqtr2rUdBPvME5HJn1Rz35MCJCRK8z4f4yNU/M51CCccNKP2FPZNpt1Rdjt2Cf7x1aLfndJ9oVCN8lTP3wPin8fB3kEeofrDL4QB3zP4o2mLJpKHoyCBoZqUKKEUQd6/E"
+      }
+     },
+     "id": "prt_0af31665c0013gPnhtlV7SB8wj",
+     "sessionID": "ses_f50ceda60ffetsa1zvbllgKLxU",
+     "messageID": "msg_0af315fa6001AiSw3Cp141FcRx"
+    },
+    {
+     "reason": "tool-calls",
+     "snapshot": "b669d823e06686503fbfbcfc0e4750d23afbc8cd",
+     "type": "step-finish",
+     "tokens": {
+      "total": 26939,
+      "input": 10311,
+      "output": 71,
+      "reasoning": 104,
+      "cache": {
+       "write": 0,
+       "read": 16453
+      }
+     },
+     "cost": 0.00402439,
+     "id": "prt_0af3166e8001dVQT47rt4kWAOt",
+     "sessionID": "ses_f50ceda60ffetsa1zvbllgKLxU",
+     "messageID": "msg_0af315fa6001AiSw3Cp141FcRx"
+    }
+   ]
+  },
+  {
+   "info": {
+    "parentID": "msg_0af31260b001OaSP3Fs42wDqnA",
+    "role": "assistant",
+    "mode": "build",
+    "agent": "build",
+    "path": {
+     "cwd": "C:\\Users\\Ithallo Emanuel\\Desktop\\PROJETO FINAL — SEMANA ACADÊMICA\\semana-academica",
+     "root": "C:\\Users\\Ithallo Emanuel\\Desktop\\PROJETO FINAL — SEMANA ACADÊMICA\\semana-academica"
+    },
+    "cost": 0.02906332,
+    "tokens": {
+     "total": 38036,
+     "input": 11550,
+     "output": 3711,
+     "reasoning": 6331,
+     "cache": {
+      "write": 0,
+      "read": 16444
+     }
+    },
+    "modelID": "gemini-3.5-flash-lite",
+    "providerID": "google",
+    "time": {
+     "created": 1789645645652,
+     "completed": 1789645671503
+    },
+    "finish": "tool-calls",
+    "id": "msg_0af316754001msxC8T05WrBuvb",
+    "sessionID": "ses_f50ceda60ffetsa1zvbllgKLxU"
+   },
+   "parts": [
+    {
+     "snapshot": "b669d823e06686503fbfbcfc0e4750d23afbc8cd",
+     "type": "step-start",
+     "id": "prt_0af31727c001jprHa3n0JdgYHw",
+     "sessionID": "ses_f50ceda60ffetsa1zvbllgKLxU",
+     "messageID": "msg_0af316754001msxC8T05WrBuvb"
+    },
+    {
+     "type": "reasoning",
+     "text": "**Reviewing Format Compliance**\n\nI'm meticulously reviewing `specs/M1-grade.md`, ensuring strict adherence to the defined format and sections. I want to confirm that all necessary sections—Objective, Out of Scope, Model, Endpoints, Rules (including references), and Acceptance Criteria (linking to rules)—are present and correctly structured, just to be precise.\n\n\n**Extracting M2 Details**\n\nI'm now diving into `entrevistas/M2-inscricoes.md` and `contrato-api.md`, focusing on M2 specifics. I'm extracting key details such as the scope (inscriptions, waitlist, confirmations, and cancellations), and the deadline for registrations (30 minutes before the first meeting). I'm also examining the waitlist logic, including the allocation of spots, the order, and the process of how convocations and the expiration of waitlist spots work (2-hour confirmation window), considering relevant rules like RN-205, RN-216, RN-211, RN-212 and RN-213. Furthermore, I'm analyzing rules on time conflicts, limit of minicourses and the corresponding error codes.\n\n\n**Analyzing Error Prioritization**\n\nI'm now focusing on error prioritization in the inscription process, specifically when multiple rules apply. I've been organizing the precedence order: nonexistent, canceled activity, closed inscriptions, blocked inscription, already enrolled, time conflict, and limit of minicourses. I'm also considering the implications of rules RN-206, RN-207, and RN-208 in this context.\n\n\n**Mapping API Endpoints**\n\nI'm now mapping the M2 API endpoints outlined in `contrato-api.md`. I'm focusing on POST, GET, and cancellation/confirmation endpoints, including their expected responses. I'm noting the endpoints for inscriptions, listing all, and getting individual records, along with their related HTTP status codes and response models (Inscricao, and the filters involved), particularly considering how privacy affects visibility. I'm also confirming that canceling an inscription allows for re-inscription at the end of the line, as per RN-204.\n\n\n**Defining Data Structure**\n\nI'm now detailing the inscription data structure, including `participanteId`, `status` (confirmada, em_espera, convocada, cancelada, expirada), `posicaoNaEspera`, `convocadaAte`, and `criadaEm`. I'm also cataloging the specific error codes with their HTTP status codes for M2, ensuring all potential error scenarios are accounted for.\n\n\n\n**Clarifying Scope Boundaries**\n\nI'm now solidifying the scope for M2, focusing on inscription management. My focus is on automatic waitlist management and participant inscription consultation. I am excluding features from M3, M4, and M5, such as attendance tracking via QR codes, certificate generation, organization dashboards, and participant blocking based on attendance. I’m confirming the `INSCRICAO_BLOQUEADA` code is inactive for M2.\n\n\n**Defining Data Properties**\n\nI'm now detailing data properties for inscriptions. I'm focusing on properties like `convocada`, `cancelada`, `expirada`, `posicaoNaEspera`, `convocadaAte`, and `criadaEm`, clearly defining their data types and management, to complete the documentation. I'm also confirming the `X-Usuario` header is part of the API contract, and defining endpoint specifics (method, route, access, and success codes).\n\n\n\n**Organizing Rules Systematically**\n\nI'm now methodically numbering the rules related to inscriptions, referencing relevant documents. For example, I've defined **R1** to encompass the scope, **R2** focuses on registration deadlines, and **R3** details the inscription process and status with automatic handling. Currently, **R4** defines waitlist positioning, and **R5** addresses the process of waitlist convocations and expiration.\n\n\n**Defining Waitlist Logic**\n\nI'm now detailing waitlist management rules and the corresponding rule numbers. **R6** defines the behavior for conflicts when a new participant will occupy a place. **R7** addresses limits on inscription of the number of courses. If a spot opens up through cancellation, expired invocation, or increased activity capacity, it automatically calls the first one on the waitlist, updating their status to 'convocada', and defining 'convocadaAte' with a 2-hour window. This window can't surpass registration closure, nor will there be further calls if the spot is freed after the deadline. Expired convocations trigger an immediate cascade.\n\n\n**Defining Course Limits**\n\nI'm now clarifying the course limits and corresponding rules. **R7** specifies a maximum of three confirmed or convocated minicourses per participant simultaneously. I am formalizing this rule. I'm also including **R8**, which covers error precedence when multiple inscription rules apply. Furthermore, I've outlined **R9**, which details the cancellation of inscriptions, and its related rules and error codes. Finally, **R10** outlines an order of checking when canceling an inscription.\n\n\n**Defining Access Controls**\n\nI am now detailing access controls related to inscription management. I am including **R12**, focusing on privacy and visibility, stating active inscriptions (`confirmada`, `em_espera`, `convocada`) are automatically canceled. Also, the participant can only view, cancel, or confirm their own inscriptions. A 404 `NAO_ENCONTRADO` error is returned when accessing someone else's, never a 403, thus avoiding revealing the existence of the enrollment. **R13** details participant vs. organization access: only participants can inscribe, cancel, or confirm; the organization can only list all records, with any write attempts returning 403 `SOMENTE_PARTICIPANTE`.\n\n\n**Defining Confirmation Rules**\n\nI am now detailing rules related to inscription confirmation. I've defined **R14**, detailing reinscription rules, including handling 409 `JA_INSCRITO` errors. Furthermore, **R15** details confirming the status to `confirmada`, and **R16** specifies validation on confirmation, handling `SEM_CONVOCACAO`, `CONVOCACAO_EXPIRADA`, `CONFLITO_DE_HORARIO`, and `LIMITE_DE_MINICURSOS` errors. I'm aiming for complete documentation of each scenario.\n\n\n**Formalizing Use Cases**\n\nI'm now detailing specific use cases and their corresponding rules and expected outcomes. For example, I'm documenting the scenarios related to inscriptions: if a participant registers for an activity with available spots, they will get a 201 response, and their status will be set to `confirmada`, without any position in the waitlist. In the case of a full activity, a 201 status and position in waitlist is expected. I am also documenting what happens when there is an attempt 29 minutes before the first meeting, and when an inscription conflicts with already-confirmed inscriptions. I also formalized the limit of courses and what to expect if it gets violated. Also, I am documenting the expected behavior if there is a conflict.\n\n\n**Defining Cancellation Rules**\n\nI am now focusing on refining the rules related to inscription cancellation and related scenarios, to complete the documentation. I am addressing edge cases, like what happens when a participant attempts to cancel an inscription after the activity has started, and when the inscription is already inactive. I am now also focusing on how to handle the case of activity cancellation and participant attempts to access or cancel another participant's inscription.\n\n\n**Summarizing Scope Definition**\n\nI'm now detailing the scope of functionalities for the M2 release. I've broken down key aspects into six main categories: Basic inscriptions and listing functionalities (including both confirmed and waitlisted inscriptions with privacy and role considerations). I'm finalizing deadline management, including handling of inscription cancellation. Error prioritization, waitlist management, and the confirmation process have also been established. I have included the case of activity cancellation as well. Finally, I'm documenting the specifications, to cover all aspects.\n\n\n**Verifying Rule Numbering**\n\nI'm now cross-referencing all rules with their source questions (`P-xx`) and interview references (`RN-xxx`) from `entrevistas/M2-inscricoes.md`. I am formalizing the relationship between each question and its corresponding rule number. I am confirming R1 links to P1 (M2 scope), R2 connects to P2 (inscription deadline and RN-202), R3 and R4 cover P3 (waitlist and allocation and RN-205, RN-216). Furthermore, I've linked R5 with P4 (waitlist calls and expiration/RN-211, RN-212, RN-213), and R6 with P5 (time conflicts and limits/RN-206). Finally, I'm documenting all the verification processes and API specifications for testing.\n\n\n",
+     "time": {
+      "start": 1789645648509,
+      "end": 1789645671126
+     },
+     "id": "prt_0af31727d001EJE5eGC7bhjkPb",
+     "sessionID": "ses_f50ceda60ffetsa1zvbllgKLxU",
+     "messageID": "msg_0af316754001msxC8T05WrBuvb"
+    },
+    {
+     "type": "tool",
+     "tool": "write",
+     "callID": "jYQAOJjVPe56M7IV",
+     "state": {
+      "status": "completed",
+      "input": {
+       "content": "# Spec — M2: Inscrições e lista de espera\n\n## 1. Objetivo\n\nPermitir que os participantes se inscrevam nas atividades da Semana Acadêmica 2026, gerenciem suas inscrições (cancelamento e confirmação de convocação) e acompanhem a lista de espera e atribuição automática de vagas. Participantes consultam as próprias inscrições e a organização lista todas; inscrições fecham 30 minutos antes do 1º encontro; vagas liberadas convocam automaticamente o próximo da espera com prazo de 2 horas; conflitos de horário e limite de 3 minicursos são respeitados.\n\n## 2. Fora de escopo\n\nM2 **não** faz:\n- Presença por QR (M3).\n- Certificados e extrato (M4).\n- Painel da organização e bloqueios (M5) — exceto listagem geral de inscrições pela organização.\n- Bloqueio por faltas (M5) / código `INSCRICAO_BLOQUEADA` fica inativo ou fora do escopo funcional de M2 (só ativado em grupos com M5).\n- Criação de usuário ou atividade (vêm dos dados iniciais ou M1).\n\n## 3. Modelo\n\n**Inscrição**:\n\n| campo | tipo | origem |\n|---|---|---|\n| `id` | string (`ins_` + 8 hex) | gerado |\n| `atividadeId` | string | informado |\n| `participanteId` | string | informado (identificação) |\n| `status` | `confirmada` \\| `em_espera` \\| `convocada` \\| `cancelada` \\| `expirada` | calculado / gerenciado |\n| `posicaoNaEspera` | inteiro \\| null | calculado (só quando `em_espera`) |\n| `convocadaAte` | ISO 8601 com fuso \\| null | calculado (só quando `convocada`) |\n| `criadaEm` | ISO 8601 com fuso | gerado |\n\n## 4. Endpoints\n\nIdentificação (`X-Usuario`) e ordem geral são do contrato: 401 (usuário desconhecido) → 403 (quem pode chamar) → 404 (recurso inexistente) → 422 (corpo) → regras do recurso.\n\n| Método | Rota | Quem | Sucesso |\n|---|---|---|---|\n| POST | `/atividades/:id/inscricoes` | participante | 201 `Inscricao` (sem corpo na entrada) |\n| GET | `/inscricoes` | todos | 200 `[Inscricao]` — participante recebe só as próprias; organização recebe todas; filtro `?atividadeId=` |\n| GET | `/inscricoes/:id` | todos | 200 `Inscricao` — participante só vê as próprias; de outro → 404 |\n| POST | `/inscricoes/:id/cancelamento` | participante | 200 `Inscricao` |\n| POST | `/inscricoes/:id/confirmacao` | participante | 200 `Inscricao` |\n\n## 5. Regras\n\nCada regra cita a pergunta da entrevista (`P-xx`) que a originou e, quando existe, a regra do documento de requisitos (`RN-xxx`). Sem RN, a fonte é decisão do grupo ou contrato.\n\n- **R1** (P1, decisão do grupo): O escopo de M2 abrange inscrições, lista de espera, confirmação de convocação e cancelamento de inscrições.\n- **R2** (P2, RN-202): As inscrições fecham 30 minutos antes do início do 1º encontro da atividade. Tentativa de inscrição a partir de 30 minutos antes do início ou depois → 422 `INSCRICOES_ENCERRADAS`.\n- **R3** (P3, RN-205, RN-216): Atribuição de vagas na inscrição: havendo vaga na atividade (número de ocupadas < vagas), a inscrição nasce com status `confirmada` e `posicaoNaEspera: null`; sem vaga, nasce com status `em_espera` no fim da fila. Lotar a atividade ou entrar na espera não é erro. \"Ocupa vaga\" quem está com status `confirmada` ou `convocada`.\n- **R4** (P3, RN-205): A posição na espera (`posicaoNaEspera`) é calculada dinamicamente, sendo 1 o próximo a ser convocado, ordenado pela ordem de chegada (`criadaEm`). Para status diferentes de `em_espera`, `posicaoNaEspera` é `null`.\n- **R5** (P4, RN-211, RN-212, RN-213): Convocação e expiração da lista de espera: toda vaga liberada (por cancelamento de inscrição, convocação vencida ou aumento de vagas na atividade) convoca automaticamente o 1º da fila de espera, alterando seu status para `convocada` e definindo `convocadaAte` com prazo de 2 horas a partir da liberação. O prazo nunca ultrapassa o fecho das inscrições (30 min antes do 1º encontro); vaga liberada após o fecho não convoca ninguém. Convocação cujo `convocadaAte` venceu sem confirmação vira `expirada`, sai da fila e imediatamente convoca o próximo (em cascata), com novo prazo de 2h (respeitando o fecho das inscrições), calculado na leitura (mesmo sem acesso prévio).\n- **R6** (P5, RN-206): Conflito de horário: participante que vai ocupar vaga (`confirmada` ou `convocada`) não pode ter outra inscrição que ocupe vaga (`confirmada` ou `convocada`) com encontro sobreposto. Encostar (um encontro termina exatamente no mesmo instante em que outro começa) não constitui conflito. Quem está apenas na espera (`em_espera`) não é verificado para conflito. Violação → 409 `CONFLITO_DE_HORARIO`.\n- **R7** (P5, RN-207): Limite de minicursos: no máximo 3 minicursos ocupando vaga (`confirmada` ou `convocada`) por participante simultaneamente. Palestras não contam, e inscrições em espera (`em_espera`) não contam. Exceder o limite → 422 `LIMITE_DE_MINICURSOS`.\n- **R8** (P6, RN-208): Ordem de precedência de erros na inscrição (`POST /atividades/:id/inscricoes`): quando mais de uma regra recusa a mesma inscrição, vale a primeira na ordem: atividade inexistente (404 `NAO_ENCONTRADO`) → atividade cancelada (422 `ATIVIDADE_CANCELADA`) → inscrições encerradas (422 `INSCRICOES_ENCERRADAS`) → bloqueio (422 `INSCRICAO_BLOQUEADA`, se aplicável) → já inscrito (409 `JA_INSCRITO`) → conflito de horário (409 `CONFLITO_DE_HORARIO`) → limite de minicursos (422 `LIMITE_DE_MINICURSOS`).\n- **R9** (P7, RN-209, RN-210): Cancelamento de inscrição (`POST /inscricoes/:id/cancelamento`): o participante pode cancelar a própria inscrição enquanto o relógio estiver antes do início do 1º encontro da atividade. Se o relógio estiver no início do 1º encontro ou depois → 422 `ATIVIDADE_JA_INICIADA`. Inscrição que já esteja com status `cancelada` ou `expirada` não pode ser cancelada de novo → 422 `INSCRICAO_INATIVA`.\n- **R10** (P7, decisão do grupo / RN-210): No cancelamento de inscrição, a verificação de `INSCRICAO_INATIVA` ocorre antes de `ATIVIDADE_JA_INICIADA`.\n- **R11** (P8, RN-217): Cancelamento da atividade: quando uma atividade é cancelada (M1), todas as suas inscrições ativas (`confirmada`, `em_espera`, `convocada`) são automaticamente canceladas (status `cancelada`).\n- **R12** (P9, RN-218): Privacidade e escopo de visualização/cancelamento/confirmação: o participante só pode visualizar, cancelar ou confirmar as próprias inscrições. Se um participante tentar acessar, cancelar ou confirmar uma inscrição pertencente a outro participante, a API responde 404 `NAO_ENCONTRADO` (e nunca 403), de forma a não revelar a existência da inscrição alheia.\n- **R13** (P10, RN-201, RN-219): Participação da organização: apenas participantes podem se inscrever (`POST /atividades/:id/inscricoes`), cancelar inscrição (`POST /inscricoes/:id/cancelamento`) e confirmar convocação (`POST /inscricoes/:id/confirmacao`). A organização pode listar todas as inscrições (`GET /inscricoes`), mas não pode se inscrever, cancelar ou confirmar por ninguém. Tentativa da organização em rotas de escrita de inscrições responde 403 `SOMENTE_PARTICIPANTE`.\n- **R14** (P11, RN-204): Reinscrição: é permitida uma única inscrição ativa (`confirmada`, `em_espera` ou `convocada`) por participante e atividade. Tentativa de nova inscrição enquanto já houver inscrição ativa → 409 `JA_INSCRITO`. Quem cancelou ou teve inscrição expirada/cancelada pode se inscrever novamente na mesma atividade, entrando ao final da fila de espera (ou confirmada, se houver vaga).\n- **R15** (Contrato M2 / RN-215): Confirmação de convocação (`POST /inscricoes/:id/confirmacao`): o participante com inscrição em status `convocada` pode confirmar a vaga dentro do prazo (`convocadaAte`). Ao confirmar, o status muda para `confirmada`, e `convocadaAte` passa a ser `null`.\n- **R16** (Contrato M2 / RN-215): Validações na confirmação de convocação:\n  - Inscrição sem estar convocada (ex: já `confirmada`, `em_espera`, `cancelada`, `expirada`) → 422 `SEM_CONVOCACAO`.\n  - Confirmação após o prazo (`convocadaAte` expirado pelo relógio) → 422 `CONVOCACAO_EXPIRADA` (e a vaga é liberada/repassada).\n  - Confirmação que gere conflito de horário com outra inscrição confirmada/convocada → 409 `CONFLITO_DE_HORARIO`.\n  - Confirmação que exceda o limite de 3 minicursos → 422 `LIMITE_DE_MINICURSOS`.\n\n## 6. Critérios de aceite\n\n1. (R3) Participante se inscreve em atividade com vagas disponíveis → 201 com status `confirmada`, `posicaoNaEspera: null`.\n2. (R3, R4) Participante se inscreve em atividade lotada → 201 com status `em_espera`, `posicaoNaEspera` correspondente (1, 2, ...).\n3. (R2) Participante tenta se inscrever em atividade a 29 minutos ou menos do início do 1º encontro → 422 `INSCRICOES_ENCERRADAS`.\n4. (R5) Cancelamento de inscrição confirmada libera vaga e convoca automaticamente o 1º da espera com `convocadaAte` daqui a 2h; se vencer sem confirmação, vira `expirada` e convoca o próximo em cascata.\n5. (R6) Participante com vaga ocupada em atividade com encontro sobreposto tenta se inscrever em outra → 409 `CONFLITO_DE_HORARIO`; encostar (fim = início) → 201 ok; quem está só na espera não gera conflito.\n6. (R7) Participante com 3 minicursos ocupando vaga tenta se inscrever num 4º minicurso → 422 `LIMITE_DE_MINICURSOS`; palestras e espera não contam.\n7. (R8) Inscrição que viole atividade inexistente (404), atividade cancelada (422 `ATIVIDADE_CANCELADA`) e inscrições encerradas (422) ao mesmo tempo respeita a ordem de precedência (404 primeiro, depois 422 `ATIVIDADE_CANCELADA`, etc.).\n8. (R9, R10) Participante tenta cancelar inscrição após o início do 1º encontro → 422 `ATIVIDADE_JA_INICIADA`; tentar cancelar inscrição já inativa (cancelada/expirada) → 422 `INSCRICAO_INATIVA`, verificada antes de `ATIVIDADE_JA_INICIADA`.\n9. (R11) Cancelamento da atividade cancela automaticamente todas as suas inscrições ativas (`confirmada`, `em_espera`, `convocada`).\n10. (R12) Participante tenta acessar, cancelar ou confirmar inscrição de outro participante → 404 `NAO_ENCONTRADO` (nunca 403).\n11. (R13) Organização tenta se inscrever, cancelar ou confirmar inscrição → 403 `SOMENTE_PARTICIPANTE`; organização lista todas com `GET /inscricoes`.\n12. (R14) Participante com inscrição ativa tenta se inscrever novamente na mesma atividade → 409 `JA_INSCRITO`; após cancelar, pode se inscrever de novo entrando no fim da fila.\n13. (R15, R16) Participante com status `convocada` confirma a tempo → 200 `confirmada`; confirmar sem convocação (`SEM_CONVOCACAO`), após o prazo (`CONVOCACAO_EXPIRADA`), com conflito de horário (`CONFLITO_DE_HORARIO`) ou limite de minicursos (`LIMITE_DE_MINICURSOS`) → respectivos erros.\n\n## 7. Como isto será verificado\n\nPela costura mais externa que já existe: **HTTP**, na API subida por `npm start` dentro de `api/` (stack do `projeto.json`), com `MODO_TESTE=1`. Cada cenário começa com `POST /_teste/reset`, usa `PUT /_teste/relogio` para fixar o tempo e `X-Usuario` para autenticação. O juiz do contrato confere status, `erro` e corpo nas mesmas rotas, então o teste que exercita a rota real cobre automaticamente regra e contrato.\n\n## 8. Fatias de entrega\n\n1. **Inscrições básicas e listagem**: `POST /atividades/:id/inscricoes` (confirmada e em espera), `GET /inscricoes` e `GET /inscricoes/:id` com privacidade e papéis (R1, R3, R4, R12, R13, R14).\n2. **Prazos e cancelamento de inscrição**: Fechamento 30 min antes (R2), cancelamento de inscrição e janela/inativa (R9, R10).\n3. **Conflitos e limites**: Conflito de horário (R6) e limite de minicursos (R7), além da ordem de precedência de erros (R8).\n4. **Lista de espera e convocação**: Convocação automática, prazo de 2h, expiração em cascata na leitura, aumento de vagas (R5).\n5. **Confirmação de convocação**: `POST /inscricoes/:id/confirmacao` e suas regras (R15, R16).\n6. **Efeito do cancelamento da atividade**: Cancelamento de atividade afetando inscrições ativas (R11).\n",
+       "filePath": "C:\\Users\\Ithallo Emanuel\\Desktop\\PROJETO FINAL — SEMANA ACADÊMICA\\semana-academica\\specs\\M2-inscricoes.md"
+      },
+      "output": "Wrote file successfully.",
+      "metadata": {
+       "diagnostics": {},
+       "filepath": "C:\\Users\\Ithallo Emanuel\\Desktop\\PROJETO FINAL — SEMANA ACADÊMICA\\semana-academica\\specs\\M2-inscricoes.md",
+       "exists": false,
+       "truncated": false
+      },
+      "title": "specs\\M2-inscricoes.md",
+      "time": {
+       "start": 1789645671124,
+       "end": 1789645671133
+      }
+     },
+     "metadata": {
+      "google": {
+       "thoughtSignature": "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"
+      }
+     },
+     "id": "prt_0af31cad1001fgZgoY7xKj1keC",
+     "sessionID": "ses_f50ceda60ffetsa1zvbllgKLxU",
+     "messageID": "msg_0af316754001msxC8T05WrBuvb"
+    },
+    {
+     "reason": "tool-calls",
+     "snapshot": "81fcd20bd62699b5d502255e50353db2e95865cb",
+     "type": "step-finish",
+     "tokens": {
+      "total": 38036,
+      "input": 11550,
+      "output": 3711,
+      "reasoning": 6331,
+      "cache": {
+       "write": 0,
+       "read": 16444
+      }
+     },
+     "cost": 0.02906332,
+     "id": "prt_0af31cbc4001vnjHkOdIzfJdoO",
+     "sessionID": "ses_f50ceda60ffetsa1zvbllgKLxU",
+     "messageID": "msg_0af316754001msxC8T05WrBuvb"
+    },
+    {
+     "type": "patch",
+     "hash": "b669d823e06686503fbfbcfc0e4750d23afbc8cd",
+     "files": [
+      "C:/Users/Ithallo Emanuel/Desktop/PROJETO FINAL — SEMANA ACADÊMICA/semana-academica/specs/M2-inscricoes.md"
+     ],
+     "id": "prt_0af31cc4e001PHkL4mMPJyxnNZ",
+     "sessionID": "ses_f50ceda60ffetsa1zvbllgKLxU",
+     "messageID": "msg_0af316754001msxC8T05WrBuvb"
+    }
+   ]
+  },
+  {
+   "info": {
+    "parentID": "msg_0af31260b001OaSP3Fs42wDqnA",
+    "role": "assistant",
+    "mode": "build",
+    "agent": "build",
+    "path": {
+     "cwd": "C:\\Users\\Ithallo Emanuel\\Desktop\\PROJETO FINAL — SEMANA ACADÊMICA\\semana-academica",
+     "root": "C:\\Users\\Ithallo Emanuel\\Desktop\\PROJETO FINAL — SEMANA ACADÊMICA\\semana-academica"
+    },
+    "cost": 0.01006951,
+    "tokens": {
+     "total": 41081,
+     "input": 22731,
+     "output": 500,
+     "reasoning": 593,
+     "cache": {
+      "write": 0,
+      "read": 17257
+     }
+    },
+    "modelID": "gemini-3.5-flash-lite",
+    "providerID": "google",
+    "time": {
+     "created": 1789645671505,
+     "completed": 1789645675987
+    },
+    "finish": "stop",
+    "id": "msg_0af31cc510018nfHr9BGnGD2Gn",
+    "sessionID": "ses_f50ceda60ffetsa1zvbllgKLxU"
+   },
+   "parts": [
+    {
+     "snapshot": "81fcd20bd62699b5d502255e50353db2e95865cb",
+     "type": "step-start",
+     "id": "prt_0af31d66e001PZBp3yL2iyHXTP",
+     "sessionID": "ses_f50ceda60ffetsa1zvbllgKLxU",
+     "messageID": "msg_0af31cc510018nfHr9BGnGD2Gn"
+    },
+    {
+     "type": "reasoning",
+     "text": "**Listing the Rules**\n\nI've successfully created the `specs/M2-inscricoes.md` file. Now, I'm focusing on the final task: listing the numbered rules from the document. The goal is to present each rule in a clear, concise format, one per line, just the number and a single line describing the rule. This streamlined approach will make for easier review.\n\n\n",
+     "time": {
+      "start": 1789645674095,
+      "end": 1789645674710
+     },
+     "id": "prt_0af31d66f001N8O7fwVnyveeIw",
+     "sessionID": "ses_f50ceda60ffetsa1zvbllgKLxU",
+     "messageID": "msg_0af31cc510018nfHr9BGnGD2Gn"
+    },
+    {
+     "type": "text",
+     "text": "- R1: O escopo de M2 abrange inscrições, lista de espera, confirmação de convocação e cancelamento de inscrições.\n- R2: As inscrições fecham 30 minutos antes do início do 1º encontro da atividade.\n- R3: Atribuição de vagas na inscrição: havendo vaga, nasce confirmada; sem vaga, nasce em_espera no fim da fila.\n- R4: A posição na espera (`posicaoNaEspera`) é calculada dinamicamente por ordem de chegada para inscrições `em_espera`.\n- R5: Vagas liberadas convocam automaticamente o 1º da espera com prazo de 2h, expirando em cascata na leitura.\n- R6: Conflito de horário impede inscrição ou confirmação que ocupe vaga com encontro sobreposto.\n- R7: Limite de 3 minicursos ocupando vaga simultaneamente por participante.\n- R8: Ordem de precedência de erros na inscrição: inexistente → cancelada → encerradas → bloqueada → já inscrito → conflito → limite.\n- R9: Cancelamento de inscrição permitido até o início do 1º encontro; após, ATIVIDADE_JA_INICIADA.\n- R10: Verificação de `INSCRICAO_INATIVA` ocorre antes de `ATIVIDADE_JA_INICIADA` no cancelamento.\n- R11: Cancelamento da atividade cancela automaticamente todas as suas inscrições ativas.\n- R12: Privacidade: participante só vê/mexe nas próprias inscrições; tentativa em alheia responde 404.\n- R13: Apenas participantes realizam inscrições, cancelamentos e confirmações; organização recebe 403 `SOMENTE_PARTICIPANTE`.\n- R14: Permite uma única inscrição ativa por participante e atividade; cancelados podem se inscrever novamente no fim da fila.\n- R15: Confirmação de convocação altera status para confirmada dentro do prazo de `convocadaAte`.\n- R16: Validações na confirmação de convocação (`SEM_CONVOCACAO`, `CONVOCACAO_EXPIRADA`, `CONFLITO_DE_HORARIO`, `LIMITE_DE_MINICURSOS`).",
+     "time": {
+      "start": 1789645674712,
+      "end": 1789645675767
+     },
+     "id": "prt_0af31d8d8001A5fSvpNl02US76",
+     "sessionID": "ses_f50ceda60ffetsa1zvbllgKLxU",
+     "messageID": "msg_0af31cc510018nfHr9BGnGD2Gn"
+    },
+    {
+     "reason": "stop",
+     "snapshot": "81fcd20bd62699b5d502255e50353db2e95865cb",
+     "type": "step-finish",
+     "tokens": {
+      "total": 41081,
+      "input": 22731,
+      "output": 500,
+      "reasoning": 593,
+      "cache": {
+       "write": 0,
+       "read": 17257
+      }
+     },
+     "cost": 0.01006951,
+     "id": "prt_0af31dd68001Sw5aJ679ZoRoEO",
+     "sessionID": "ses_f50ceda60ffetsa1zvbllgKLxU",
+     "messageID": "msg_0af31cc510018nfHr9BGnGD2Gn"
+    }
+   ]
+  },
+  {
+   "info": {
+    "role": "user",
+    "time": {
+     "created": 1789645796829
+    },
+    "agent": "build",
+    "model": {
+     "providerID": "google",
+     "modelID": "gemini-3.5-flash-lite"
+    },
+    "summary": {
+     "diffs": [
+      {
+       "file": "specs/M2-inscricoes.md",
+       "patch": "Index: specs/M2-inscricoes.md\n===================================================================\n--- specs/M2-inscricoes.md\t\n+++ specs/M2-inscricoes.md\t\n@@ -1,94 +1,95 @@\n # Spec — M2: Inscrições e lista de espera\n \n ## 1. Objetivo\n \n Permitir que os participantes se inscrevam nas atividades da Semana Acadêmica 2026, gerenciem suas inscrições (cancelamento e confirmação de convocação) e acompanhem a lista de espera e atribuição automática de vagas. Participantes consultam as próprias inscrições e a organização lista todas; inscrições fecham 30 minutos antes do 1º encontro; vagas liberadas convocam automaticamente o próximo da espera com prazo de 2 horas; conflitos de horário e limite de 3 minicursos são respeitados.\n \n ## 2. Fora de escopo\n \n M2 **não** faz:\n - Presença por QR (M3).\n - Certificados e extrato (M4).\n - Painel da organização e bloqueios (M5) — exceto listagem geral de inscrições pela organização.\n - Bloqueio por faltas (M5) / código `INSCRICAO_BLOQUEADA` fica inativo ou fora do escopo funcional de M2 (só ativado em grupos com M5).\n - Criação de usuário ou atividade (vêm dos dados iniciais ou M1).\n \n ## 3. Modelo\n \n **Inscrição**:\n \n | campo | tipo | origem |\n |---|---|---|\n | `id` | string (`ins_` + 8 hex) | gerado |\n | `atividadeId` | string | informado |\n | `participanteId` | string | informado (identificação) |\n | `status` | `confirmada` \\| `em_espera` \\| `convocada` \\| `cancelada` \\| `expirada` | calculado / gerenciado |\n | `posicaoNaEspera` | inteiro \\| null | calculado (só quando `em_espera`) |\n | `convocadaAte` | ISO 8601 com fuso \\| null | calculado (só quando `convocada`) |\n | `criadaEm` | ISO 8601 com fuso | gerado |\n \n ## 4. Endpoints\n \n Identificação (`X-Usuario`) e ordem geral são do contrato: 401 (usuário desconhecido) → 403 (quem pode chamar) → 404 (recurso inexistente) → 422 (corpo) → regras do recurso.\n \n | Método | Rota | Quem | Sucesso |\n |---|---|---|---|\n | POST | `/atividades/:id/inscricoes` | participante | 201 `Inscricao` (sem corpo na entrada) |\n | GET | `/inscricoes` | todos | 200 `[Inscricao]` — participante recebe só as próprias; organização recebe todas; filtro `?atividadeId=` |\n | GET | `/inscricoes/:id` | todos | 200 `Inscricao` — participante só vê as próprias; de outro → 404 |\n | POST | `/inscricoes/:id/cancelamento` | participante | 200 `Inscricao` |\n | POST | `/inscricoes/:id/confirmacao` | participante | 200 `Inscricao` |\n \n ## 5. Regras\n \n Cada regra cita a pergunta da entrevista (`P-xx`) que a originou e, quando existe, a regra do documento de requisitos (`RN-xxx`). Sem RN, a fonte é decisão do grupo ou contrato.\n \n - **R1** (P1, decisão do grupo): O escopo de M2 abrange inscrições, lista de espera, confirmação de convocação e cancelamento de inscrições.\n - **R2** (P2, RN-202): As inscrições fecham 30 minutos antes do início do 1º encontro da atividade. Tentativa de inscrição a partir de 30 minutos antes do início ou depois → 422 `INSCRICOES_ENCERRADAS`.\n - **R3** (P3, RN-205, RN-216): Atribuição de vagas na inscrição: havendo vaga na atividade (número de ocupadas < vagas), a inscrição nasce com status `confirmada` e `posicaoNaEspera: null`; sem vaga, nasce com status `em_espera` no fim da fila. Lotar a atividade ou entrar na espera não é erro. \"Ocupa vaga\" quem está com status `confirmada` ou `convocada`.\n - **R4** (P3, RN-205): A posição na espera (`posicaoNaEspera`) é calculada dinamicamente, sendo 1 o próximo a ser convocado, ordenado pela ordem de chegada (`criadaEm`). Para status diferentes de `em_espera`, `posicaoNaEspera` é `null`.\n-- **R5** (P4, RN-211, RN-212, RN-213): Convocação e expiração da lista de espera: toda vaga liberada (por cancelamento de inscrição, convocação vencida ou aumento de vagas na atividade) convoca automaticamente o 1º da fila de espera, alterando seu status para `convocada` e definindo `convocadaAte` com prazo de 2 horas a partir da liberação. O prazo nunca ultrapassa o fecho das inscrições (30 min antes do 1º encontro); vaga liberada após o fecho não convoca ninguém. Convocação cujo `convocadaAte` venceu sem confirmação vira `expirada`, sai da fila e imediatamente convoca o próximo (em cascata), com novo prazo de 2h (respeitando o fecho das inscrições), calculado na leitura (mesmo sem acesso prévio).\n+- **R5** (P4, RN-211, RN-212, RN-213): Convocação e expiração da lista de espera: cada vaga liberada (por cancelamento de inscrição, convocação vencida ou aumento de $N$ vagas na atividade) convoca automaticamente o respectivo número de participantes da fila de espera (um por vaga liberada, convocando os $N$ primeiros da fila), alterando seus status para `convocada` e definindo `convocadaAte` com prazo de 2 horas a partir da liberação. O prazo nunca ultrapassa o fecho das inscrições (30 min antes do 1º encontro); vaga liberada após o fecho não convoca ninguém. Convocação cujo `convocadaAte` venceu sem confirmação vira `expirada`, sai da fila e imediatamente convoca o próximo (em cascata), com novo prazo de 2h (respeitando o fecho das inscrições), calculado na leitura (mesmo sem acesso prévio).\n - **R6** (P5, RN-206): Conflito de horário: participante que vai ocupar vaga (`confirmada` ou `convocada`) não pode ter outra inscrição que ocupe vaga (`confirmada` ou `convocada`) com encontro sobreposto. Encostar (um encontro termina exatamente no mesmo instante em que outro começa) não constitui conflito. Quem está apenas na espera (`em_espera`) não é verificado para conflito. Violação → 409 `CONFLITO_DE_HORARIO`.\n - **R7** (P5, RN-207): Limite de minicursos: no máximo 3 minicursos ocupando vaga (`confirmada` ou `convocada`) por participante simultaneamente. Palestras não contam, e inscrições em espera (`em_espera`) não contam. Exceder o limite → 422 `LIMITE_DE_MINICURSOS`.\n - **R8** (P6, RN-208): Ordem de precedência de erros na inscrição (`POST /atividades/:id/inscricoes`): quando mais de uma regra recusa a mesma inscrição, vale a primeira na ordem: atividade inexistente (404 `NAO_ENCONTRADO`) → atividade cancelada (422 `ATIVIDADE_CANCELADA`) → inscrições encerradas (422 `INSCRICOES_ENCERRADAS`) → bloqueio (422 `INSCRICAO_BLOQUEADA`, se aplicável) → já inscrito (409 `JA_INSCRITO`) → conflito de horário (409 `CONFLITO_DE_HORARIO`) → limite de minicursos (422 `LIMITE_DE_MINICURSOS`).\n - **R9** (P7, RN-209, RN-210): Cancelamento de inscrição (`POST /inscricoes/:id/cancelamento`): o participante pode cancelar a própria inscrição enquanto o relógio estiver antes do início do 1º encontro da atividade. Se o relógio estiver no início do 1º encontro ou depois → 422 `ATIVIDADE_JA_INICIADA`. Inscrição que já esteja com status `cancelada` ou `expirada` não pode ser cancelada de novo → 422 `INSCRICAO_INATIVA`.\n - **R10** (P7, decisão do grupo / RN-210): No cancelamento de inscrição, a verificação de `INSCRICAO_INATIVA` ocorre antes de `ATIVIDADE_JA_INICIADA`.\n - **R11** (P8, RN-217): Cancelamento da atividade: quando uma atividade é cancelada (M1), todas as suas inscrições ativas (`confirmada`, `em_espera`, `convocada`) são automaticamente canceladas (status `cancelada`).\n - **R12** (P9, RN-218): Privacidade e escopo de visualização/cancelamento/confirmação: o participante só pode visualizar, cancelar ou confirmar as próprias inscrições. Se um participante tentar acessar, cancelar ou confirmar uma inscrição pertencente a outro participante, a API responde 404 `NAO_ENCONTRADO` (e nunca 403), de forma a não revelar a existência da inscrição alheia.\n - **R13** (P10, RN-201, RN-219): Participação da organização: apenas participantes podem se inscrever (`POST /atividades/:id/inscricoes`), cancelar inscrição (`POST /inscricoes/:id/cancelamento`) e confirmar convocação (`POST /inscricoes/:id/confirmacao`). A organização pode listar todas as inscrições (`GET /inscricoes`), mas não pode se inscrever, cancelar ou confirmar por ninguém. Tentativa da organização em rotas de escrita de inscrições responde 403 `SOMENTE_PARTICIPANTE`.\n - **R14** (P11, RN-204): Reinscrição: é permitida uma única inscrição ativa (`confirmada`, `em_espera` ou `convocada`) por participante e atividade. Tentativa de nova inscrição enquanto já houver inscrição ativa → 409 `JA_INSCRITO`. Quem cancelou ou teve inscrição expirada/cancelada pode se inscrever novamente na mesma atividade, entrando ao final da fila de espera (ou confirmada, se houver vaga).\n - **R15** (Contrato M2 / RN-215): Confirmação de convocação (`POST /inscricoes/:id/confirmacao`): o participante com inscrição em status `convocada` pode confirmar a vaga dentro do prazo (`convocadaAte`). Ao confirmar, o status muda para `confirmada`, e `convocadaAte` passa a ser `null`.\n-- **R16** (Contrato M2 / RN-215): Validações na confirmação de convocação:\n+- **R16** (Contrato M2 / RN-215, RN-214): Validações na confirmação de convocação:\n   - Inscrição sem estar convocada (ex: já `confirmada`, `em_espera`, `cancelada`, `expirada`) → 422 `SEM_CONVOCACAO`.\n   - Confirmação após o prazo (`convocadaAte` expirado pelo relógio) → 422 `CONVOCACAO_EXPIRADA` (e a vaga é liberada/repassada).\n   - Confirmação que gere conflito de horário com outra inscrição confirmada/convocada → 409 `CONFLITO_DE_HORARIO`.\n   - Confirmação que exceda o limite de 3 minicursos → 422 `LIMITE_DE_MINICURSOS`.\n+  Caso a confirmação seja recusada por conflito de horário ou limite de minicursos, a convocação não é cancelada e continua valendo até o prazo original (`convocadaAte`).\n \n ## 6. Critérios de aceite\n \n 1. (R3) Participante se inscreve em atividade com vagas disponíveis → 201 com status `confirmada`, `posicaoNaEspera: null`.\n 2. (R3, R4) Participante se inscreve em atividade lotada → 201 com status `em_espera`, `posicaoNaEspera` correspondente (1, 2, ...).\n-3. (R2) Participante tenta se inscrever em atividade a 29 minutos ou menos do início do 1º encontro → 422 `INSCRICOES_ENCERRADAS`.\n+3. (R2) Participante tenta se inscrever em atividade faltando exatamente 30 minutos para o início do 1º encontro → 422 `INSCRICOES_ENCERRADAS`; faltando 31 minutos → 201.\n 4. (R5) Cancelamento de inscrição confirmada libera vaga e convoca automaticamente o 1º da espera com `convocadaAte` daqui a 2h; se vencer sem confirmação, vira `expirada` e convoca o próximo em cascata.\n 5. (R6) Participante com vaga ocupada em atividade com encontro sobreposto tenta se inscrever em outra → 409 `CONFLITO_DE_HORARIO`; encostar (fim = início) → 201 ok; quem está só na espera não gera conflito.\n 6. (R7) Participante com 3 minicursos ocupando vaga tenta se inscrever num 4º minicurso → 422 `LIMITE_DE_MINICURSOS`; palestras e espera não contam.\n 7. (R8) Inscrição que viole atividade inexistente (404), atividade cancelada (422 `ATIVIDADE_CANCELADA`) e inscrições encerradas (422) ao mesmo tempo respeita a ordem de precedência (404 primeiro, depois 422 `ATIVIDADE_CANCELADA`, etc.).\n 8. (R9, R10) Participante tenta cancelar inscrição após o início do 1º encontro → 422 `ATIVIDADE_JA_INICIADA`; tentar cancelar inscrição já inativa (cancelada/expirada) → 422 `INSCRICAO_INATIVA`, verificada antes de `ATIVIDADE_JA_INICIADA`.\n 9. (R11) Cancelamento da atividade cancela automaticamente todas as suas inscrições ativas (`confirmada`, `em_espera`, `convocada`).\n 10. (R12) Participante tenta acessar, cancelar ou confirmar inscrição de outro participante → 404 `NAO_ENCONTRADO` (nunca 403).\n 11. (R13) Organização tenta se inscrever, cancelar ou confirmar inscrição → 403 `SOMENTE_PARTICIPANTE`; organização lista todas com `GET /inscricoes`.\n 12. (R14) Participante com inscrição ativa tenta se inscrever novamente na mesma atividade → 409 `JA_INSCRITO`; após cancelar, pode se inscrever de novo entrando no fim da fila.\n 13. (R15, R16) Participante com status `convocada` confirma a tempo → 200 `confirmada`; confirmar sem convocação (`SEM_CONVOCACAO`), após o prazo (`CONVOCACAO_EXPIRADA`), com conflito de horário (`CONFLITO_DE_HORARIO`) ou limite de minicursos (`LIMITE_DE_MINICURSOS`) → respectivos erros.\n \n ## 7. Como isto será verificado\n \n Pela costura mais externa que já existe: **HTTP**, na API subida por `npm start` dentro de `api/` (stack do `projeto.json`), com `MODO_TESTE=1`. Cada cenário começa com `POST /_teste/reset`, usa `PUT /_teste/relogio` para fixar o tempo e `X-Usuario` para autenticação. O juiz do contrato confere status, `erro` e corpo nas mesmas rotas, então o teste que exercita a rota real cobre automaticamente regra e contrato.\n \n ## 8. Fatias de entrega\n \n 1. **Inscrições básicas e listagem**: `POST /atividades/:id/inscricoes` (confirmada e em espera), `GET /inscricoes` e `GET /inscricoes/:id` com privacidade e papéis (R1, R3, R4, R12, R13, R14).\n 2. **Prazos e cancelamento de inscrição**: Fechamento 30 min antes (R2), cancelamento de inscrição e janela/inativa (R9, R10).\n 3. **Conflitos e limites**: Conflito de horário (R6) e limite de minicursos (R7), além da ordem de precedência de erros (R8).\n 4. **Lista de espera e convocação**: Convocação automática, prazo de 2h, expiração em cascata na leitura, aumento de vagas (R5).\n 5. **Confirmação de convocação**: `POST /inscricoes/:id/confirmacao` e suas regras (R15, R16).\n 6. **Efeito do cancelamento da atividade**: Cancelamento de atividade afetando inscrições ativas (R11).\n",
+       "additions": 4,
+       "deletions": 3,
+       "status": "modified"
+      }
+     ]
+    },
+    "id": "msg_0af33b5c8001d2xgeYnMvZWida",
+    "sessionID": "ses_f50ceda60ffetsa1zvbllgKLxU"
+   },
+   "parts": [
+    {
+     "type": "text",
+     "text": "\r\r\nAjuste specs/M2-inscricoes.md em três pontos, sem mexer no resto:\r\n1. Critério de aceite 3: o fecho é 30 min antes e recusa no próprio instante. Troque\r\n   \"29 minutos ou menos\" por testar a borda: faltando exatamente 30 min → INSCRICOES_ENCERRADAS;\r\n   faltando 31 min → 201.\r\n2. Na R5, deixe explícito que cada vaga liberada convoca um da espera, então um aumento\r\n   de N vagas convoca os N primeiros da fila.\r\n3. Na R16, acrescente que, se a confirmação for recusada por conflito ou limite, a\r\n   convocação continua valendo até o prazo (RN-214).",
+     "id": "prt_0af33b5cb0012zIV6yke06ocp8",
+     "sessionID": "ses_f50ceda60ffetsa1zvbllgKLxU",
+     "messageID": "msg_0af33b5c8001d2xgeYnMvZWida"
+    }
+   ]
+  },
+  {
+   "info": {
+    "parentID": "msg_0af33b5c8001d2xgeYnMvZWida",
+    "role": "assistant",
+    "mode": "build",
+    "agent": "build",
+    "path": {
+     "cwd": "C:\\Users\\Ithallo Emanuel\\Desktop\\PROJETO FINAL — SEMANA ACADÊMICA\\semana-academica",
+     "root": "C:\\Users\\Ithallo Emanuel\\Desktop\\PROJETO FINAL — SEMANA ACADÊMICA\\semana-academica"
+    },
+    "cost": 0.00362125,
+    "tokens": {
+     "total": 41051,
+     "input": 6207,
+     "output": 65,
+     "reasoning": 224,
+     "cache": {
+      "write": 0,
+      "read": 34555
+     }
+    },
+    "modelID": "gemini-3.5-flash-lite",
+    "providerID": "google",
+    "time": {
+     "created": 1789645796835,
+     "completed": 1789645799527
+    },
+    "finish": "tool-calls",
+    "id": "msg_0af33b5e300175IWupVM96TzAw",
+    "sessionID": "ses_f50ceda60ffetsa1zvbllgKLxU"
+   },
+   "parts": [
+    {
+     "snapshot": "81fcd20bd62699b5d502255e50353db2e95865cb",
+     "type": "step-start",
+     "id": "prt_0af33bf7d0015ikVGgzXXG5EJP",
+     "sessionID": "ses_f50ceda60ffetsa1zvbllgKLxU",
+     "messageID": "msg_0af33b5e300175IWupVM96TzAw"
+    },
+    {
+     "type": "tool",
+     "tool": "read",
+     "callID": "4FKZJbgE2gYRG6mB",
+     "state": {
+      "status": "completed",
+      "input": {
+       "limit": 2000,
+       "offset": 1,
+       "filePath": "C:\\Users\\Ithallo Emanuel\\Desktop\\PROJETO FINAL — SEMANA ACADÊMICA\\semana-academica\\specs\\M2-inscricoes.md"
+      },
+      "output": "[12252 caracteres omitidos]",
+      "title": "specs\\M2-inscricoes.md",
+      "time": {
+       "start": 1789645799296,
+       "end": 1789645799301
+      }
+     },
+     "metadata": {
+      "google": {
+       "thoughtSignature": "EtYHCtMHARFNMg8o/DnSrHYPb1akQ0pD9wJTToNaU7HCqboMAOWKdGs5EHNiHU6DzCeT1wMZvT6m1VsNKSJblK3YCGQx705Hg6DCvsAsiv5ka+GbnCO9LSAhGXvFrjuDBi1cQhoE/JEs5HEqiXKfynqdDwkcJIGGKPPk9rLHSSOowOvVdZDefG0AUHiolpQJnlBL3EBhszo5Ne50IT+s6kwv4bSsQtOrknryWMPa8f7MjD1P+AzlrJGRxsgYmB2OBqNo3qHmFtq7Ie0Hm0R4/Ahqmt/ttJLOoAtxjCQ0NpL3AFF305Dyr6oaO1VwSYctTBmswkPJe468liIiY0kODuGV9hj/XjpLGd8voZpH+7qj56H4ijJf9F3eekN/IvTPwCUCNwm7h64bkCxdvRXgFVRG5pqSdEl169H5zN7V/9gUKoz5bEXRjcDMZPf9xDteRv061xityomqUYlnkHBFb/TaL/VJljpBTn+arH0D9mwq0Hao4sSg3zci1R/ADRJJnsSvUACyKiSOJYlr7lAMUUZNVCnVjTnlCL/opxuueZD3Jq4LfFbp9XwjSVYting57xaQsDZall6YmJv6QP/D+2zCTx82uN26lhXCeFaZkAeEioWzkNXvp2/r5lluPkL43DRzzzww7ia+7zGwAJi0F0vQ/hjxoBaBDtsRUTnP92DpumGeZmoeb8jZD6WQ52Ogr2WtFziHeCZCmsVwi+YhzL0qg482uCEkFl4lpICjbr9lLBQlmwNfue5k738CFhH4+pju9BAI6til4oAzIzfB76V+J0V+f+FwC0tIR02dgfJ2XqQsg4HCN0+S57+g/FeviExBwX/rNa2pAmyocTzyM+0u3PC4Nb8nznt01ubjbyrh9cDLrnm7jy/rNUtXjtRYF8s2C2YR87SVd2EalyB2RZ5RnDWnXPvd+pdzgorDLeOLpG87kKSRa1CFHqW+q7+P1HsEArEzxoS+AJaoSiZ6M4Gkui1ys5m7HtEvvuuAWahUbMs1Rc294d1j8cqNqWQdj1BXh3EJ4CceTBXyBBNCStRIETtc2e7zsB6Sh3+jiqiyZd8d7PWTipwPmN+9yPFrtCzelwurG1eCAJdzFuwG7YTlCs9/k/Zz9/k7EMwxWwBu2KrwM+h9KhoVth0/cNav/bApTGYnqrEHJ5BPu+ut1hKWRfyaZLhiFExfDafjiWnsHviDFE77NTVUaSnE2JxfkiDd5cLErBZWDhBnoDABLSZHGLWg3u2SQu00BuL6zb6TOcNdgLvqTuMtxjvnrMKRXvKV2NrP/ZQ70Fh2kvGi5OTjv+y83d+6Ag=="
+      }
+     },
+     "id": "prt_0af33bf7e001iOlEz9f773Xhlo",
+     "sessionID": "ses_f50ceda60ffetsa1zvbllgKLxU",
+     "messageID": "msg_0af33b5e300175IWupVM96TzAw"
+    },
+    {
+     "reason": "tool-calls",
+     "snapshot": "81fcd20bd62699b5d502255e50353db2e95865cb",
+     "type": "step-finish",
+     "tokens": {
+      "total": 41051,
+      "input": 6207,
+      "output": 65,
+      "reasoning": 224,
+      "cache": {
+       "write": 0,
+       "read": 34555
+      }
+     },
+     "cost": 0.00362125,
+     "id": "prt_0af33bffd001bsMMvNUpzdpeMN",
+     "sessionID": "ses_f50ceda60ffetsa1zvbllgKLxU",
+     "messageID": "msg_0af33b5e300175IWupVM96TzAw"
+    }
+   ]
+  },
+  {
+   "info": {
+    "parentID": "msg_0af33b5c8001d2xgeYnMvZWida",
+    "role": "assistant",
+    "mode": "build",
+    "agent": "build",
+    "path": {
+     "cwd": "C:\\Users\\Ithallo Emanuel\\Desktop\\PROJETO FINAL — SEMANA ACADÊMICA\\semana-academica",
+     "root": "C:\\Users\\Ithallo Emanuel\\Desktop\\PROJETO FINAL — SEMANA ACADÊMICA\\semana-academica"
+    },
+    "cost": 0.00880588,
+    "tokens": {
+     "total": 46943,
+     "input": 10758,
+     "output": 495,
+     "reasoning": 1324,
+     "cache": {
+      "write": 0,
+      "read": 34366
+     }
+    },
+    "modelID": "gemini-3.5-flash-lite",
+    "providerID": "google",
+    "time": {
+     "created": 1789645799530,
+     "completed": 1789645805369
+    },
+    "finish": "tool-calls",
+    "id": "msg_0af33c06a001NVVav1C9dzF0d5",
+    "sessionID": "ses_f50ceda60ffetsa1zvbllgKLxU"
+   },
+   "parts": [
+    {
+     "snapshot": "81fcd20bd62699b5d502255e50353db2e95865cb",
+     "type": "step-start",
+     "id": "prt_0af33c8b8001c8md6kmRWQVlvh",
+     "sessionID": "ses_f50ceda60ffetsa1zvbllgKLxU",
+     "messageID": "msg_0af33c06a001NVVav1C9dzF0d5"
+    },
+    {
+     "type": "reasoning",
+     "text": "**Analyzing Acceptance Criteria**\n\nI'm currently dissecting the acceptance criteria, specifically focusing on the nuance of the third point. The key adjustment involves a precise timing boundary. I'm swapping the wording \"29 minutes or less\" to target the exact 30-minute mark, ensuring immediate rejection at that precise instance.\n\n\n**Refining Waiting List Logic**\n\nI'm now focusing on the waiting list logic, particularly regarding rule R5. I've clarified that each released slot triggers a direct call-up from the waiting list; an increase of *N* slots now summons the top *N* individuals from the queue. Furthermore, rule R16 is being updated to specify that a rejected confirmation (due to conflict or limit) doesn't invalidate the ongoing call-up, which remains active until the deadline, as per RN-214.\n\n\n**Clarifying Call-Up Triggers**\n\nI've refined the language around Rule R5 concerning the waiting list call-up mechanism. Specifically, I've clarified that each released slot triggers a direct call-up, and an increase of *N* slots now directly calls up the top *N* individuals from the waiting list. This ensures a clear and immediate response to slot availability.\n\n\n**Defining Rejection Scenarios**\n\nI'm now detailing rejection scenarios within the confirmation process, specifically addressing conflict, expiration, and exceeding limits. An update involves an edge case: if a confirmation is rejected due to a time conflict or limit, the call-up is still considered valid and continues to be relevant until the deadline, as per RN-214. This is for the edge case scenarios detailed.\n\n\n",
+     "time": {
+      "start": 1789645801657,
+      "end": 1789645805016
+     },
+     "id": "prt_0af33c8b90010Zb4UmJlglPh7p",
+     "sessionID": "ses_f50ceda60ffetsa1zvbllgKLxU",
+     "messageID": "msg_0af33c06a001NVVav1C9dzF0d5"
+    },
+    {
+     "type": "tool",
+     "tool": "edit",
+     "callID": "PiGyYXeli8rfbimO",
+     "state": {
+      "status": "completed",
+      "input": {
+       "newString": "- **R5** (P4, RN-211, RN-212, RN-213): Convocação e expiração da lista de espera: cada vaga liberada (por cancelamento de inscrição, convocação vencida ou aumento de $N$ vagas na atividade) convoca automaticamente o respectivo número de participantes da fila de espera (um por vaga liberada, convocando os $N$ primeiros da fila), alterando seus status para `convocada` e definindo `convocadaAte` com prazo de 2 horas a partir da liberação. O prazo nunca ultrapassa o fecho das inscrições (30 min antes do 1º encontro); vaga liberada após o fecho não convoca ninguém. Convocação cujo `convocadaAte` venceu sem confirmação vira `expirada`, sai da fila e imediatamente convoca o próximo (em cascata), com novo prazo de 2h (respeitando o fecho das inscrições), calculado na leitura (mesmo sem acesso prévio).",
+       "oldString": "- **R5** (P4, RN-211, RN-212, RN-213): Convocação e expiração da lista de espera: toda vaga liberada (por cancelamento de inscrição, convocação vencida ou aumento de vagas na atividade) convoca automaticamente o 1º da fila de espera, alterando seu status para `convocada` e definindo `convocadaAte` com prazo de 2 horas a partir da liberação. O prazo nunca ultrapassa o fecho das inscrições (30 min antes do 1º encontro); vaga liberada após o fecho não convoca ninguém. Convocação cujo `convocadaAte` venceu sem confirmação vira `expirada`, sai da fila e imediatamente convoca o próximo (em cascata), com novo prazo de 2h (respeitando o fecho das inscrições), calculado na leitura (mesmo sem acesso prévio).",
+       "filePath": "C:\\Users\\Ithallo Emanuel\\Desktop\\PROJETO FINAL — SEMANA ACADÊMICA\\semana-academica\\specs\\M2-inscricoes.md"
+      },
+      "output": "Edit applied successfully.",
+      "metadata": {
+       "diagnostics": {},
+       "diff": "Index: C:\\Users\\Ithallo Emanuel\\Desktop\\PROJETO FINAL — SEMANA ACADÊMICA\\semana-academica\\specs\\M2-inscricoes.md\n===================================================================\n--- C:\\Users\\Ithallo Emanuel\\Desktop\\PROJETO FINAL — SEMANA ACADÊMICA\\semana-academica\\specs\\M2-inscricoes.md\n+++ C:\\Users\\Ithallo Emanuel\\Desktop\\PROJETO FINAL — SEMANA ACADÊMICA\\semana-academica\\specs\\M2-inscricoes.md\n@@ -46,9 +46,9 @@\n - **R1** (P1, decisão do grupo): O escopo de M2 abrange inscrições, lista de espera, confirmação de convocação e cancelamento de inscrições.\n - **R2** (P2, RN-202): As inscrições fecham 30 minutos antes do início do 1º encontro da atividade. Tentativa de inscrição a partir de 30 minutos antes do início ou depois → 422 `INSCRICOES_ENCERRADAS`.\n - **R3** (P3, RN-205, RN-216): Atribuição de vagas na inscrição: havendo vaga na atividade (número de ocupadas < vagas), a inscrição nasce com status `confirmada` e `posicaoNaEspera: null`; sem vaga, nasce com status `em_espera` no fim da fila. Lotar a atividade ou entrar na espera não é erro. \"Ocupa vaga\" quem está com status `confirmada` ou `convocada`.\n - **R4** (P3, RN-205): A posição na espera (`posicaoNaEspera`) é calculada dinamicamente, sendo 1 o próximo a ser convocado, ordenado pela ordem de chegada (`criadaEm`). Para status diferentes de `em_espera`, `posicaoNaEspera` é `null`.\n-- **R5** (P4, RN-211, RN-212, RN-213): Convocação e expiração da lista de espera: toda vaga liberada (por cancelamento de inscrição, convocação vencida ou aumento de vagas na atividade) convoca automaticamente o 1º da fila de espera, alterando seu status para `convocada` e definindo `convocadaAte` com prazo de 2 horas a partir da liberação. O prazo nunca ultrapassa o fecho das inscrições (30 min antes do 1º encontro); vaga liberada após o fecho não convoca ninguém. Convocação cujo `convocadaAte` venceu sem confirmação vira `expirada`, sai da fila e imediatamente convoca o próximo (em cascata), com novo prazo de 2h (respeitando o fecho das inscrições), calculado na leitura (mesmo sem acesso prévio).\n+- **R5** (P4, RN-211, RN-212, RN-213): Convocação e expiração da lista de espera: cada vaga liberada (por cancelamento de inscrição, convocação vencida ou aumento de $N$ vagas na atividade) convoca automaticamente o respectivo número de participantes da fila de espera (um por vaga liberada, convocando os $N$ primeiros da fila), alterando seus status para `convocada` e definindo `convocadaAte` com prazo de 2 horas a partir da liberação. O prazo nunca ultrapassa o fecho das inscrições (30 min antes do 1º encontro); vaga liberada após o fecho não convoca ninguém. Convocação cujo `convocadaAte` venceu sem confirmação vira `expirada`, sai da fila e imediatamente convoca o próximo (em cascata), com novo prazo de 2h (respeitando o fecho das inscrições), calculado na leitura (mesmo sem acesso prévio).\n - **R6** (P5, RN-206): Conflito de horário: participante que vai ocupar vaga (`confirmada` ou `convocada`) não pode ter outra inscrição que ocupe vaga (`confirmada` ou `convocada`) com encontro sobreposto. Encostar (um encontro termina exatamente no mesmo instante em que outro começa) não constitui conflito. Quem está apenas na espera (`em_espera`) não é verificado para conflito. Violação → 409 `CONFLITO_DE_HORARIO`.\n - **R7** (P5, RN-207): Limite de minicursos: no máximo 3 minicursos ocupando vaga (`confirmada` ou `convocada`) por participante simultaneamente. Palestras não contam, e inscrições em espera (`em_espera`) não contam. Exceder o limite → 422 `LIMITE_DE_MINICURSOS`.\n - **R8** (P6, RN-208): Ordem de precedência de erros na inscrição (`POST /atividades/:id/inscricoes`): quando mais de uma regra recusa a mesma inscrição, vale a primeira na ordem: atividade inexistente (404 `NAO_ENCONTRADO`) → atividade cancelada (422 `ATIVIDADE_CANCELADA`) → inscrições encerradas (422 `INSCRICOES_ENCERRADAS`) → bloqueio (422 `INSCRICAO_BLOQUEADA`, se aplicável) → já inscrito (409 `JA_INSCRITO`) → conflito de horário (409 `CONFLITO_DE_HORARIO`) → limite de minicursos (422 `LIMITE_DE_MINICURSOS`).\n - **R9** (P7, RN-209, RN-210): Cancelamento de inscrição (`POST /inscricoes/:id/cancelamento`): o participante pode cancelar a própria inscrição enquanto o relógio estiver antes do início do 1º encontro da atividade. Se o relógio estiver no início do 1º encontro ou depois → 422 `ATIVIDADE_JA_INICIADA`. Inscrição que já esteja com status `cancelada` ou `expirada` não pode ser cancelada de novo → 422 `INSCRICAO_INATIVA`.\n",
+       "filediff": {
+        "file": "C:\\Users\\Ithallo Emanuel\\Desktop\\PROJETO FINAL — SEMANA ACADÊMICA\\semana-academica\\specs\\M2-inscricoes.md",
+        "patch": "Index: C:\\Users\\Ithallo Emanuel\\Desktop\\PROJETO FINAL — SEMANA ACADÊMICA\\semana-academica\\specs\\M2-inscricoes.md\n===================================================================\n--- C:\\Users\\Ithallo Emanuel\\Desktop\\PROJETO FINAL — SEMANA ACADÊMICA\\semana-academica\\specs\\M2-inscricoes.md\n+++ C:\\Users\\Ithallo Emanuel\\Desktop\\PROJETO FINAL — SEMANA ACADÊMICA\\semana-academica\\specs\\M2-inscricoes.md\n@@ -46,9 +46,9 @@\n - **R1** (P1, decisão do grupo): O escopo de M2 abrange inscrições, lista de espera, confirmação de convocação e cancelamento de inscrições.\n - **R2** (P2, RN-202): As inscrições fecham 30 minutos antes do início do 1º encontro da atividade. Tentativa de inscrição a partir de 30 minutos antes do início ou depois → 422 `INSCRICOES_ENCERRADAS`.\n - **R3** (P3, RN-205, RN-216): Atribuição de vagas na inscrição: havendo vaga na atividade (número de ocupadas < vagas), a inscrição nasce com status `confirmada` e `posicaoNaEspera: null`; sem vaga, nasce com status `em_espera` no fim da fila. Lotar a atividade ou entrar na espera não é erro. \"Ocupa vaga\" quem está com status `confirmada` ou `convocada`.\n - **R4** (P3, RN-205): A posição na espera (`posicaoNaEspera`) é calculada dinamicamente, sendo 1 o próximo a ser convocado, ordenado pela ordem de chegada (`criadaEm`). Para status diferentes de `em_espera`, `posicaoNaEspera` é `null`.\n-- **R5** (P4, RN-211, RN-212, RN-213): Convocação e expiração da lista de espera: toda vaga liberada (por cancelamento de inscrição, convocação vencida ou aumento de vagas na atividade) convoca automaticamente o 1º da fila de espera, alterando seu status para `convocada` e definindo `convocadaAte` com prazo de 2 horas a partir da liberação. O prazo nunca ultrapassa o fecho das inscrições (30 min antes do 1º encontro); vaga liberada após o fecho não convoca ninguém. Convocação cujo `convocadaAte` venceu sem confirmação vira `expirada`, sai da fila e imediatamente convoca o próximo (em cascata), com novo prazo de 2h (respeitando o fecho das inscrições), calculado na leitura (mesmo sem acesso prévio).\n+- **R5** (P4, RN-211, RN-212, RN-213): Convocação e expiração da lista de espera: cada vaga liberada (por cancelamento de inscrição, convocação vencida ou aumento de $N$ vagas na atividade) convoca automaticamente o respectivo número de participantes da fila de espera (um por vaga liberada, convocando os $N$ primeiros da fila), alterando seus status para `convocada` e definindo `convocadaAte` com prazo de 2 horas a partir da liberação. O prazo nunca ultrapassa o fecho das inscrições (30 min antes do 1º encontro); vaga liberada após o fecho não convoca ninguém. Convocação cujo `convocadaAte` venceu sem confirmação vira `expirada`, sai da fila e imediatamente convoca o próximo (em cascata), com novo prazo de 2h (respeitando o fecho das inscrições), calculado na leitura (mesmo sem acesso prévio).\n - **R6** (P5, RN-206): Conflito de horário: participante que vai ocupar vaga (`confirmada` ou `convocada`) não pode ter outra inscrição que ocupe vaga (`confirmada` ou `convocada`) com encontro sobreposto. Encostar (um encontro termina exatamente no mesmo instante em que outro começa) não constitui conflito. Quem está apenas na espera (`em_espera`) não é verificado para conflito. Violação → 409 `CONFLITO_DE_HORARIO`.\n - **R7** (P5, RN-207): Limite de minicursos: no máximo 3 minicursos ocupando vaga (`confirmada` ou `convocada`) por participante simultaneamente. Palestras não contam, e inscrições em espera (`em_espera`) não contam. Exceder o limite → 422 `LIMITE_DE_MINICURSOS`.\n - **R8** (P6, RN-208): Ordem de precedência de erros na inscrição (`POST /atividades/:id/inscricoes`): quando mais de uma regra recusa a mesma inscrição, vale a primeira na ordem: atividade inexistente (404 `NAO_ENCONTRADO`) → atividade cancelada (422 `ATIVIDADE_CANCELADA`) → inscrições encerradas (422 `INSCRICOES_ENCERRADAS`) → bloqueio (422 `INSCRICAO_BLOQUEADA`, se aplicável) → já inscrito (409 `JA_INSCRITO`) → conflito de horário (409 `CONFLITO_DE_HORARIO`) → limite de minicursos (422 `LIMITE_DE_MINICURSOS`).\n - **R9** (P7, RN-209, RN-210): Cancelamento de inscrição (`POST /inscricoes/:id/cancelamento`): o participante pode cancelar a própria inscrição enquanto o relógio estiver antes do início do 1º encontro da atividade. Se o relógio estiver no início do 1º encontro ou depois → 422 `ATIVIDADE_JA_INICIADA`. Inscrição que já esteja com status `cancelada` ou `expirada` não pode ser cancelada de novo → 422 `INSCRICAO_INATIVA`.\n",
+        "additions": 1,
+        "deletions": 1
+       },
+       "truncated": false
+      },
+      "title": "specs\\M2-inscricoes.md",
+      "time": {
+       "start": 1789645804999,
+       "end": 1789645805001
+      }
+     },
+     "metadata": {
+      "google": {
+       "thoughtSignature": "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"
+      }
+     },
+     "id": "prt_0af33d5c0001ae2sOG8xEqZJ8j",
+     "sessionID": "ses_f50ceda60ffetsa1zvbllgKLxU",
+     "messageID": "msg_0af33c06a001NVVav1C9dzF0d5"
+    },
+    {
+     "reason": "tool-calls",
+     "snapshot": "4e643701f013ee603ac66b364e0d13eb45850043",
+     "type": "step-finish",
+     "tokens": {
+      "total": 46943,
+      "input": 10758,
+      "output": 495,
+      "reasoning": 1324,
+      "cache": {
+       "write": 0,
+       "read": 34366
+      }
+     },
+     "cost": 0.00880588,
+     "id": "prt_0af33d6af0015TnANsdYlq5ntM",
+     "sessionID": "ses_f50ceda60ffetsa1zvbllgKLxU",
+     "messageID": "msg_0af33c06a001NVVav1C9dzF0d5"
+    },
+    {
+     "type": "patch",
+     "hash": "81fcd20bd62699b5d502255e50353db2e95865cb",
+     "files": [
+      "C:/Users/Ithallo Emanuel/Desktop/PROJETO FINAL — SEMANA ACADÊMICA/semana-academica/specs/M2-inscricoes.md"
+     ],
+     "id": "prt_0af33d738001IJ5TEmdbL4sQPL",
+     "sessionID": "ses_f50ceda60ffetsa1zvbllgKLxU",
+     "messageID": "msg_0af33c06a001NVVav1C9dzF0d5"
+    }
+   ]
+  },
+  {
+   "info": {
+    "parentID": "msg_0af33b5c8001d2xgeYnMvZWida",
+    "role": "assistant",
+    "mode": "build",
+    "agent": "build",
+    "path": {
+     "cwd": "C:\\Users\\Ithallo Emanuel\\Desktop\\PROJETO FINAL — SEMANA ACADÊMICA\\semana-academica",
+     "root": "C:\\Users\\Ithallo Emanuel\\Desktop\\PROJETO FINAL — SEMANA ACADÊMICA\\semana-academica"
+    },
+    "cost": 0.00523305,
+    "tokens": {
+     "total": 47456,
+     "input": 12764,
+     "output": 64,
+     "reasoning": 83,
+     "cache": {
+      "write": 0,
+      "read": 34545
+     }
+    },
+    "modelID": "gemini-3.5-flash-lite",
+    "providerID": "google",
+    "time": {
+     "created": 1789645805371,
+     "completed": 1789645807611
+    },
+    "finish": "tool-calls",
+    "id": "msg_0af33d73b001vIjpqSw2XhHUda",
+    "sessionID": "ses_f50ceda60ffetsa1zvbllgKLxU"
+   },
+   "parts": [
+    {
+     "snapshot": "4e643701f013ee603ac66b364e0d13eb45850043",
+     "type": "step-start",
+     "id": "prt_0af33df07001wwZ4PbDFbqGhtL",
+     "sessionID": "ses_f50ceda60ffetsa1zvbllgKLxU",
+     "messageID": "msg_0af33d73b001vIjpqSw2XhHUda"
+    },
+    {
+     "type": "tool",
+     "tool": "read",
+     "callID": "6gMUP0WWWJTNcgR0",
+     "state": {
+      "status": "completed",
+      "input": {
+       "offset": 55,
+       "limit": 50,
+       "filePath": "C:\\Users\\Ithallo Emanuel\\Desktop\\PROJETO FINAL — SEMANA ACADÊMICA\\semana-academica\\specs\\M2-inscricoes.md"
+      },
+      "output": "[6374 caracteres omitidos]",
+      "title": "specs\\M2-inscricoes.md",
+      "time": {
+       "start": 1789645807370,
+       "end": 1789645807375
+      }
+     },
+     "metadata": {
+      "google": {
+       "thoughtSignature": "EqUDCqIDARFNMg/aVOlriNC0eXCIR9+dR6NaAktKZJPmd0SrZXGoPhhsz+Y2tkWUKIevg6KgPlCsSVL50h3Iqk6U70J07cqduXmFpO0ZOCEDfPBslqBXBXbuA8p6uqi5xsv+5Nvkj3ziyOsnbG67hxbIxBybNSVBBzslf0UkHfi7FmaIcJ5/dCJEa5wn9B6OU7u0NNLPDnjDf4IQptEP3x0Kq899WupAHSMq/tGr8tknSAFkpZ0/6BoS1r8OfcGfLtvMf21TMkUTRf+Wr+UvsVxsogRlc4f2ykAu/YgTpCqkb+/gPJXC4WDNRaSc/TmXATpr97FPaIa/gx4/zEuP6y84lCh1owG2Gc+hrjeNvJU5oRt4MRTdBaRDVnB73jf+wzJ6L5wnFf42bERZN1Dno4CJCOuU3F1H7pgTuOkcYGMKvHswLPB+/yBldxHmWavKkwXL0rHViliL5aG4upPSI1l5VcCInyPvmET1gV+hMHAvf8stnHeooUeqzI5mFU36nETORJh0BJinVsh3gYijO6kmS/VobPxmAdVBfYLbWPxbrHVosp8BvA=="
+      }
+     },
+     "id": "prt_0af33df09001MQ1yRX6k2hXdkK",
+     "sessionID": "ses_f50ceda60ffetsa1zvbllgKLxU",
+     "messageID": "msg_0af33d73b001vIjpqSw2XhHUda"
+    },
+    {
+     "reason": "tool-calls",
+     "snapshot": "4e643701f013ee603ac66b364e0d13eb45850043",
+     "type": "step-finish",
+     "tokens": {
+      "total": 47456,
+      "input": 12764,
+      "output": 64,
+      "reasoning": 83,
+      "cache": {
+       "write": 0,
+       "read": 34545
+      }
+     },
+     "cost": 0.00523305,
+     "id": "prt_0af33df900016duS2Iar1dH6ZS",
+     "sessionID": "ses_f50ceda60ffetsa1zvbllgKLxU",
+     "messageID": "msg_0af33d73b001vIjpqSw2XhHUda"
+    }
+   ]
+  },
+  {
+   "info": {
+    "parentID": "msg_0af33b5c8001d2xgeYnMvZWida",
+    "role": "assistant",
+    "mode": "build",
+    "agent": "build",
+    "path": {
+     "cwd": "C:\\Users\\Ithallo Emanuel\\Desktop\\PROJETO FINAL — SEMANA ACADÊMICA\\semana-academica",
+     "root": "C:\\Users\\Ithallo Emanuel\\Desktop\\PROJETO FINAL — SEMANA ACADÊMICA\\semana-academica"
+    },
+    "cost": 0.00766896,
+    "tokens": {
+     "total": 50410,
+     "input": 15118,
+     "output": 495,
+     "reasoning": 345,
+     "cache": {
+      "write": 0,
+      "read": 34452
+     }
+    },
+    "modelID": "gemini-3.5-flash-lite",
+    "providerID": "google",
+    "time": {
+     "created": 1789645807613,
+     "completed": 1789645811640
+    },
+    "finish": "tool-calls",
+    "id": "msg_0af33dffd0012xF23ejtRAqmG2",
+    "sessionID": "ses_f50ceda60ffetsa1zvbllgKLxU"
+   },
+   "parts": [
+    {
+     "snapshot": "4e643701f013ee603ac66b364e0d13eb45850043",
+     "type": "step-start",
+     "id": "prt_0af33ea81001N1w0gbGYqpMTsQ",
+     "sessionID": "ses_f50ceda60ffetsa1zvbllgKLxU",
+     "messageID": "msg_0af33dffd0012xF23ejtRAqmG2"
+    },
+    {
+     "type": "reasoning",
+     "text": "**Revising Key Elements**\n\nI'm currently focused on refining R16 and Critério 3 using the `edit` command. For R16, I'm working on validation checks related to convocations, specifically handling scenarios where an inscription isn't eligible (already confirmed, waiting, canceled, or expired). I'm carefully considering how to handle these states efficiently within the existing system.\n\n\n",
+     "time": {
+      "start": 1789645810306,
+      "end": 1789645811280
+     },
+     "id": "prt_0af33ea8200121j148kYaeoHuK",
+     "sessionID": "ses_f50ceda60ffetsa1zvbllgKLxU",
+     "messageID": "msg_0af33dffd0012xF23ejtRAqmG2"
+    },
+    {
+     "type": "tool",
+     "tool": "edit",
+     "callID": "UZ3W3gkHIDDP0Ywd",
+     "state": {
+      "status": "completed",
+      "input": {
+       "oldString": "- **R16** (Contrato M2 / RN-215): Validações na confirmação de convocação:\n  - Inscrição sem estar convocada (ex: já `confirmada`, `em_espera`, `cancelada`, `expirada`) → 422 `SEM_CONVOCACAO`.\n  - Confirmação após o prazo (`convocadaAte` expirado pelo relógio) → 422 `CONVOCACAO_EXPIRADA` (e a vaga é liberada/repassada).\n  - Confirmação que gere conflito de horário com outra inscrição confirmada/convocada → 409 `CONFLITO_DE_HORARIO`.\n  - Confirmação que exceda o limite de 3 minicursos → 422 `LIMITE_DE_MINICURSOS`.",
+       "newString": "- **R16** (Contrato M2 / RN-215, RN-214): Validações na confirmação de convocação:\n  - Inscrição sem estar convocada (ex: já `confirmada`, `em_espera`, `cancelada`, `expirada`) → 422 `SEM_CONVOCACAO`.\n  - Confirmação após o prazo (`convocadaAte` expirado pelo relógio) → 422 `CONVOCACAO_EXPIRADA` (e a vaga é liberada/repassada).\n  - Confirmação que gere conflito de horário com outra inscrição confirmada/convocada → 409 `CONFLITO_DE_HORARIO`.\n  - Confirmação que exceda o limite de 3 minicursos → 422 `LIMITE_DE_MINICURSOS`.\n  Caso a confirmação seja recusada por conflito de horário ou limite de minicursos, a convocação não é cancelada e continua valendo até o prazo original (`convocadaAte`).",
+       "filePath": "C:\\Users\\Ithallo Emanuel\\Desktop\\PROJETO FINAL — SEMANA ACADÊMICA\\semana-academica\\specs\\M2-inscricoes.md"
+      },
+      "output": "Edit applied successfully.",
+      "metadata": {
+       "diagnostics": {},
+       "diff": "Index: C:\\Users\\Ithallo Emanuel\\Desktop\\PROJETO FINAL — SEMANA ACADÊMICA\\semana-academica\\specs\\M2-inscricoes.md\n===================================================================\n--- C:\\Users\\Ithallo Emanuel\\Desktop\\PROJETO FINAL — SEMANA ACADÊMICA\\semana-academica\\specs\\M2-inscricoes.md\n+++ C:\\Users\\Ithallo Emanuel\\Desktop\\PROJETO FINAL — SEMANA ACADÊMICA\\semana-academica\\specs\\M2-inscricoes.md\n@@ -57,13 +57,14 @@\n - **R12** (P9, RN-218): Privacidade e escopo de visualização/cancelamento/confirmação: o participante só pode visualizar, cancelar ou confirmar as próprias inscrições. Se um participante tentar acessar, cancelar ou confirmar uma inscrição pertencente a outro participante, a API responde 404 `NAO_ENCONTRADO` (e nunca 403), de forma a não revelar a existência da inscrição alheia.\n - **R13** (P10, RN-201, RN-219): Participação da organização: apenas participantes podem se inscrever (`POST /atividades/:id/inscricoes`), cancelar inscrição (`POST /inscricoes/:id/cancelamento`) e confirmar convocação (`POST /inscricoes/:id/confirmacao`). A organização pode listar todas as inscrições (`GET /inscricoes`), mas não pode se inscrever, cancelar ou confirmar por ninguém. Tentativa da organização em rotas de escrita de inscrições responde 403 `SOMENTE_PARTICIPANTE`.\n - **R14** (P11, RN-204): Reinscrição: é permitida uma única inscrição ativa (`confirmada`, `em_espera` ou `convocada`) por participante e atividade. Tentativa de nova inscrição enquanto já houver inscrição ativa → 409 `JA_INSCRITO`. Quem cancelou ou teve inscrição expirada/cancelada pode se inscrever novamente na mesma atividade, entrando ao final da fila de espera (ou confirmada, se houver vaga).\n - **R15** (Contrato M2 / RN-215): Confirmação de convocação (`POST /inscricoes/:id/confirmacao`): o participante com inscrição em status `convocada` pode confirmar a vaga dentro do prazo (`convocadaAte`). Ao confirmar, o status muda para `confirmada`, e `convocadaAte` passa a ser `null`.\n-- **R16** (Contrato M2 / RN-215): Validações na confirmação de convocação:\n+- **R16** (Contrato M2 / RN-215, RN-214): Validações na confirmação de convocação:\n   - Inscrição sem estar convocada (ex: já `confirmada`, `em_espera`, `cancelada`, `expirada`) → 422 `SEM_CONVOCACAO`.\n   - Confirmação após o prazo (`convocadaAte` expirado pelo relógio) → 422 `CONVOCACAO_EXPIRADA` (e a vaga é liberada/repassada).\n   - Confirmação que gere conflito de horário com outra inscrição confirmada/convocada → 409 `CONFLITO_DE_HORARIO`.\n   - Confirmação que exceda o limite de 3 minicursos → 422 `LIMITE_DE_MINICURSOS`.\n+  Caso a confirmação seja recusada por conflito de horário ou limite de minicursos, a convocação não é cancelada e continua valendo até o prazo original (`convocadaAte`).\n \n ## 6. Critérios de aceite\n \n 1. (R3) Participante se inscreve em atividade com vagas disponíveis → 201 com status `confirmada`, `posicaoNaEspera: null`.\n",
+       "filediff": {
+        "file": "C:\\Users\\Ithallo Emanuel\\Desktop\\PROJETO FINAL — SEMANA ACADÊMICA\\semana-academica\\specs\\M2-inscricoes.md",
+        "patch": "Index: C:\\Users\\Ithallo Emanuel\\Desktop\\PROJETO FINAL — SEMANA ACADÊMICA\\semana-academica\\specs\\M2-inscricoes.md\n===================================================================\n--- C:\\Users\\Ithallo Emanuel\\Desktop\\PROJETO FINAL — SEMANA ACADÊMICA\\semana-academica\\specs\\M2-inscricoes.md\n+++ C:\\Users\\Ithallo Emanuel\\Desktop\\PROJETO FINAL — SEMANA ACADÊMICA\\semana-academica\\specs\\M2-inscricoes.md\n@@ -57,13 +57,14 @@\n - **R12** (P9, RN-218): Privacidade e escopo de visualização/cancelamento/confirmação: o participante só pode visualizar, cancelar ou confirmar as próprias inscrições. Se um participante tentar acessar, cancelar ou confirmar uma inscrição pertencente a outro participante, a API responde 404 `NAO_ENCONTRADO` (e nunca 403), de forma a não revelar a existência da inscrição alheia.\n - **R13** (P10, RN-201, RN-219): Participação da organização: apenas participantes podem se inscrever (`POST /atividades/:id/inscricoes`), cancelar inscrição (`POST /inscricoes/:id/cancelamento`) e confirmar convocação (`POST /inscricoes/:id/confirmacao`). A organização pode listar todas as inscrições (`GET /inscricoes`), mas não pode se inscrever, cancelar ou confirmar por ninguém. Tentativa da organização em rotas de escrita de inscrições responde 403 `SOMENTE_PARTICIPANTE`.\n - **R14** (P11, RN-204): Reinscrição: é permitida uma única inscrição ativa (`confirmada`, `em_espera` ou `convocada`) por participante e atividade. Tentativa de nova inscrição enquanto já houver inscrição ativa → 409 `JA_INSCRITO`. Quem cancelou ou teve inscrição expirada/cancelada pode se inscrever novamente na mesma atividade, entrando ao final da fila de espera (ou confirmada, se houver vaga).\n - **R15** (Contrato M2 / RN-215): Confirmação de convocação (`POST /inscricoes/:id/confirmacao`): o participante com inscrição em status `convocada` pode confirmar a vaga dentro do prazo (`convocadaAte`). Ao confirmar, o status muda para `confirmada`, e `convocadaAte` passa a ser `null`.\n-- **R16** (Contrato M2 / RN-215): Validações na confirmação de convocação:\n+- **R16** (Contrato M2 / RN-215, RN-214): Validações na confirmação de convocação:\n   - Inscrição sem estar convocada (ex: já `confirmada`, `em_espera`, `cancelada`, `expirada`) → 422 `SEM_CONVOCACAO`.\n   - Confirmação após o prazo (`convocadaAte` expirado pelo relógio) → 422 `CONVOCACAO_EXPIRADA` (e a vaga é liberada/repassada).\n   - Confirmação que gere conflito de horário com outra inscrição confirmada/convocada → 409 `CONFLITO_DE_HORARIO`.\n   - Confirmação que exceda o limite de 3 minicursos → 422 `LIMITE_DE_MINICURSOS`.\n+  Caso a confirmação seja recusada por conflito de horário ou limite de minicursos, a convocação não é cancelada e continua valendo até o prazo original (`convocadaAte`).\n \n ## 6. Critérios de aceite\n \n 1. (R3) Participante se inscreve em atividade com vagas disponíveis → 201 com status `confirmada`, `posicaoNaEspera: null`.\n",
+        "additions": 2,
+        "deletions": 1
+       },
+       "truncated": false
+      },
+      "title": "specs\\M2-inscricoes.md",
+      "time": {
+       "start": 1789645811251,
+       "end": 1789645811254
+      }
+     },
+     "metadata": {
+      "google": {
+       "thoughtSignature": "EtoKCtcKARFNMg8FmOwX7hOJnUOavuV5FfJmdPgFu3N02buOS0ZT+PFwYIqEC0Mf8JOMLk9G24ycQpvVKfkhlN8scCaslA9sXNZgSHLWXd98goUePAGV+QrgRPW/twUFRqYCProY45T/cklsM3SRB3cbs7Y58mkPQFTchq3aQnBvKB0+681U306g1OQes8p2UpXtg1hjVZA1E/W65bEgujIc0QNjLSkAMaXxHkRV8jh1qwS8u0HpPkLPfjUlpi/iHH4ndpET/1/rDZvnywNN51EEWc5o4kH7VgbFweawNjzK90YH0BzCcorIvLiKPxKVzVHYAGJSe0CThxnjAKYQa/RuDrfDBXxt98U5cNZ9eDPel44bEpBeGvN0clPdwlaIOKbNViR6VCajFI+4qWgT464yTte00KKCaMLxpaw8XywaWDMB1OSXmK00p+zulfk5v1TRcuRYkzk3G/9si9qcd5lG8T6Lv2lzQoGcFv20fCu1ZorhoDemNVsxNfp1gII+dG1AO/It5wKrZE+LUuUDi2xpe4D1FJrFMZIqKcgbq/W0Zw2mRuxSe3UBwPG9AwiPYChF0v2ja/tCBCU5ZLOVcvCWdPGu1k9a9E49ao1ocUBdi0nfetPTjvPXEAY2Kv4l9HjcIqH0dsl6ckL1n5Ym5IBETRDZVVINnTgPDCwvTDxrItbF2JwBfg4iBq7JO1W3qP7bgPfnkflADEVx8eq8rPYPCTOmg8kbHD7GLUoGG/I/6yKNUyQji8ChldFvWMl27Xk6RDosnbMuX3kubheN49pyEsUNuzf8pqJCV4T0xsTFf2W5UFy55la7Oc1YaMCNe18bJvMucwjutd8416lZNx39Yank9qwLAafpRPXpOaky7HvLvsA8R9Igs7FsqeQd/TbxZqvHfKneULs8vUohUgYLJIetWeB7LdBq9YcAaddsUxQBSVZX66O9nowqwyBqu4AR5ydONJ/roAr0dxjafYBXTjweKmScnIrxHPk/JQgJbPWR6oqCeashmQyDgHTiPwuweDyrt75b3ueXZcixJw1ps/A0542D4HZdFeAOz8JLDZg512czKCejY569V3eDPGX0sei6awbe6uoA/56n3R6vylzcVL02VRSFo1cGXK4X3GQdDtf6/iPMPaQOt1ORxZV9I7M/iCIUE4vqHx8HH0RLlig4xN2FM1xtfylbaCQ7kuvv4qd6lLvK76aLvH7t/ugvTU9VbFMRuTy6aQdoNnAwYLaDkIBrEBqexfIg8BTyZ9g3rZbVJP20PjM7Z5EAjokJa8IyR0T6yJXr4aQIi2+ZZOCW1/NNVsRoln/et/5ZSaKjvKbKrA3mDtGuXMDYcSMwZUmTcZDQH5J76re39qAiZc/Avvt5NvgP/f40FeXPvmUmes0KWGSYlVh5Sy3/5I9LlJTtDfX3vnqebAnCpA3nBcXi/G7rJjUrropyokViJY++KmxLnh/hWexR68iyZt9Ldv/vBfFUFRhDkhu1nFZwa2CQLdJG3PY1Jg+hh6Ov7Pz3Zl6zU9S1kRCJvp0OgYImivcT/b56d18gyKbbb2o5lBSoBSshExo8TtRlCClPNRQKAOrB7Q+ddru15X4Ui8d8oMNzZCryKetvDQKqdMUxkSv/9Agh2l76wsdgC5O37kEF0fosc+VbJ4OaUA5M3OFMc7urLZz/s9h5bPY/dJd3/Ji+BNajWT0k8hHZS+C+KpN4ZcFa2FHhiRabREu6RNkHyGmt0f5EWZ2YYOWVl7AlV9GzHuWxhWmsMWvPBeSuZnyav8JiqsFgZOxKfLRvaxOwWz/eYH1VTWyRuXybasyIbu6B4TjUCkHO5lE="
+      }
+     },
+     "id": "prt_0af33ee2b001aWjhkvn743Wlzs",
+     "sessionID": "ses_f50ceda60ffetsa1zvbllgKLxU",
+     "messageID": "msg_0af33dffd0012xF23ejtRAqmG2"
+    },
+    {
+     "reason": "tool-calls",
+     "snapshot": "13b78e2e080c09bafb34e0cab345dfd4b79dbb0b",
+     "type": "step-finish",
+     "tokens": {
+      "total": 50410,
+      "input": 15118,
+      "output": 495,
+      "reasoning": 345,
+      "cache": {
+       "write": 0,
+       "read": 34452
+      }
+     },
+     "cost": 0.00766896,
+     "id": "prt_0af33ef2c001bkED1qLrarKsx8",
+     "sessionID": "ses_f50ceda60ffetsa1zvbllgKLxU",
+     "messageID": "msg_0af33dffd0012xF23ejtRAqmG2"
+    },
+    {
+     "type": "patch",
+     "hash": "4e643701f013ee603ac66b364e0d13eb45850043",
+     "files": [
+      "C:/Users/Ithallo Emanuel/Desktop/PROJETO FINAL — SEMANA ACADÊMICA/semana-academica/specs/M2-inscricoes.md"
+     ],
+     "id": "prt_0af33efb7001X5SB0N6W73iwau",
+     "sessionID": "ses_f50ceda60ffetsa1zvbllgKLxU",
+     "messageID": "msg_0af33dffd0012xF23ejtRAqmG2"
+    }
+   ]
+  },
+  {
+   "info": {
+    "parentID": "msg_0af33b5c8001d2xgeYnMvZWida",
+    "role": "assistant",
+    "mode": "build",
+    "agent": "build",
+    "path": {
+     "cwd": "C:\\Users\\Ithallo Emanuel\\Desktop\\PROJETO FINAL — SEMANA ACADÊMICA\\semana-academica",
+     "root": "C:\\Users\\Ithallo Emanuel\\Desktop\\PROJETO FINAL — SEMANA ACADÊMICA\\semana-academica"
+    },
+    "cost": 0.00628709,
+    "tokens": {
+     "total": 50692,
+     "input": 16043,
+     "output": 163,
+     "reasoning": 13,
+     "cache": {
+      "write": 0,
+      "read": 34473
+     }
+    },
+    "modelID": "gemini-3.5-flash-lite",
+    "providerID": "google",
+    "time": {
+     "created": 1789645811642,
+     "completed": 1789645814077
+    },
+    "finish": "tool-calls",
+    "id": "msg_0af33efba001HfdqJYIWHKiNvb",
+    "sessionID": "ses_f50ceda60ffetsa1zvbllgKLxU"
+   },
+   "parts": [
+    {
+     "snapshot": "13b78e2e080c09bafb34e0cab345dfd4b79dbb0b",
+     "type": "step-start",
+     "id": "prt_0af33f7b8001xCJUY84vVGyise",
+     "sessionID": "ses_f50ceda60ffetsa1zvbllgKLxU",
+     "messageID": "msg_0af33efba001HfdqJYIWHKiNvb"
+    },
+    {
+     "type": "tool",
+     "tool": "edit",
+     "callID": "JVd3CEePZeLNzxxi",
+     "state": {
+      "status": "completed",
+      "input": {
+       "newString": "3. (R2) Participante tenta se inscrever em atividade faltando exatamente 30 minutos para o início do 1º encontro → 422 `INSCRICOES_ENCERRADAS`; faltando 31 minutos → 201.",
+       "oldString": "3. (R2) Participante tenta se inscrever em atividade a 29 minutos ou menos do início do 1º encontro → 422 `INSCRICOES_ENCERRADAS`.",
+       "filePath": "C:\\Users\\Ithallo Emanuel\\Desktop\\PROJETO FINAL — SEMANA ACADÊMICA\\semana-academica\\specs\\M2-inscricoes.md"
+      },
+      "output": "Edit applied successfully.",
+      "metadata": {
+       "diagnostics": {},
+       "diff": "Index: C:\\Users\\Ithallo Emanuel\\Desktop\\PROJETO FINAL — SEMANA ACADÊMICA\\semana-academica\\specs\\M2-inscricoes.md\n===================================================================\n--- C:\\Users\\Ithallo Emanuel\\Desktop\\PROJETO FINAL — SEMANA ACADÊMICA\\semana-academica\\specs\\M2-inscricoes.md\n+++ C:\\Users\\Ithallo Emanuel\\Desktop\\PROJETO FINAL — SEMANA ACADÊMICA\\semana-academica\\specs\\M2-inscricoes.md\n@@ -68,9 +68,9 @@\n ## 6. Critérios de aceite\n \n 1. (R3) Participante se inscreve em atividade com vagas disponíveis → 201 com status `confirmada`, `posicaoNaEspera: null`.\n 2. (R3, R4) Participante se inscreve em atividade lotada → 201 com status `em_espera`, `posicaoNaEspera` correspondente (1, 2, ...).\n-3. (R2) Participante tenta se inscrever em atividade a 29 minutos ou menos do início do 1º encontro → 422 `INSCRICOES_ENCERRADAS`.\n+3. (R2) Participante tenta se inscrever em atividade faltando exatamente 30 minutos para o início do 1º encontro → 422 `INSCRICOES_ENCERRADAS`; faltando 31 minutos → 201.\n 4. (R5) Cancelamento de inscrição confirmada libera vaga e convoca automaticamente o 1º da espera com `convocadaAte` daqui a 2h; se vencer sem confirmação, vira `expirada` e convoca o próximo em cascata.\n 5. (R6) Participante com vaga ocupada em atividade com encontro sobreposto tenta se inscrever em outra → 409 `CONFLITO_DE_HORARIO`; encostar (fim = início) → 201 ok; quem está só na espera não gera conflito.\n 6. (R7) Participante com 3 minicursos ocupando vaga tenta se inscrever num 4º minicurso → 422 `LIMITE_DE_MINICURSOS`; palestras e espera não contam.\n 7. (R8) Inscrição que viole atividade inexistente (404), atividade cancelada (422 `ATIVIDADE_CANCELADA`) e inscrições encerradas (422) ao mesmo tempo respeita a ordem de precedência (404 primeiro, depois 422 `ATIVIDADE_CANCELADA`, etc.).\n",
+       "filediff": {
+        "file": "C:\\Users\\Ithallo Emanuel\\Desktop\\PROJETO FINAL — SEMANA ACADÊMICA\\semana-academica\\specs\\M2-inscricoes.md",
+        "patch": "Index: C:\\Users\\Ithallo Emanuel\\Desktop\\PROJETO FINAL — SEMANA ACADÊMICA\\semana-academica\\specs\\M2-inscricoes.md\n===================================================================\n--- C:\\Users\\Ithallo Emanuel\\Desktop\\PROJETO FINAL — SEMANA ACADÊMICA\\semana-academica\\specs\\M2-inscricoes.md\n+++ C:\\Users\\Ithallo Emanuel\\Desktop\\PROJETO FINAL — SEMANA ACADÊMICA\\semana-academica\\specs\\M2-inscricoes.md\n@@ -68,9 +68,9 @@\n ## 6. Critérios de aceite\n \n 1. (R3) Participante se inscreve em atividade com vagas disponíveis → 201 com status `confirmada`, `posicaoNaEspera: null`.\n 2. (R3, R4) Participante se inscreve em atividade lotada → 201 com status `em_espera`, `posicaoNaEspera` correspondente (1, 2, ...).\n-3. (R2) Participante tenta se inscrever em atividade a 29 minutos ou menos do início do 1º encontro → 422 `INSCRICOES_ENCERRADAS`.\n+3. (R2) Participante tenta se inscrever em atividade faltando exatamente 30 minutos para o início do 1º encontro → 422 `INSCRICOES_ENCERRADAS`; faltando 31 minutos → 201.\n 4. (R5) Cancelamento de inscrição confirmada libera vaga e convoca automaticamente o 1º da espera com `convocadaAte` daqui a 2h; se vencer sem confirmação, vira `expirada` e convoca o próximo em cascata.\n 5. (R6) Participante com vaga ocupada em atividade com encontro sobreposto tenta se inscrever em outra → 409 `CONFLITO_DE_HORARIO`; encostar (fim = início) → 201 ok; quem está só na espera não gera conflito.\n 6. (R7) Participante com 3 minicursos ocupando vaga tenta se inscrever num 4º minicurso → 422 `LIMITE_DE_MINICURSOS`; palestras e espera não contam.\n 7. (R8) Inscrição que viole atividade inexistente (404), atividade cancelada (422 `ATIVIDADE_CANCELADA`) e inscrições encerradas (422) ao mesmo tempo respeita a ordem de precedência (404 primeiro, depois 422 `ATIVIDADE_CANCELADA`, etc.).\n",
+        "additions": 1,
+        "deletions": 1
+       },
+       "truncated": false
+      },
+      "title": "specs\\M2-inscricoes.md",
+      "time": {
+       "start": 1789645813697,
+       "end": 1789645813699
+      }
+     },
+     "metadata": {
+      "google": {
+       "thoughtSignature": "EpoBCpcBARFNMg/wjShMB7wAPXfZSwGu0+bmwfllswT44FQ7f34b5vS4DCPL5c+lUjgZNHfrO6vhxb0W8HCNhmzohl2xhJBMUMrD3l2JUYy4maKuKsfBDtd3ZEKmg6CCOm8+OjH9+cWe2gYLdh3Y5hUBRlpq5o8Wt9CthmYbYTDrY6pEjVlRLYJ+bB2YzDsGq2XeCHfa5qKMiLtdJw=="
+      }
+     },
+     "id": "prt_0af33f7b9001cmX4Y5LcdoK2ph",
+     "sessionID": "ses_f50ceda60ffetsa1zvbllgKLxU",
+     "messageID": "msg_0af33efba001HfdqJYIWHKiNvb"
+    },
+    {
+     "reason": "tool-calls",
+     "snapshot": "4394087f8b2539128b0cea99e53793490a75054d",
+     "type": "step-finish",
+     "tokens": {
+      "total": 50692,
+      "input": 16043,
+      "output": 163,
+      "reasoning": 13,
+      "cache": {
+       "write": 0,
+       "read": 34473
+      }
+     },
+     "cost": 0.00628709,
+     "id": "prt_0af33f8b2001Thax78RZdnUb0F",
+     "sessionID": "ses_f50ceda60ffetsa1zvbllgKLxU",
+     "messageID": "msg_0af33efba001HfdqJYIWHKiNvb"
+    },
+    {
+     "type": "patch",
+     "hash": "13b78e2e080c09bafb34e0cab345dfd4b79dbb0b",
+     "files": [
+      "C:/Users/Ithallo Emanuel/Desktop/PROJETO FINAL — SEMANA ACADÊMICA/semana-academica/specs/M2-inscricoes.md"
+     ],
+     "id": "prt_0af33f93b001j2ouCbmUPq7C4N",
+     "sessionID": "ses_f50ceda60ffetsa1zvbllgKLxU",
+     "messageID": "msg_0af33efba001HfdqJYIWHKiNvb"
+    }
+   ]
+  },
+  {
+   "info": {
+    "parentID": "msg_0af33b5c8001d2xgeYnMvZWida",
+    "role": "assistant",
+    "mode": "build",
+    "agent": "build",
+    "path": {
+     "cwd": "C:\\Users\\Ithallo Emanuel\\Desktop\\PROJETO FINAL — SEMANA ACADÊMICA\\semana-academica",
+     "root": "C:\\Users\\Ithallo Emanuel\\Desktop\\PROJETO FINAL — SEMANA ACADÊMICA\\semana-academica"
+    },
+    "cost": 0.0180314,
+    "tokens": {
+     "total": 51840,
+     "input": 50713,
+     "output": 491,
+     "reasoning": 636,
+     "cache": {
+      "write": 0,
+      "read": 0
+     }
+    },
+    "modelID": "gemini-3.5-flash-lite",
+    "providerID": "google",
+    "time": {
+     "created": 1789645814079,
+     "completed": 1789645877701
+    },
+    "finish": "stop",
+    "id": "msg_0af33f93f001rfoVTiJhg9Nt1h",
+    "sessionID": "ses_f50ceda60ffetsa1zvbllgKLxU"
+   },
+   "parts": [
+    {
+     "snapshot": "4394087f8b2539128b0cea99e53793490a75054d",
+     "type": "step-start",
+     "id": "prt_0af34e89a0015erhcGGm4azb6T",
+     "sessionID": "ses_f50ceda60ffetsa1zvbllgKLxU",
+     "messageID": "msg_0af33f93f001rfoVTiJhg9Nt1h"
+    },
+    {
+     "type": "reasoning",
+     "text": "**Listing the Rules**\n\nI am now enumerating the rules as requested, formatting each on a single line for easy review. The goal is to provide a clear and concise listing for the expert.\n\n\n",
+     "time": {
+      "start": 1789645875356,
+      "end": 1789645876269
+     },
+     "id": "prt_0af34e89c001gek9xcsDrdegUL",
+     "sessionID": "ses_f50ceda60ffetsa1zvbllgKLxU",
+     "messageID": "msg_0af33f93f001rfoVTiJhg9Nt1h"
+    },
+    {
+     "type": "text",
+     "text": "- R1: O escopo de M2 abrange inscrições, lista de espera, confirmação de convocação e cancelamento de inscrições.\n- R2: As inscrições fecham 30 minutos antes do início do 1º encontro da atividade.\n- R3: Atribuição de vagas na inscrição: havendo vaga, nasce confirmada; sem vaga, nasce em_espera no fim da fila.\n- R4: A posição na espera (`posicaoNaEspera`) é calculada dinamicamente por ordem de chegada para inscrições `em_espera`.\n- R5: Cada vaga liberada (por cancelamento, convocação vencida ou aumento de $N$ vagas) convoca automaticamente os participantes correspondentes da fila de espera.\n- R6: Conflito de horário impede inscrição ou confirmação que ocupe vaga com encontro sobreposto.\n- R7: Limite de 3 minicursos ocupando vaga simultaneamente por participante.\n- R8: Ordem de precedência de erros na inscrição: inexistente → cancelada → encerradas → bloqueada → já inscrito → conflito → limite.\n- R9: Cancelamento de inscrição permitido até o início do 1º encontro; após, ATIVIDADE_JA_INICIADA.\n- R10: Verificação de `INSCRICAO_INATIVA` ocorre antes de `ATIVIDADE_JA_INICIADA` no cancelamento de inscrição.\n- R11: Cancelamento da atividade cancela automaticamente todas as suas inscrições ativas.\n- R12: Privacidade: participante só vê/mexe nas próprias inscrições; tentativa em alheia responde 404.\n- R13: Apenas participantes realizam inscrições, cancelamentos e confirmações; organização recebe 403 `SOMENTE_PARTICIPANTE`.\n- R14: Permite uma única inscrição ativa por participante e atividade; cancelados podem se inscrever novamente no fim da fila.\n- R15: Confirmação de convocação altera status para confirmada dentro do prazo de `convocadaAte`.\n- R16: Validações na confirmação de convocação, mantendo a convocação válida até o prazo em caso de recusa por conflito ou limite.",
+     "time": {
+      "start": 1789645876270,
+      "end": 1789645877479
+     },
+     "id": "prt_0af34ec2e001WlRFkt9pPr3oh4",
+     "sessionID": "ses_f50ceda60ffetsa1zvbllgKLxU",
+     "messageID": "msg_0af33f93f001rfoVTiJhg9Nt1h"
+    },
+    {
+     "reason": "stop",
+     "snapshot": "4394087f8b2539128b0cea99e53793490a75054d",
+     "type": "step-finish",
+     "tokens": {
+      "total": 51840,
+      "input": 50713,
+      "output": 491,
+      "reasoning": 636,
+      "cache": {
+       "write": 0,
+       "read": 0
+      }
+     },
+     "cost": 0.0180314,
+     "id": "prt_0af34f158001LyQU69Km3qkU4F",
+     "sessionID": "ses_f50ceda60ffetsa1zvbllgKLxU",
+     "messageID": "msg_0af33f93f001rfoVTiJhg9Nt1h"
+    }
+   ]
+  }
+ ]
+}
