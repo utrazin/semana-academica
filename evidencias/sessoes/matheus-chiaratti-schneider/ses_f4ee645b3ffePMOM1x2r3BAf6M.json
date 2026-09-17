@@ -1,0 +1,529 @@
+{
+ "info": {
+  "id": "ses_f4ee645b3ffePMOM1x2r3BAf6M",
+  "slug": "clever-panda",
+  "projectID": "ef5c31e66779deb7b442cd2960ce806c7cc88c17",
+  "directory": "C:\\Users\\matga\\OneDrive\\Área de Trabalho\\semana-academica\\semana-academica\\api",
+  "path": "api",
+  "title": "Auditoria do módulo M3 contra specs",
+  "agent": "build",
+  "model": {
+   "id": "big-pickle",
+   "providerID": "opencode"
+  },
+  "version": "1.18.31",
+  "summary": {
+   "additions": 0,
+   "deletions": 0,
+   "files": 0
+  },
+  "cost": 0,
+  "tokens": {
+   "input": 12225,
+   "output": 3212,
+   "reasoning": 0,
+   "cache": {
+    "read": 59392,
+    "write": 0
+   }
+  },
+  "time": {
+   "created": 1789677648460,
+   "updated": 1789677808256
+  }
+ },
+ "messages": [
+  {
+   "info": {
+    "role": "user",
+    "time": {
+     "created": 1789677648472
+    },
+    "agent": "build",
+    "model": {
+     "providerID": "opencode",
+     "modelID": "big-pickle"
+    },
+    "summary": {
+     "diffs": []
+    },
+    "id": "msg_0b119ba5700193VKE2AV0wF7Wl",
+    "sessionID": "ses_f4ee645b3ffePMOM1x2r3BAf6M"
+   },
+   "parts": [
+    {
+     "type": "text",
+     "text": "@auditor audite o módulo M3 contra specs/M3-presenca.md",
+     "id": "prt_0b119ba58001OAfE6rr2JZD4qo",
+     "sessionID": "ses_f4ee645b3ffePMOM1x2r3BAf6M",
+     "messageID": "msg_0b119ba5700193VKE2AV0wF7Wl"
+    }
+   ]
+  },
+  {
+   "info": {
+    "parentID": "msg_0b119ba5700193VKE2AV0wF7Wl",
+    "role": "assistant",
+    "mode": "build",
+    "agent": "build",
+    "path": {
+     "cwd": "C:\\Users\\matga\\OneDrive\\Área de Trabalho\\semana-academica\\semana-academica\\api",
+     "root": "C:\\Users\\matga\\OneDrive\\Área de Trabalho\\semana-academica\\semana-academica"
+    },
+    "cost": 0,
+    "tokens": {
+     "total": 12127,
+     "input": 9681,
+     "output": 654,
+     "reasoning": 0,
+     "cache": {
+      "write": 0,
+      "read": 1792
+     }
+    },
+    "modelID": "big-pickle",
+    "providerID": "opencode",
+    "time": {
+     "created": 1789677648479,
+     "completed": 1789677790586
+    },
+    "finish": "tool-calls",
+    "id": "msg_0b119ba5f001mYGT34ik0hghoO",
+    "sessionID": "ses_f4ee645b3ffePMOM1x2r3BAf6M"
+   },
+   "parts": [
+    {
+     "snapshot": "c3730445b6e16bb44ac5200a1d49947f1c57cb14",
+     "type": "step-start",
+     "id": "prt_0b119f5a5001Atdd8NdVXdCIpw",
+     "sessionID": "ses_f4ee645b3ffePMOM1x2r3BAf6M",
+     "messageID": "msg_0b119ba5f001mYGT34ik0hghoO"
+    },
+    {
+     "type": "reasoning",
+     "text": "The user wants me to audit module M3 against the spec. Let me load the auditor agent. The user explicitly invoked `@auditor`, which is a subagent. Let me use the task tool with subagent_type \"auditor\".\n\nActually, the auditor is mentioned in the AGENTS.md instructions as a subagent type. Let me check what's available. The available agent types listed in the task tool include \"auditor\". So I should delegate this task to the auditor agent.\n\nLet me provide a detailed prompt for the auditor agent.",
+     "time": {
+      "start": 1789677663655,
+      "end": 1789677664398
+     },
+     "id": "prt_0b119f5a7001PQIuk9sgYpv1NA",
+     "sessionID": "ses_f4ee645b3ffePMOM1x2r3BAf6M",
+     "messageID": "msg_0b119ba5f001mYGT34ik0hghoO"
+    },
+    {
+     "type": "tool",
+     "tool": "task",
+     "callID": "call_0b4d7152d3b54e5886740270",
+     "state": {
+      "status": "completed",
+      "input": {
+       "description": "Auditar módulo M3 contra spec",
+       "prompt": "Audite o módulo M3 da Semana Acadêmica contra a spec em `specs/M3-presenca.md`.\n\nLocalize-se no projeto: a raiz do workspace é `C:\\Users\\matga\\OneDrive\\Área de Trabalho\\semana-academica\\semana-academica`, com a API em `api/` e a interface web em `web/`. Existe também `projeto.json` e um `contrato-api.md` na raiz ou na pasta spec que pode definir o contrato esperado.\n\nTarefa (conforme o papel do auditor):\n1. Leia `specs/M3-presenca.md` na íntegra.\n2. Para cada regra numerada da spec, confira:\n   a. se a regra nasceu de uma pergunta da entrevista (busque registros de entrevista/entrevistas, ex. `docs/` ou em arquivos da spec — verifique se há um registro de entrevista que sustente a regra);\n   b. se existe um teste que comprove a regra (procure em `api/test/`, `api/tests/`, `web/src/__tests__` ou onde os testes do projeto moram; use o padrão de nomes de arquivos para identificar o módulo M3/presença);\n   c. se a regra está implementada no código (procure rotas/controllers/serviços relacionados a presença em `api/src/` e telas em `web/src/`).\n3. Aponte, de forma clara e itemizada, o que ficou SEM prova (regra sem teste), SEM origem (regra sem pergunta de entrevista que a sustente), e SEM implementação (regra sem código). Registre também se existe teste que não corresponde a nenhuma regra.\n4. NÃO conserte nada — apenas audite e reporte.\n\nRetorne um relatório itemizado em português, listando cada regra com seu estado (cobrerta / sem teste / sem origem / sem implementação) e, no final, um resumo dos achados.",
+       "subagent_type": "auditor"
+      },
+      "output": "<task id=\"ses_f4ee5fd18ffed54hfKkA5NEN8v\" state=\"completed\">\n<task_result>\nLi a spec, a entrevista, o contrato, a implementação e os testes; rodei as duas suítes. Segue o parecer.\n\n---\n\n## Matriz de rastreabilidade\n\n| Regra | Origem | Teste que comprova | Veredito |\n|---|---|---|---|\n| R1 | P1 | `api/verificacoes/m3-presenca.spec.js:825` «R1: registrar presenca por QR nao altera a inscricao deixada pelo M2» | COMPROVADA |\n| R2 | P1 (contrato) | `m3-presenca.spec.js:68` «R2: … 401 USUARIO_DESCONHECIDO» e `:95` «R2: perfil trocado … 403» | COMPROVADA |\n| R3 | P18 (contrato) | `m3-presenca.spec.js:121` «R3: encontro inexistente → 404 NAO_ENCONTRADO» | COMPROVADA |\n| R4 | P12 (contrato, seção 1) | `m3-presenca.spec.js:875` «R4: lidoEm não-string ou não-data → 422 DADOS_INVALIDOS» | COMPROVADA |\n| R5 | P7 | `m3-presenca.spec.js:553` «R5: codigo ausente/não-string → DADOS_INVALIDOS; curto/outro encontro → CODIGO_INVALIDO» | COMPROVADA |\n| R6 | P8 | `m3-presenca.spec.js:417` «R6: só confirmada registra por QR» e `:1247` «R6 na manual» | COMPROVADA |\n| R7 | P2 | `m3-presenca.spec.js:241` «R7: janela do obter codigo, bordas incluídas» | COMPROVADA |\n| R8 | P16 | `m3-presenca.spec.js:281` «R8: ATIVIDADE_CANCELADA antes de FORA_DA_JANELA» e `:316` «R8 parte 2: QR e manual → NAO_INSCRITO» | COMPROVADA |\n| R9 | P3 | `m3-presenca.spec.js:495` «R9: janela do QR, bordas incluídas» | COMPROVADA |\n| R10 | P4 | `m3-presenca.spec.js:1195` «R10: janela da manual até fim + 2h» | COMPROVADA |\n| R11 | P5 | `m3-presenca.spec.js:147` «R11: código estável no minuto; muda no minuto seguinte» | COMPROVADA |\n| R12 | P6 | `m3-presenca.spec.js:192` «R12: trocaEm/validoAte com sobreposição» e `:619` «R12: aceita corrente e anterior; recusa em validoAte» | COMPROVADA |\n| R13 | P14 | `m3-presenca.spec.js:675` «R13: normaliza caixa e espaços; fora do alfabeto → CODIGO_INVALIDO» | COMPROVADA |\n| R14 | P11 | `m3-presenca.spec.js:922` «R14: lidoEm guia janela e validade; sem lidoEm vale o envio» | COMPROVADA |\n| R15 | P12 | `m3-presenca.spec.js:976` «R15 e R24: lidoEm adiantado não é erro» | COMPROVADA |\n| R16 | P13 | `m3-presenca.spec.js:1024` «R16: aceito até fim + 2h; depois SINCRONIZACAO_TARDIA» | COMPROVADA |\n| R17 | P9, P10 | `m3-presenca.spec.js:728` «R17 e R24: 201 → 200 com a mesma presença» e `:1517` «R17: cruzamento manual × QR preserva» | COMPROVADA |\n| R18 | P15 | `m3-presenca.spec.js:1142` «R18: justificativa ≥ 10 caracteres» | COMPROVADA |\n| R19 | P17 | `m3-presenca.spec.js:1366` «R19: teto 10% arredondado p/ cima (5→1, 20→2, 21→3)» | COMPROVADA |\n| R20 | P18 | `m3-presenca.spec.js:1080` «R20: ordem da rota QR» | COMPROVADA |\n| R21 | P19 | `m3-presenca.spec.js:1436` «R21: ordem da rota manual» | COMPROVADA |\n| R22 | P20 | `m3-presenca.spec.js:1591` «R22: listagem ordenada por nome, desempate por participanteId» | COMPROVADA |\n| R23 | P21 | `m3-presenca.spec.js:783` «R23: código vencido recusado sem rotação buscada» | COMPROVADA |\n| R24 | P22 | `m3-presenca.spec.js:728` (qr), `:976` (qr_offline adiantado), `:922` (qr_offline com lidoEm), `:1316` (manual) | COMPROVADA |\n\nTodas as 24 regras citam P-xx que existe na entrevista e tem resposta (nenhuma `PENDENTE`). Todas têm teste que executa o cenário e confere status **e** valor/`erro` — não só o nome. Todas têm implementação em `api/src/app.js` (rotas em `:761`, `:786`, `:866`, `:948`).\n\n## Suíte\n\n`npm --prefix api test` (raiz) → `# tests 91 / # pass 91 / # fail 0` (TAP, 91 subtests ok, incluindo os 30 de M3).\n`npm --prefix web test` (raiz) → `Test Files 5 passed (5) / Tests 32 passed (32)`.\n\n## Achados\n\n1. **[CONTRATO — cite de passagem]** `api/src/app.js:874-880`: justificativa não-string (número, objeto) cai em `JUSTIFICATIVA_OBRIGATORIA`, porque a condição é `typeof justificativa !== 'string' || justificativa.length < 10`. O contrato (seção 1) manda `DADOS_INVALIDOS` para \"campo obrigatório ausente ou de tipo errado\"; a spec R18 só cobre ausente/vazia/<10 caracteres. Não há teste para justificativa não-string. Assunto do revisor-de-contrato; não bloqueia M3.\n2. **[OBSERVAÇÃO — teste sem regra]** `m3-presenca.spec.js:378` «infra: POST /_teste/reset limpa a tabela presencas» não corresponde a nenhuma regra da spec — é teste de infraestrutura do modo de teste. Inofensivo.\n3. **[OBSERVAÇÃO — cobertura literal do critério 11]** O teste R11 (`m3-presenca.spec.js:147`) não assere explicitamente que `trocaEm`/`validoAte` são iguais entre dois GETs no mesmo minuto (cláusula do critério de aceite 11). A regra está comprovada mesmo assim: o R12 (`:192`) verifica os valores exatos calculados (`trocaEm` 19:04:00, `validoAte` 19:05:00) e o R23 (`:783`) prova que nada é guardado. Não é prova fraca.\n4. **[OBSERVAÇÃO — interface]** A `web/` não tem tela nem teste de M3 (não há página de presença/código em `web/src/paginas/`, e `web/src/api.js` não expõe as rotas de M3). A spec não exige interface para M3 — a seção 7 manda verificar por HTTP na API — então não é defeito.\n\n## Veredito\n\nMódulo M3 aceito: as 24 regras da spec têm origem na entrevista, teste que comprova o cenário e implementação correspondente; as duas suítes passam (91/91 na API, 32/32 na web). Único ponto a encaminhar é a divergência de contrato na justificativa não-string (achado 1), que fica para o revisor-de-contrato.\n</task_result>\n</task>",
+      "metadata": {
+       "parentSessionId": "ses_f4ee645b3ffePMOM1x2r3BAf6M",
+       "sessionId": "ses_f4ee5fd18ffed54hfKkA5NEN8v",
+       "model": {
+        "modelID": "big-pickle",
+        "providerID": "opencode"
+       },
+       "truncated": false
+      },
+      "title": "Auditar módulo M3 contra spec",
+      "time": {
+       "start": 1789677667050,
+       "end": 1789677790285
+      }
+     },
+     "id": "prt_0b119f890001eBKhQ8LLz2N8jh",
+     "sessionID": "ses_f4ee645b3ffePMOM1x2r3BAf6M",
+     "messageID": "msg_0b119ba5f001mYGT34ik0hghoO"
+    },
+    {
+     "reason": "tool-calls",
+     "snapshot": "c3730445b6e16bb44ac5200a1d49947f1c57cb14",
+     "type": "step-finish",
+     "tokens": {
+      "total": 12127,
+      "input": 9681,
+      "output": 654,
+      "reasoning": 0,
+      "cache": {
+       "write": 0,
+       "read": 1792
+      }
+     },
+     "cost": 0,
+     "id": "prt_0b11be4eb0013l0iKvjRJn0ZU9",
+     "sessionID": "ses_f4ee645b3ffePMOM1x2r3BAf6M",
+     "messageID": "msg_0b119ba5f001mYGT34ik0hghoO"
+    }
+   ]
+  },
+  {
+   "info": {
+    "parentID": "msg_0b119ba5700193VKE2AV0wF7Wl",
+    "role": "assistant",
+    "mode": "build",
+    "agent": "build",
+    "path": {
+     "cwd": "C:\\Users\\matga\\OneDrive\\Área de Trabalho\\semana-academica\\semana-academica\\api",
+     "root": "C:\\Users\\matga\\OneDrive\\Área de Trabalho\\semana-academica\\semana-academica"
+    },
+    "cost": 0,
+    "tokens": {
+     "total": 14511,
+     "input": 2128,
+     "output": 351,
+     "reasoning": 0,
+     "cache": {
+      "write": 0,
+      "read": 12032
+     }
+    },
+    "modelID": "big-pickle",
+    "providerID": "opencode",
+    "time": {
+     "created": 1789677790589,
+     "completed": 1789677793381
+    },
+    "finish": "stop",
+    "id": "msg_0b11be57d0015TvDa0KQHbLmjz",
+    "sessionID": "ses_f4ee645b3ffePMOM1x2r3BAf6M"
+   },
+   "parts": [
+    {
+     "snapshot": "c3730445b6e16bb44ac5200a1d49947f1c57cb14",
+     "type": "step-start",
+     "id": "prt_0b11be927001gD2VqM7KxS9Ixq",
+     "sessionID": "ses_f4ee645b3ffePMOM1x2r3BAf6M",
+     "messageID": "msg_0b11be57d0015TvDa0KQHbLmjz"
+    },
+    {
+     "type": "reasoning",
+     "text": "The auditor subagent completed the audit. I need to present the result concisely to the user.",
+     "time": {
+      "start": 1789677791529,
+      "end": 1789677791608
+     },
+     "id": "prt_0b11be929001bXWGgoce8aT0ta",
+     "sessionID": "ses_f4ee645b3ffePMOM1x2r3BAf6M",
+     "messageID": "msg_0b11be57d0015TvDa0KQHbLmjz"
+    },
+    {
+     "type": "text",
+     "text": "## Auditoria M3 — parecer\n\n**Veredito: módulo M3 aceito.** As 24 regras da spec têm origem na entrevista (todas as P-xx existem e respondidas, nenhuma PENDENTE), teste que comprova o cenário (status + valor, não só nome) e implementação correspondente (`api/src/app.js:761,786,866,948`). Suítes passam: **91/91** na API, **32/32** na web.\n\n**Achados:**\n1. **Contrato (encaminhar)** — `api/src/app.js:874-880`: justificativa não-string cai em `JUSTIFICATIVA_OBRIGATORIA`, mas o contrato manda `DADOS_INVALIDOS` para tipo errado. Sem teste. Não bloqueia M3, fica para o revisor-de-contrato.\n2. **Obs.** — teste de infra em `m3-presenca.spec.js:378` (reset da tabela) não corresponde a regra; inofensivo.\n3. **Obs.** — R11 não assere explicitamente a igualdade `trocaEm`/`validoAte` entre dois GETs no mesmo minuto, mas é comprovada via R12 e R23.\n4. **Obs.** — `web/` não tem tela nem teste de M3; a spec manda verificar por HTTP na API (seção 7), então não é defeito.",
+     "time": {
+      "start": 1789677791610,
+      "end": 1789677793098
+     },
+     "id": "prt_0b11be97a001tXJGKKtMRy3Aok",
+     "sessionID": "ses_f4ee645b3ffePMOM1x2r3BAf6M",
+     "messageID": "msg_0b11be57d0015TvDa0KQHbLmjz"
+    },
+    {
+     "reason": "stop",
+     "snapshot": "c3730445b6e16bb44ac5200a1d49947f1c57cb14",
+     "type": "step-finish",
+     "tokens": {
+      "total": 14511,
+      "input": 2128,
+      "output": 351,
+      "reasoning": 0,
+      "cache": {
+       "write": 0,
+       "read": 12032
+      }
+     },
+     "cost": 0,
+     "id": "prt_0b11befd80013Msd5dB8dKU56R",
+     "sessionID": "ses_f4ee645b3ffePMOM1x2r3BAf6M",
+     "messageID": "msg_0b11be57d0015TvDa0KQHbLmjz"
+    }
+   ]
+  },
+  {
+   "info": {
+    "role": "user",
+    "time": {
+     "created": 1789677796247
+    },
+    "agent": "build",
+    "model": {
+     "providerID": "opencode",
+     "modelID": "big-pickle"
+    },
+    "summary": {
+     "diffs": []
+    },
+    "id": "msg_0b11bfb97001qvQwdWcypcOQ2Y",
+    "sessionID": "ses_f4ee645b3ffePMOM1x2r3BAf6M"
+   },
+   "parts": [
+    {
+     "type": "text",
+     "text": "Salve o parecer inteiro, sem editar, em auditorias/M3-2026-09-17-reauditoria.md.",
+     "id": "prt_0b11bfb98001b33C9xonxHngjV",
+     "sessionID": "ses_f4ee645b3ffePMOM1x2r3BAf6M",
+     "messageID": "msg_0b11bfb97001qvQwdWcypcOQ2Y"
+    }
+   ]
+  },
+  {
+   "info": {
+    "parentID": "msg_0b11bfb97001qvQwdWcypcOQ2Y",
+    "role": "assistant",
+    "mode": "build",
+    "agent": "build",
+    "path": {
+     "cwd": "C:\\Users\\matga\\OneDrive\\Área de Trabalho\\semana-academica\\semana-academica\\api",
+     "root": "C:\\Users\\matga\\OneDrive\\Área de Trabalho\\semana-academica\\semana-academica"
+    },
+    "cost": 0,
+    "tokens": {
+     "total": 14671,
+     "input": 208,
+     "output": 127,
+     "reasoning": 0,
+     "cache": {
+      "write": 0,
+      "read": 14336
+     }
+    },
+    "modelID": "big-pickle",
+    "providerID": "opencode",
+    "time": {
+     "created": 1789677796254,
+     "completed": 1789677797887
+    },
+    "finish": "tool-calls",
+    "id": "msg_0b11bfb9e001ModkdvS3HUNIGD",
+    "sessionID": "ses_f4ee645b3ffePMOM1x2r3BAf6M"
+   },
+   "parts": [
+    {
+     "snapshot": "c3730445b6e16bb44ac5200a1d49947f1c57cb14",
+     "type": "step-start",
+     "id": "prt_0b11bfed3001OFSp7aoB56QYW8",
+     "sessionID": "ses_f4ee645b3ffePMOM1x2r3BAf6M",
+     "messageID": "msg_0b11bfb9e001ModkdvS3HUNIGD"
+    },
+    {
+     "type": "reasoning",
+     "text": "The user wants me to save the full report to a file. \"Salve o parecer inteiro, sem editar\" - save the whole report, without editing. Let me check if the directory exists first.",
+     "time": {
+      "start": 1789677797077,
+      "end": 1789677797262
+     },
+     "id": "prt_0b11bfed4001p2qpZREe30V34x",
+     "sessionID": "ses_f4ee645b3ffePMOM1x2r3BAf6M",
+     "messageID": "msg_0b11bfb9e001ModkdvS3HUNIGD"
+    },
+    {
+     "type": "tool",
+     "tool": "bash",
+     "callID": "call_92eb9a0f14a84bf7bbf70cbb",
+     "state": {
+      "status": "completed",
+      "input": {
+       "command": "Test-Path -LiteralPath \"C:\\Users\\matga\\OneDrive\\Área de Trabalho\\semana-academica\\semana-academica\\auditorias\""
+      },
+      "output": "True\r\n",
+      "metadata": {
+       "output": "True\r\n",
+       "exit": 0,
+       "truncated": false
+      },
+      "title": "Test-Path -LiteralPath \"C:\\Users\\matga\\OneDrive\\Área de Trabalho\\semana-academica\\semana-academica\\auditorias\"",
+      "time": {
+       "start": 1789677797432,
+       "end": 1789677797590
+      }
+     },
+     "id": "prt_0b11bff90001kb8fzrcGlErbFY",
+     "sessionID": "ses_f4ee645b3ffePMOM1x2r3BAf6M",
+     "messageID": "msg_0b11bfb9e001ModkdvS3HUNIGD"
+    },
+    {
+     "reason": "tool-calls",
+     "snapshot": "c3730445b6e16bb44ac5200a1d49947f1c57cb14",
+     "type": "step-finish",
+     "tokens": {
+      "total": 14671,
+      "input": 208,
+      "output": 127,
+      "reasoning": 0,
+      "cache": {
+       "write": 0,
+       "read": 14336
+      }
+     },
+     "cost": 0,
+     "id": "prt_0b11c0161001VXUdYB98kOfY3Y",
+     "sessionID": "ses_f4ee645b3ffePMOM1x2r3BAf6M",
+     "messageID": "msg_0b11bfb9e001ModkdvS3HUNIGD"
+    }
+   ]
+  },
+  {
+   "info": {
+    "parentID": "msg_0b11bfb97001qvQwdWcypcOQ2Y",
+    "role": "assistant",
+    "mode": "build",
+    "agent": "build",
+    "path": {
+     "cwd": "C:\\Users\\matga\\OneDrive\\Área de Trabalho\\semana-academica\\semana-academica\\api",
+     "root": "C:\\Users\\matga\\OneDrive\\Área de Trabalho\\semana-academica\\semana-academica"
+    },
+    "cost": 0,
+    "tokens": {
+     "total": 16741,
+     "input": 93,
+     "output": 2056,
+     "reasoning": 0,
+     "cache": {
+      "write": 0,
+      "read": 14592
+     }
+    },
+    "modelID": "big-pickle",
+    "providerID": "opencode",
+    "time": {
+     "created": 1789677797890,
+     "completed": 1789677805715
+    },
+    "finish": "tool-calls",
+    "id": "msg_0b11c02020010h7M4VtrPn47od",
+    "sessionID": "ses_f4ee645b3ffePMOM1x2r3BAf6M"
+   },
+   "parts": [
+    {
+     "snapshot": "c3730445b6e16bb44ac5200a1d49947f1c57cb14",
+     "type": "step-start",
+     "id": "prt_0b11c05ec001sa3E9yfP776h9I",
+     "sessionID": "ses_f4ee645b3ffePMOM1x2r3BAf6M",
+     "messageID": "msg_0b11c02020010h7M4VtrPn47od"
+    },
+    {
+     "type": "tool",
+     "tool": "write",
+     "callID": "call_c61cd783e9794e36a0e510bb",
+     "state": {
+      "status": "completed",
+      "input": {
+       "filePath": "C:\\Users\\matga\\OneDrive\\Área de Trabalho\\semana-academica\\semana-academica\\auditorias\\M3-2026-09-17-reauditoria.md",
+       "content": "## Matriz de rastreabilidade\n\n| Regra | Origem | Teste que comprova | Veredito |\n|---|---|---|---|\n| R1 | P1 | `api/verificacoes/m3-presenca.spec.js:825` «R1: registrar presenca por QR nao altera a inscricao deixada pelo M2» | COMPROVADA |\n| R2 | P1 (contrato) | `m3-presenca.spec.js:68` «R2: … 401 USUARIO_DESCONHECIDO» e `:95` «R2: perfil trocado … 403» | COMPROVADA |\n| R3 | P18 (contrato) | `m3-presenca.spec.js:121` «R3: encontro inexistente → 404 NAO_ENCONTRADO» | COMPROVADA |\n| R4 | P12 (contrato, seção 1) | `m3-presenca.spec.js:875` «R4: lidoEm não-string ou não-data → 422 DADOS_INVALIDOS» | COMPROVADA |\n| R5 | P7 | `m3-presenca.spec.js:553` «R5: codigo ausente/não-string → DADOS_INVALIDOS; curto/outro encontro → CODIGO_INVALIDO» | COMPROVADA |\n| R6 | P8 | `m3-presenca.spec.js:417` «R6: só confirmada registra por QR» e `:1247` «R6 na manual» | COMPROVADA |\n| R7 | P2 | `m3-presenca.spec.js:241` «R7: janela do obter codigo, bordas incluídas» | COMPROVADA |\n| R8 | P16 | `m3-presenca.spec.js:281` «R8: ATIVIDADE_CANCELADA antes de FORA_DA_JANELA» e `:316` «R8 parte 2: QR e manual → NAO_INSCRITO» | COMPROVADA |\n| R9 | P3 | `m3-presenca.spec.js:495` «R9: janela do QR, bordas incluídas» | COMPROVADA |\n| R10 | P4 | `m3-presenca.spec.js:1195` «R10: janela da manual até fim + 2h» | COMPROVADA |\n| R11 | P5 | `m3-presenca.spec.js:147` «R11: código estável no minuto; muda no minuto seguinte» | COMPROVADA |\n| R12 | P6 | `m3-presenca.spec.js:192` «R12: trocaEm/validoAte com sobreposição» e `:619` «R12: aceita corrente e anterior; recusa em validoAte» | COMPROVADA |\n| R13 | P14 | `m3-presenca.spec.js:675` «R13: normaliza caixa e espaços; fora do alfabeto → CODIGO_INVALIDO» | COMPROVADA |\n| R14 | P11 | `m3-presenca.spec.js:922` «R14: lidoEm guia janela e validade; sem lidoEm vale o envio» | COMPROVADA |\n| R15 | P12 | `m3-presenca.spec.js:976` «R15 e R24: lidoEm adiantado não é erro» | COMPROVADA |\n| R16 | P13 | `m3-presenca.spec.js:1024` «R16: aceito até fim + 2h; depois SINCRONIZACAO_TARDIA» | COMPROVADA |\n| R17 | P9, P10 | `m3-presenca.spec.js:728` «R17 e R24: 201 → 200 com a mesma presença» e `:1517` «R17: cruzamento manual × QR preserva» | COMPROVADA |\n| R18 | P15 | `m3-presenca.spec.js:1142` «R18: justificativa ≥ 10 caracteres» | COMPROVADA |\n| R19 | P17 | `m3-presenca.spec.js:1366` «R19: teto 10% arredondado p/ cima (5→1, 20→2, 21→3)» | COMPROVADA |\n| R20 | P18 | `m3-presenca.spec.js:1080` «R20: ordem da rota QR» | COMPROVADA |\n| R21 | P19 | `m3-presenca.spec.js:1436` «R21: ordem da rota manual» | COMPROVADA |\n| R22 | P20 | `m3-presenca.spec.js:1591` «R22: listagem ordenada por nome, desempate por participanteId» | COMPROVADA |\n| R23 | P21 | `m3-presenca.spec.js:783` «R23: código vencido recusado sem rotação buscada» | COMPROVADA |\n| R24 | P22 | `m3-presenca.spec.js:728` (qr), `:976` (qr_offline adiantado), `:922` (qr_offline com lidoEm), `:1316` (manual) | COMPROVADA |\n\nTodas as 24 regras citam P-xx que existe na entrevista e tem resposta (nenhuma `PENDENTE`). Todas têm teste que executa o cenário e confere status **e** valor/`erro` — não só o nome. Todas têm implementação em `api/src/app.js` (rotas em `:761`, `:786`, `:866`, `:948`).\n\n## Suíte\n\n`npm --prefix api test` (raiz) → `# tests 91 / # pass 91 / # fail 0` (TAP, 91 subtests ok, incluindo os 30 de M3).\n`npm --prefix web test` (raiz) → `Test Files 5 passed (5) / Tests 32 passed (32)`.\n\n## Achados\n\n1. **[CONTRATO — cite de passagem]** `api/src/app.js:874-880`: justificativa não-string (número, objeto) cai em `JUSTIFICATIVA_OBRIGATORIA`, porque a condição é `typeof justificativa !== 'string' || justificativa.length < 10`. O contrato (seção 1) manda `DADOS_INVALIDOS` para \"campo obrigatório ausente ou de tipo errado\"; a spec R18 só cobre ausente/vazia/<10 caracteres. Não há teste para justificativa não-string. Assunto do revisor-de-contrato; não bloqueia M3.\n2. **[OBSERVAÇÃO — teste sem regra]** `m3-presenca.spec.js:378` «infra: POST /_teste/reset limpa a tabela presencas» não corresponde a nenhuma regra da spec — é teste de infraestrutura do modo de teste. Inofensivo.\n3. **[OBSERVAÇÃO — cobertura literal do critério 11]** O teste R11 (`m3-presenca.spec.js:147`) não assere explicitamente que `trocaEm`/`validoAte` são iguais entre dois GETs no mesmo minuto (cláusula do critério de aceite 11). A regra está comprovada mesmo assim: o R12 (`:192`) verifica os valores exatos calculados (`trocaEm` 19:04:00, `validoAte` 19:05:00) e o R23 (`:783`) prova que nada é guardado. Não é prova fraca.\n4. **[OBSERVAÇÃO — interface]** A `web/` não tem tela nem teste de M3 (não há página de presença/código em `web/src/paginas/`, e `web/src/api.js` não expõe as rotas de M3). A spec não exige interface para M3 — a seção 7 manda verificar por HTTP na API — então não é defeito.\n\n## Veredito\n\nMódulo M3 aceito: as 24 regras da spec têm origem na entrevista, teste que comprova o cenário e implementação correspondente; as duas suítes passam (91/91 na API, 32/32 na web). Único ponto a encaminhar é a divergência de contrato na justificativa não-string (achado 1), que fica para o revisor-de-contrato."
+      },
+      "output": "Wrote file successfully.",
+      "metadata": {
+       "diagnostics": {},
+       "filepath": "C:\\Users\\matga\\OneDrive\\Área de Trabalho\\semana-academica\\semana-academica\\auditorias\\M3-2026-09-17-reauditoria.md",
+       "exists": false,
+       "truncated": false
+      },
+      "title": "auditorias\\M3-2026-09-17-reauditoria.md",
+      "time": {
+       "start": 1789677805428,
+       "end": 1789677805433
+      }
+     },
+     "id": "prt_0b11c061f001bgHy1WOMBAEM0j",
+     "sessionID": "ses_f4ee645b3ffePMOM1x2r3BAf6M",
+     "messageID": "msg_0b11c02020010h7M4VtrPn47od"
+    },
+    {
+     "reason": "tool-calls",
+     "snapshot": "c3730445b6e16bb44ac5200a1d49947f1c57cb14",
+     "type": "step-finish",
+     "tokens": {
+      "total": 16741,
+      "input": 93,
+      "output": 2056,
+      "reasoning": 0,
+      "cache": {
+       "write": 0,
+       "read": 14592
+      }
+     },
+     "cost": 0,
+     "id": "prt_0b11c200c001UiiC9e1WR8szHL",
+     "sessionID": "ses_f4ee645b3ffePMOM1x2r3BAf6M",
+     "messageID": "msg_0b11c02020010h7M4VtrPn47od"
+    }
+   ]
+  },
+  {
+   "info": {
+    "parentID": "msg_0b11bfb97001qvQwdWcypcOQ2Y",
+    "role": "assistant",
+    "mode": "build",
+    "agent": "build",
+    "path": {
+     "cwd": "C:\\Users\\matga\\OneDrive\\Área de Trabalho\\semana-academica\\semana-academica\\api",
+     "root": "C:\\Users\\matga\\OneDrive\\Área de Trabalho\\semana-academica\\semana-academica"
+    },
+    "cost": 0,
+    "tokens": {
+     "total": 16779,
+     "input": 115,
+     "output": 24,
+     "reasoning": 0,
+     "cache": {
+      "write": 0,
+      "read": 16640
+     }
+    },
+    "modelID": "big-pickle",
+    "providerID": "opencode",
+    "time": {
+     "created": 1789677805729,
+     "completed": 1789677808252
+    },
+    "finish": "stop",
+    "id": "msg_0b11c20a1001Z6n31lzXIT29L7",
+    "sessionID": "ses_f4ee645b3ffePMOM1x2r3BAf6M"
+   },
+   "parts": [
+    {
+     "snapshot": "c3730445b6e16bb44ac5200a1d49947f1c57cb14",
+     "type": "step-start",
+     "id": "prt_0b11c27c5001E75lHNhDj2SP98",
+     "sessionID": "ses_f4ee645b3ffePMOM1x2r3BAf6M",
+     "messageID": "msg_0b11c20a1001Z6n31lzXIT29L7"
+    },
+    {
+     "type": "text",
+     "text": "Salvo em `auditorias/M3-2026-09-17-reauditoria.md`.",
+     "time": {
+      "start": 1789677807714,
+      "end": 1789677807973
+     },
+     "id": "prt_0b11c2862001GSsd3awX8Aw7yj",
+     "sessionID": "ses_f4ee645b3ffePMOM1x2r3BAf6M",
+     "messageID": "msg_0b11c20a1001Z6n31lzXIT29L7"
+    },
+    {
+     "reason": "stop",
+     "snapshot": "c3730445b6e16bb44ac5200a1d49947f1c57cb14",
+     "type": "step-finish",
+     "tokens": {
+      "total": 16779,
+      "input": 115,
+      "output": 24,
+      "reasoning": 0,
+      "cache": {
+       "write": 0,
+       "read": 16640
+      }
+     },
+     "cost": 0,
+     "id": "prt_0b11c29f1001GP5JrUgNk1OLxH",
+     "sessionID": "ses_f4ee645b3ffePMOM1x2r3BAf6M",
+     "messageID": "msg_0b11c20a1001Z6n31lzXIT29L7"
+    }
+   ]
+  }
+ ]
+}

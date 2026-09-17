@@ -1,0 +1,528 @@
+{
+ "info": {
+  "id": "ses_f4ec46762ffeaoUziXJKL3HRD6",
+  "slug": "neon-cactus",
+  "projectID": "ef5c31e66779deb7b442cd2960ce806c7cc88c17",
+  "directory": "C:\\Users\\matga\\OneDrive\\Área de Trabalho\\semana-academica\\semana-academica",
+  "path": "",
+  "title": "Criar AGENTS.md para api e web",
+  "agent": "build",
+  "model": {
+   "id": "big-pickle",
+   "providerID": "opencode"
+  },
+  "version": "1.18.31",
+  "summary": {
+   "additions": 0,
+   "deletions": 0,
+   "files": 0
+  },
+  "cost": 0,
+  "tokens": {
+   "input": 11459,
+   "output": 1168,
+   "reasoning": 0,
+   "cache": {
+    "read": 39680,
+    "write": 0
+   }
+  },
+  "time": {
+   "created": 1789679868061,
+   "updated": 1789679879139
+  }
+ },
+ "messages": [
+  {
+   "info": {
+    "role": "user",
+    "time": {
+     "created": 1789679868086
+    },
+    "agent": "build",
+    "model": {
+     "providerID": "opencode",
+     "modelID": "big-pickle"
+    },
+    "summary": {
+     "diffs": [
+      {
+       "file": "api/AGENTS.md",
+       "patch": "Index: api/AGENTS.md\n===================================================================\n--- api/AGENTS.md\t\n+++ api/AGENTS.md\t\n@@ -0,0 +1,7 @@\n+# AGENTS.md — api\n+\n+- Regra que depende de tempo lê `agora()` de `src/relogio.js`; `new Date()` e `Date.now()` dentro de regra quebram o modo de teste, onde o relógio fica parado.\n+- Nada de estado derivado do tempo guardado no banco: janela, validade e expiração são calculadas na leitura.\n+- Tabela nova precisa entrar em `resetarBanco()` antes das tabelas de que ela depende, por causa das foreign keys — se não entrar, os testes passam com banco `:memory:` e o juiz quebra com `POST /_teste/reset`.\n+- Teste fala por HTTP com `criarServidor()` em porta efêmera e semeia o cenário no banco com helper; nunca importa serviço nem repositório direto.\n+- Declare `const` antes de usar dentro do handler: um uso antes da declaração vira 500 silencioso em vez de erro de regra (aconteceu na fatia 4 do M3).\n\\ No newline at end of file\n",
+       "additions": 7,
+       "deletions": 0,
+       "status": "added"
+      },
+      {
+       "file": "web/AGENTS.md",
+       "patch": "Index: web/AGENTS.md\n===================================================================\n--- web/AGENTS.md\t\n+++ web/AGENTS.md\t\n@@ -0,0 +1,8 @@\n+# AGENTS.md — web\n+\n+- O componente recebe o cliente de API por prop e nunca importa `api.js` direto, para o teste poder trocar por uma versão falsa.\n+- Erro da API aparece cru na tela, com o código e a mensagem que ela mandou.\n+- Campo opcional de corpo vai ausente, nunca `null`: `lidoEm: null` é `DADOS_INVALIDOS` na API, e `JSON.stringify` já descarta `undefined`.\n+- Erro falso no teste precisa ter `status` quando representa recusa da API — sem `status` o app trata como queda de rede.\n+- `setTimeout` com atraso maior que 2.147.483.647 ms estoura o inteiro de 32 bits e dispara em 1 ms; limite o atraso antes de agendar (aconteceu na tela do código).\n+- Limpe o `localStorage` entre os testes.\n\\ No newline at end of file\n",
+       "additions": 8,
+       "deletions": 0,
+       "status": "added"
+      }
+     ]
+    },
+    "id": "msg_0b13b98b6001NLDkfKCbl9llZ4",
+    "sessionID": "ses_f4ec46762ffeaoUziXJKL3HRD6"
+   },
+   "parts": [
+    {
+     "type": "text",
+     "text": "Crie api/AGENTS.md e web/AGENTS.md. Leia antes o AGENTS.md da raiz: a regra de lá é\nque cada linha só entra quando um agente errou de um jeito que valha registrar. Não\nescreva regra genérica de boas práticas; escreva só o que aconteceu neste projeto.\n\nEm api/AGENTS.md, com base no que de fato ocorreu:\n- regra que depende de tempo lê agora() de src/relogio.js; new Date() e Date.now()\n  dentro de regra quebram o modo de teste, onde o relógio fica parado;\n- nada de estado derivado do tempo guardado no banco: janela, validade e expiração são\n  calculadas na leitura;\n- tabela nova precisa entrar em resetarBanco() antes das tabelas de que ela depende,\n  por causa das foreign keys — se não entrar, os testes passam com banco :memory: e o\n  juiz quebra com POST /_teste/reset;\n- teste fala por HTTP com criarServidor() em porta efêmera e semeia o cenário no banco\n  com helper; nunca importa serviço nem repositório direto;\n- declare const antes de usar dentro do handler: um uso antes da declaração vira 500\n  silencioso em vez de erro de regra (aconteceu na fatia 4 do M3).\n\nEm web/AGENTS.md:\n- o componente recebe o cliente de API por prop e nunca importa api.js direto, para o\n  teste poder trocar por uma versão falsa;\n- erro da API aparece cru na tela, com o código e a mensagem que ela mandou;\n- campo opcional de corpo vai ausente, nunca null: lidoEm: null é DADOS_INVALIDOS na\n  API, e JSON.stringify já descarta undefined;\n- erro falso no teste precisa ter status quando representa recusa da API — sem status\n  o app trata como queda de rede;\n- setTimeout com atraso maior que 2.147.483.647 ms estoura o inteiro de 32 bits e\n  dispara em 1 ms; limite o atraso antes de agendar (aconteceu na tela do código);\n- limpe o localStorage entre os testes.\n\nEscreva em português, no tom seco do AGENTS.md da raiz, sem introdução e sem elogio. ",
+     "id": "prt_0b13b98b8001d2HUixbtsWnoEr",
+     "sessionID": "ses_f4ec46762ffeaoUziXJKL3HRD6",
+     "messageID": "msg_0b13b98b6001NLDkfKCbl9llZ4"
+    }
+   ]
+  },
+  {
+   "info": {
+    "parentID": "msg_0b13b98b6001NLDkfKCbl9llZ4",
+    "role": "assistant",
+    "mode": "build",
+    "agent": "build",
+    "path": {
+     "cwd": "C:\\Users\\matga\\OneDrive\\Área de Trabalho\\semana-academica\\semana-academica",
+     "root": "C:\\Users\\matga\\OneDrive\\Área de Trabalho\\semana-academica\\semana-academica"
+    },
+    "cost": 0,
+    "tokens": {
+     "total": 12215,
+     "input": 10271,
+     "output": 152,
+     "reasoning": 0,
+     "cache": {
+      "write": 0,
+      "read": 1792
+     }
+    },
+    "modelID": "big-pickle",
+    "providerID": "opencode",
+    "time": {
+     "created": 1789679868104,
+     "completed": 1789679871479
+    },
+    "finish": "tool-calls",
+    "id": "msg_0b13b98c800129yv6xUfBFV2cA",
+    "sessionID": "ses_f4ec46762ffeaoUziXJKL3HRD6"
+   },
+   "parts": [
+    {
+     "snapshot": "4ece3fbc0602b81cc698ae5673157954e15ec21c",
+     "type": "step-start",
+     "id": "prt_0b13ba3370011foWgS0FvWaYmi",
+     "sessionID": "ses_f4ec46762ffeaoUziXJKL3HRD6",
+     "messageID": "msg_0b13b98c800129yv6xUfBFV2cA"
+    },
+    {
+     "type": "reasoning",
+     "text": "Let me start by reading the root AGENTS.md and exploring the structure to understand the project.",
+     "time": {
+      "start": 1789679870778,
+      "end": 1789679870860
+     },
+     "id": "prt_0b13ba33a001nPj8u9cv2wXOFL",
+     "sessionID": "ses_f4ec46762ffeaoUziXJKL3HRD6",
+     "messageID": "msg_0b13b98c800129yv6xUfBFV2cA"
+    },
+    {
+     "type": "tool",
+     "tool": "read",
+     "callID": "call_f29e0558bd9d4201ae22579f",
+     "state": {
+      "status": "completed",
+      "input": {
+       "filePath": "C:\\Users\\matga\\OneDrive\\Área de Trabalho\\semana-academica\\semana-academica\\AGENTS.md"
+      },
+      "output": "[466 caracteres omitidos]",
+      "title": "AGENTS.md",
+      "time": {
+       "start": 1789679870992,
+       "end": 1789679871012
+      }
+     },
+     "id": "prt_0b13ba38e001yCJI4TR2Ar247n",
+     "sessionID": "ses_f4ec46762ffeaoUziXJKL3HRD6",
+     "messageID": "msg_0b13b98c800129yv6xUfBFV2cA"
+    },
+    {
+     "type": "tool",
+     "tool": "read",
+     "callID": "call_daafb80219304f06aef176c8",
+     "state": {
+      "status": "completed",
+      "input": {
+       "filePath": "C:\\Users\\matga\\OneDrive\\Área de Trabalho\\semana-academica\\semana-academica"
+      },
+      "output": "[286 caracteres omitidos]",
+      "title": "",
+      "time": {
+       "start": 1789679871125,
+       "end": 1789679871135
+      }
+     },
+     "id": "prt_0b13ba41f0013m8qhaSvCF9yUQ",
+     "sessionID": "ses_f4ec46762ffeaoUziXJKL3HRD6",
+     "messageID": "msg_0b13b98c800129yv6xUfBFV2cA"
+    },
+    {
+     "reason": "tool-calls",
+     "snapshot": "4ece3fbc0602b81cc698ae5673157954e15ec21c",
+     "type": "step-finish",
+     "tokens": {
+      "total": 12215,
+      "input": 10271,
+      "output": 152,
+      "reasoning": 0,
+      "cache": {
+       "write": 0,
+       "read": 1792
+      }
+     },
+     "cost": 0,
+     "id": "prt_0b13ba568001tzVg0LEWuq5uOR",
+     "sessionID": "ses_f4ec46762ffeaoUziXJKL3HRD6",
+     "messageID": "msg_0b13b98c800129yv6xUfBFV2cA"
+    }
+   ]
+  },
+  {
+   "info": {
+    "parentID": "msg_0b13b98b6001NLDkfKCbl9llZ4",
+    "role": "assistant",
+    "mode": "build",
+    "agent": "build",
+    "path": {
+     "cwd": "C:\\Users\\matga\\OneDrive\\Área de Trabalho\\semana-academica\\semana-academica",
+     "root": "C:\\Users\\matga\\OneDrive\\Área de Trabalho\\semana-academica\\semana-academica"
+    },
+    "cost": 0,
+    "tokens": {
+     "total": 12700,
+     "input": 454,
+     "output": 214,
+     "reasoning": 0,
+     "cache": {
+      "write": 0,
+      "read": 12032
+     }
+    },
+    "modelID": "big-pickle",
+    "providerID": "opencode",
+    "time": {
+     "created": 1789679871485,
+     "completed": 1789679873507
+    },
+    "finish": "tool-calls",
+    "id": "msg_0b13ba5fd001AprPKPLNxd80Vq",
+    "sessionID": "ses_f4ec46762ffeaoUziXJKL3HRD6"
+   },
+   "parts": [
+    {
+     "snapshot": "4ece3fbc0602b81cc698ae5673157954e15ec21c",
+     "type": "step-start",
+     "id": "prt_0b13baa26001YDaDDA3OBDiTJy",
+     "sessionID": "ses_f4ec46762ffeaoUziXJKL3HRD6",
+     "messageID": "msg_0b13ba5fd001AprPKPLNxd80Vq"
+    },
+    {
+     "type": "reasoning",
+     "text": "Let me check if api/AGENTS.md and web/AGENTS.md already exist, and look at the folders to verify the referenced details (e.g., src/relogio.js, resetarBanco, criarServidor).",
+     "time": {
+      "start": 1789679872553,
+      "end": 1789679872748
+     },
+     "id": "prt_0b13baa29001fsTAdr0WwdxxZQ",
+     "sessionID": "ses_f4ec46762ffeaoUziXJKL3HRD6",
+     "messageID": "msg_0b13ba5fd001AprPKPLNxd80Vq"
+    },
+    {
+     "type": "tool",
+     "tool": "glob",
+     "callID": "call_8368b8939725443da98c2c65",
+     "state": {
+      "status": "completed",
+      "input": {
+       "pattern": "**/AGENTS.md"
+      },
+      "output": "[84 caracteres omitidos]",
+      "title": "",
+      "time": {
+       "start": 1789679872826,
+       "end": 1789679872866
+      }
+     },
+     "id": "prt_0b13baaee001JKt1VUPUKZlF5p",
+     "sessionID": "ses_f4ec46762ffeaoUziXJKL3HRD6",
+     "messageID": "msg_0b13ba5fd001AprPKPLNxd80Vq"
+    },
+    {
+     "type": "tool",
+     "tool": "read",
+     "callID": "call_9dd09b57c17e47b89af17690",
+     "state": {
+      "status": "completed",
+      "input": {
+       "filePath": "C:\\Users\\matga\\OneDrive\\Área de Trabalho\\semana-academica\\semana-academica\\api"
+      },
+      "output": "[212 caracteres omitidos]",
+      "title": "api",
+      "time": {
+       "start": 1789679873014,
+       "end": 1789679873019
+      }
+     },
+     "id": "prt_0b13bab3c0013y41EpYbcFfvvi",
+     "sessionID": "ses_f4ec46762ffeaoUziXJKL3HRD6",
+     "messageID": "msg_0b13ba5fd001AprPKPLNxd80Vq"
+    },
+    {
+     "type": "tool",
+     "tool": "read",
+     "callID": "call_78f8a9a6ecdd4d718128502d",
+     "state": {
+      "status": "completed",
+      "input": {
+       "filePath": "C:\\Users\\matga\\OneDrive\\Área de Trabalho\\semana-academica\\semana-academica\\web"
+      },
+      "output": "[230 caracteres omitidos]",
+      "title": "web",
+      "time": {
+       "start": 1789679873168,
+       "end": 1789679873171
+      }
+     },
+     "id": "prt_0b13babf8001iu0dP0Qek4L0wK",
+     "sessionID": "ses_f4ec46762ffeaoUziXJKL3HRD6",
+     "messageID": "msg_0b13ba5fd001AprPKPLNxd80Vq"
+    },
+    {
+     "reason": "tool-calls",
+     "snapshot": "4ece3fbc0602b81cc698ae5673157954e15ec21c",
+     "type": "step-finish",
+     "tokens": {
+      "total": 12700,
+      "input": 454,
+      "output": 214,
+      "reasoning": 0,
+      "cache": {
+       "write": 0,
+       "read": 12032
+      }
+     },
+     "cost": 0,
+     "id": "prt_0b13bad51001e83Z74GkaCWqn2",
+     "sessionID": "ses_f4ec46762ffeaoUziXJKL3HRD6",
+     "messageID": "msg_0b13ba5fd001AprPKPLNxd80Vq"
+    }
+   ]
+  },
+  {
+   "info": {
+    "parentID": "msg_0b13b98b6001NLDkfKCbl9llZ4",
+    "role": "assistant",
+    "mode": "build",
+    "agent": "build",
+    "path": {
+     "cwd": "C:\\Users\\matga\\OneDrive\\Área de Trabalho\\semana-academica\\semana-academica",
+     "root": "C:\\Users\\matga\\OneDrive\\Área de Trabalho\\semana-academica\\semana-academica"
+    },
+    "cost": 0,
+    "tokens": {
+     "total": 13665,
+     "input": 355,
+     "output": 766,
+     "reasoning": 0,
+     "cache": {
+      "write": 0,
+      "read": 12544
+     }
+    },
+    "modelID": "big-pickle",
+    "providerID": "opencode",
+    "time": {
+     "created": 1789679873509,
+     "completed": 1789679877833
+    },
+    "finish": "tool-calls",
+    "id": "msg_0b13bade5001YTeiZqo37p6qvb",
+    "sessionID": "ses_f4ec46762ffeaoUziXJKL3HRD6"
+   },
+   "parts": [
+    {
+     "snapshot": "4ece3fbc0602b81cc698ae5673157954e15ec21c",
+     "type": "step-start",
+     "id": "prt_0b13bb0fe001hor6XXHGd7WLqq",
+     "sessionID": "ses_f4ec46762ffeaoUziXJKL3HRD6",
+     "messageID": "msg_0b13bade5001YTeiZqo37p6qvb"
+    },
+    {
+     "type": "reasoning",
+     "text": "Neither api/AGENTS.md nor web/AGENTS.md exists. I'll create both with the content specified, in the dry tone of the root file. Let me write them in Portuguese, without introduction or praise, with header lines matching the root's style.\n\nRoot uses:\n```\n# AGENTS.md — raiz\n\nStack: ...\n\nRegras abaixo só entram quando um agente errar de um jeito que valha registrar — este arquivo começa vazio de propósito.\n```\n\nFor api/AGENTS.md and web/AGENTS.md, I should follow the same dry tone. I'll use headers like \"# AGENTS.md — api\". Include the specific rules listed. Keep it dry.",
+     "time": {
+      "start": 1789679874304,
+      "end": 1789679874903
+     },
+     "id": "prt_0b13bb100001i2Eb3pjCzssn0R",
+     "sessionID": "ses_f4ec46762ffeaoUziXJKL3HRD6",
+     "messageID": "msg_0b13bade5001YTeiZqo37p6qvb"
+    },
+    {
+     "type": "tool",
+     "tool": "write",
+     "callID": "call_bb4cfb6722e34d1caad95f05",
+     "state": {
+      "status": "completed",
+      "input": {
+       "filePath": "C:\\Users\\matga\\OneDrive\\Área de Trabalho\\semana-academica\\semana-academica\\api\\AGENTS.md",
+       "content": "# AGENTS.md — api\n\n- Regra que depende de tempo lê `agora()` de `src/relogio.js`; `new Date()` e `Date.now()` dentro de regra quebram o modo de teste, onde o relógio fica parado.\n- Nada de estado derivado do tempo guardado no banco: janela, validade e expiração são calculadas na leitura.\n- Tabela nova precisa entrar em `resetarBanco()` antes das tabelas de que ela depende, por causa das foreign keys — se não entrar, os testes passam com banco `:memory:` e o juiz quebra com `POST /_teste/reset`.\n- Teste fala por HTTP com `criarServidor()` em porta efêmera e semeia o cenário no banco com helper; nunca importa serviço nem repositório direto.\n- Declare `const` antes de usar dentro do handler: um uso antes da declaração vira 500 silencioso em vez de erro de regra (aconteceu na fatia 4 do M3)."
+      },
+      "output": "Wrote file successfully.",
+      "metadata": {
+       "diagnostics": {},
+       "filepath": "C:\\Users\\matga\\OneDrive\\Área de Trabalho\\semana-academica\\semana-academica\\api\\AGENTS.md",
+       "exists": false,
+       "truncated": false
+      },
+      "title": "api\\AGENTS.md",
+      "time": {
+       "start": 1789679876056,
+       "end": 1789679876069
+      }
+     },
+     "id": "prt_0b13bb359001lOcEPBfHq7gyRy",
+     "sessionID": "ses_f4ec46762ffeaoUziXJKL3HRD6",
+     "messageID": "msg_0b13bade5001YTeiZqo37p6qvb"
+    },
+    {
+     "type": "tool",
+     "tool": "write",
+     "callID": "call_6de74f147f164f8f96af79d4",
+     "state": {
+      "status": "completed",
+      "input": {
+       "filePath": "C:\\Users\\matga\\OneDrive\\Área de Trabalho\\semana-academica\\semana-academica\\web\\AGENTS.md",
+       "content": "# AGENTS.md — web\n\n- O componente recebe o cliente de API por prop e nunca importa `api.js` direto, para o teste poder trocar por uma versão falsa.\n- Erro da API aparece cru na tela, com o código e a mensagem que ela mandou.\n- Campo opcional de corpo vai ausente, nunca `null`: `lidoEm: null` é `DADOS_INVALIDOS` na API, e `JSON.stringify` já descarta `undefined`.\n- Erro falso no teste precisa ter `status` quando representa recusa da API — sem `status` o app trata como queda de rede.\n- `setTimeout` com atraso maior que 2.147.483.647 ms estoura o inteiro de 32 bits e dispara em 1 ms; limite o atraso antes de agendar (aconteceu na tela do código).\n- Limpe o `localStorage` entre os testes."
+      },
+      "output": "Wrote file successfully.",
+      "metadata": {
+       "diagnostics": {},
+       "filepath": "C:\\Users\\matga\\OneDrive\\Área de Trabalho\\semana-academica\\semana-academica\\web\\AGENTS.md",
+       "exists": false,
+       "truncated": false
+      },
+      "title": "web\\AGENTS.md",
+      "time": {
+       "start": 1789679877286,
+       "end": 1789679877291
+      }
+     },
+     "id": "prt_0b13bb805001P27rj9gI7ShxuZ",
+     "sessionID": "ses_f4ec46762ffeaoUziXJKL3HRD6",
+     "messageID": "msg_0b13bade5001YTeiZqo37p6qvb"
+    },
+    {
+     "reason": "tool-calls",
+     "snapshot": "19430d79a2627d183c5f512493074fc8bd936cc2",
+     "type": "step-finish",
+     "tokens": {
+      "total": 13665,
+      "input": 355,
+      "output": 766,
+      "reasoning": 0,
+      "cache": {
+       "write": 0,
+       "read": 12544
+      }
+     },
+     "cost": 0,
+     "id": "prt_0b13bbe0a001QUlV5P2u8NQG5S",
+     "sessionID": "ses_f4ec46762ffeaoUziXJKL3HRD6",
+     "messageID": "msg_0b13bade5001YTeiZqo37p6qvb"
+    },
+    {
+     "type": "patch",
+     "hash": "4ece3fbc0602b81cc698ae5673157954e15ec21c",
+     "files": [
+      "C:/Users/matga/OneDrive/Área de Trabalho/semana-academica/semana-academica/api/AGENTS.md",
+      "C:/Users/matga/OneDrive/Área de Trabalho/semana-academica/semana-academica/web/AGENTS.md"
+     ],
+     "id": "prt_0b13bbec60016eGaFFwegGR5xc",
+     "sessionID": "ses_f4ec46762ffeaoUziXJKL3HRD6",
+     "messageID": "msg_0b13bade5001YTeiZqo37p6qvb"
+    }
+   ]
+  },
+  {
+   "info": {
+    "parentID": "msg_0b13b98b6001NLDkfKCbl9llZ4",
+    "role": "assistant",
+    "mode": "build",
+    "agent": "build",
+    "path": {
+     "cwd": "C:\\Users\\matga\\OneDrive\\Área de Trabalho\\semana-academica\\semana-academica",
+     "root": "C:\\Users\\matga\\OneDrive\\Área de Trabalho\\semana-academica\\semana-academica"
+    },
+    "cost": 0,
+    "tokens": {
+     "total": 13727,
+     "input": 379,
+     "output": 36,
+     "reasoning": 0,
+     "cache": {
+      "write": 0,
+      "read": 13312
+     }
+    },
+    "modelID": "big-pickle",
+    "providerID": "opencode",
+    "time": {
+     "created": 1789679877835,
+     "completed": 1789679879133
+    },
+    "finish": "stop",
+    "id": "msg_0b13bbecb001f3mqYwqxXj5ath",
+    "sessionID": "ses_f4ec46762ffeaoUziXJKL3HRD6"
+   },
+   "parts": [
+    {
+     "snapshot": "19430d79a2627d183c5f512493074fc8bd936cc2",
+     "type": "step-start",
+     "id": "prt_0b13bc1df0011teyj20w1Strks",
+     "sessionID": "ses_f4ec46762ffeaoUziXJKL3HRD6",
+     "messageID": "msg_0b13bbecb001f3mqYwqxXj5ath"
+    },
+    {
+     "type": "text",
+     "text": "Criados `api/AGENTS.md` e `web/AGENTS.md` com as regras específicas, no mesmo tom seco da raiz.",
+     "time": {
+      "start": 1789679878634,
+      "end": 1789679878844
+     },
+     "id": "prt_0b13bc1ea001JJXDZeqqZl8ZJr",
+     "sessionID": "ses_f4ec46762ffeaoUziXJKL3HRD6",
+     "messageID": "msg_0b13bbecb001f3mqYwqxXj5ath"
+    },
+    {
+     "reason": "stop",
+     "snapshot": "19430d79a2627d183c5f512493074fc8bd936cc2",
+     "type": "step-finish",
+     "tokens": {
+      "total": 13727,
+      "input": 379,
+      "output": 36,
+      "reasoning": 0,
+      "cache": {
+       "write": 0,
+       "read": 13312
+      }
+     },
+     "cost": 0,
+     "id": "prt_0b13bc349001xS5ZW3UBJxhdz2",
+     "sessionID": "ses_f4ec46762ffeaoUziXJKL3HRD6",
+     "messageID": "msg_0b13bbecb001f3mqYwqxXj5ath"
+    }
+   ]
+  }
+ ]
+}
