@@ -144,6 +144,49 @@ test('R3: nas quatro rotas de M3, encontro inexistente -> 404 NAO_ENCONTRADO', a
   }
 });
 
+test('R25: corpo que nao e JSON nas duas POST do M3 -> 422 DADOS_INVALIDOS com {"erro", "mensagem"}, nunca 400 text/html', async () => {
+  const banco = novoBanco(':memory:');
+  const servidor = await subirServidor({ banco });
+  try {
+    await fetch(`${servidor.base}/_teste/reset`, { method: 'POST' });
+    semearAtividade(banco, {
+      id: 'atv_r25',
+      titulo: 'Atividade R25',
+      tipo: 'palestra',
+      salaId: 'auditorio',
+      vagas: 10,
+      encontros: [
+        { id: 'enc_r25', inicio: '2026-10-20T19:00:00-03:00', fim: '2026-10-20T22:00:00-03:00' },
+      ],
+    });
+
+    const casos = [
+      { rota: '/encontros/enc_r25/presencas', usuario: 'p-carla', descricao: 'POST presencas QR' },
+      { rota: '/encontros/enc_r25/presencas/manual', usuario: 'org-ana', descricao: 'POST presencas manual' },
+    ];
+
+    for (const { rota, usuario, descricao } of casos) {
+      const res = await fetch(`${servidor.base}${rota}`, {
+        method: 'POST',
+        headers: { 'X-Usuario': usuario, 'Content-Type': 'application/json' },
+        body: '{ nao e json',
+      });
+      assert.equal(res.status, 422, `${descricao}: corpo nao-JSON`);
+      assert.match(
+        res.headers.get('content-type') || '',
+        /application\/json/,
+        `${descricao}: resposta e JSON, nao text/html`,
+      );
+      const corpo = await res.json();
+      assert.equal(corpo.erro, 'DADOS_INVALIDOS', `${descricao}: erro do contrato`);
+      assert.equal(typeof corpo.mensagem, 'string', `${descricao}: mensagem presente`);
+      assert.ok(corpo.mensagem.length > 0, `${descricao}: mensagem nao vazia`);
+    }
+  } finally {
+    await servidor.fechar();
+  }
+});
+
 test('R11: no mesmo minuto o codigo e estavel; um minuto depois ele muda', async () => {
   const banco = novoBanco(':memory:');
   const servidor = await subirServidor({ banco });
@@ -176,6 +219,8 @@ test('R11: no mesmo minuto o codigo e estavel; um minuto depois ele muda', async
     assert.equal(segunda.status, 200);
     const codigo2 = await segunda.json();
     assert.equal(codigo2.codigo, codigo1.codigo, 'mesmo minuto devolve o mesmo codigo');
+    assert.equal(codigo2.trocaEm, codigo1.trocaEm, 'mesmo minuto devolve o mesmo trocaEm');
+    assert.equal(codigo2.validoAte, codigo1.validoAte, 'mesmo minuto devolve o mesmo validoAte');
 
     await fixarRelogio(servidor.base, '2026-10-20T19:04:10-03:00');
     const terceira = await fetch(`${servidor.base}/encontros/enc_r11/codigo`, {
@@ -1187,6 +1232,55 @@ test('R18: presenca manual exige justificativa de no minimo 10 caracteres; ausen
     const presenca = await valida.json();
     assert.equal(presenca.participanteId, 'p-diego');
     assert.equal(presenca.justificativa, '123456789012');
+  } finally {
+    await servidor.fechar();
+  }
+});
+
+test('R18: presenca manual com justificativa de tipo errado (numero, objeto) -> 422 DADOS_INVALIDOS; ausente continua JUSTIFICATIVA_OBRIGATORIA', async () => {
+  const banco = novoBanco(':memory:');
+  const servidor = await subirServidor({ banco });
+  try {
+    await fetch(`${servidor.base}/_teste/reset`, { method: 'POST' });
+    semearAtividade(banco, {
+      id: 'atv_r18t',
+      titulo: 'Atividade R18 Tipo',
+      tipo: 'palestra',
+      salaId: 'auditorio',
+      vagas: 10,
+      encontros: [
+        { id: 'enc_r18t', inicio: '2026-10-20T19:00:00-03:00', fim: '2026-10-20T22:00:00-03:00' },
+      ],
+    });
+    semearInscricao(banco, {
+      id: 'ins_r18t_0',
+      atividadeId: 'atv_r18t',
+      participanteId: 'p-carla',
+      status: 'confirmada',
+    });
+
+    await fixarRelogio(servidor.base, '2026-10-20T19:00:00-03:00');
+    const enviar = (participanteId, corpo) =>
+      fetch(`${servidor.base}/encontros/enc_r18t/presencas/manual`, {
+        method: 'POST',
+        headers: { 'X-Usuario': 'org-ana', 'Content-Type': 'application/json' },
+        body: JSON.stringify({ participanteId, ...corpo }),
+      });
+
+    const tipoErrado = [
+      { corpo: { justificativa: 123 }, descricao: 'justificativa numero' },
+      { corpo: { justificativa: {} }, descricao: 'justificativa objeto' },
+      { corpo: { justificativa: ['a', 'b'] }, descricao: 'justificativa lista' },
+    ];
+    for (const { corpo, descricao } of tipoErrado) {
+      const res = await enviar('p-carla', corpo);
+      assert.equal(res.status, 422, descricao);
+      assert.equal((await res.json()).erro, 'DADOS_INVALIDOS', descricao);
+    }
+
+    const ausente = await enviar('p-carla', {});
+    assert.equal(ausente.status, 422, 'justificativa ausente');
+    assert.equal((await ausente.json()).erro, 'JUSTIFICATIVA_OBRIGATORIA', 'justificativa ausente');
   } finally {
     await servidor.fechar();
   }

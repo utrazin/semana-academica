@@ -20,6 +20,15 @@ export function criarServidor({ banco = novoBanco(':memory:') } = {}) {
 
   const app = express();
   app.use(express.json());
+  app.use((err, req, res, next) => {
+    if (err && err.type === 'entity.parse.failed') {
+      return res.status(422).json({
+        erro: 'DADOS_INVALIDOS',
+        mensagem: 'O corpo precisa ser um JSON válido.',
+      });
+    }
+    next(err);
+  });
 
   const usuarioPorId = banco.prepare('SELECT id, nome, papel FROM usuarios WHERE id = ?');
 
@@ -872,7 +881,19 @@ export function criarServidor({ banco = novoBanco(':memory:') } = {}) {
       });
     }
     const justificativa = corpo.justificativa;
-    if (typeof justificativa !== 'string' || justificativa.length < 10) {
+    if (justificativa === undefined) {
+      return res.status(422).json({
+        erro: 'JUSTIFICATIVA_OBRIGATORIA',
+        mensagem: 'A justificativa da presenca manual e obrigatoria.',
+      });
+    }
+    if (typeof justificativa !== 'string') {
+      return res.status(422).json({
+        erro: 'DADOS_INVALIDOS',
+        mensagem: 'justificativa precisa ser uma string.',
+      });
+    }
+    if (justificativa.length < 10) {
       return res.status(422).json({
         erro: 'JUSTIFICATIVA_OBRIGATORIA',
         mensagem: 'A justificativa da presenca manual precisa ter no minimo 10 caracteres.',
