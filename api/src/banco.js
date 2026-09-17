@@ -42,6 +42,17 @@ export function novoBanco(caminho) {
       FOREIGN KEY (atividadeId) REFERENCES atividades(id),
       FOREIGN KEY (participanteId) REFERENCES usuarios(id)
     );
+    CREATE TABLE IF NOT EXISTS presencas (
+      id TEXT PRIMARY KEY,
+      encontroId TEXT NOT NULL,
+      participanteId TEXT NOT NULL,
+      origem TEXT NOT NULL,
+      lidoEm TEXT NOT NULL,
+      registradaEm TEXT NOT NULL,
+      justificativa TEXT,
+      FOREIGN KEY (encontroId) REFERENCES encontros(id),
+      FOREIGN KEY (participanteId) REFERENCES usuarios(id)
+    );
   `);
   return banco;
 }
@@ -54,6 +65,6 @@ export function carregarDadosIniciais(banco) {
 }
 
 export function resetarBanco(banco) {
-  banco.exec('DELETE FROM inscricoes; DELETE FROM encontros; DELETE FROM atividades; DELETE FROM salas; DELETE FROM usuarios;');
+  banco.exec('DELETE FROM presencas; DELETE FROM inscricoes; DELETE FROM encontros; DELETE FROM atividades; DELETE FROM salas; DELETE FROM usuarios;');
   carregarDadosIniciais(banco);
 }

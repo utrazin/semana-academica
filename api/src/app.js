@@ -727,6 +727,27 @@ export function criarServidor({ banco = novoBanco(':memory:') } = {}) {
 
   const encontroPorId = banco.prepare('SELECT id, atividadeId, inicio, fim FROM encontros WHERE id = ?');
   const atividadeCancelada = banco.prepare('SELECT cancelada FROM atividades WHERE id = ?');
+  const inscricaoConfirmada = banco.prepare(
+    "SELECT id FROM inscricoes WHERE atividadeId = ? AND participanteId = ? AND status = 'confirmada'",
+  );
+  const presencaPorEncontroEParticipante = banco.prepare(
+    'SELECT id, encontroId, participanteId, origem, lidoEm, registradaEm, justificativa FROM presencas WHERE encontroId = ? AND participanteId = ?',
+  );
+  const inserirPresenca = banco.prepare(
+    'INSERT INTO presencas (id, encontroId, participanteId, origem, lidoEm, registradaEm, justificativa) VALUES (?, ?, ?, ?, ?, ?, ?)',
+  );
+
+  function serializarPresenca(linha) {
+    return {
+      id: linha.id,
+      encontroId: linha.encontroId,
+      participanteId: linha.participanteId,
+      origem: linha.origem,
+      lidoEm: linha.lidoEm,
+      registradaEm: linha.registradaEm,
+      justificativa: linha.justificativa,
+    };
+  }
 
   function exigirEncontro(req, res, next) {
     const encontro = encontroPorId.get(req.params.id);
@@ -763,7 +784,68 @@ export function criarServidor({ banco = novoBanco(':memory:') } = {}) {
   });
 
   app.post('/encontros/:id/presencas', exigirUsuario, exigirParticipante, exigirEncontro, (req, res) => {
-    res.status(501).json({ erro: 'NAO_IMPLEMENTADO' });
+    const corpo = req.body || {};
+    if (typeof corpo.codigo !== 'string') {
+      return res.status(422).json({
+        erro: 'DADOS_INVALIDOS',
+        mensagem: 'codigo precisa ser uma string.',
+      });
+    }
+
+    const presencaExistente = presencaPorEncontroEParticipante.get(req.encontro.id, req.usuario.id);
+    if (presencaExistente) {
+      return res.status(200).json(serializarPresenca(presencaExistente));
+    }
+
+    if (!inscricaoConfirmada.get(req.encontro.atividadeId, req.usuario.id)) {
+      return res.status(403).json({
+        erro: 'NAO_INSCRITO',
+        mensagem: 'Só quem tem inscrição confirmada registra presença.',
+      });
+    }
+
+    const inicioMs = Date.parse(req.encontro.inicio);
+    const agoraMs = agora().getTime();
+    if (agoraMs < inicioMs - 15 * 60000 || agoraMs > inicioMs + 30 * 60000) {
+      return res.status(422).json({
+        erro: 'FORA_DA_JANELA',
+        mensagem: 'A presença só pode ser registrada de 15 min antes a 30 min depois do início do encontro.',
+      });
+    }
+
+    const inicioMinutoMs = Math.floor(agoraMs / 60000) * 60000;
+    const codigoNormalizado = corpo.codigo.toUpperCase().replace(/\s+/g, '');
+    const codigosAceitos = [
+      codigoDoEncontro(req.encontro.id, inicioMinutoMs),
+      codigoDoEncontro(req.encontro.id, inicioMinutoMs - 60000),
+    ];
+    if (!codigosAceitos.includes(codigoNormalizado)) {
+      return res.status(422).json({
+        erro: 'CODIGO_INVALIDO',
+        mensagem: 'Código inválido para este encontro.',
+      });
+    }
+
+    const registradaEm = formatarIsoBrasilia(agora());
+    const presenca = {
+      id: gerarId('pre_'),
+      encontroId: req.encontro.id,
+      participanteId: req.usuario.id,
+      origem: 'qr',
+      lidoEm: registradaEm,
+      registradaEm,
+      justificativa: null,
+    };
+    inserirPresenca.run(
+      presenca.id,
+      presenca.encontroId,
+      presenca.participanteId,
+      presenca.origem,
+      presenca.lidoEm,
+      presenca.registradaEm,
+      presenca.justificativa,
+    );
+    res.status(201).json(serializarPresenca(presenca));
   });
 
   app.post('/encontros/:id/presencas/manual', exigirUsuario, exigirOrganizacao, exigirEncontro, (req, res) => {
