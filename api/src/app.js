@@ -4,6 +4,17 @@ import { novoBanco, resetarBanco } from './banco.js';
 import { ehModoTeste, agora, resetarRelogio, definirRelogio } from './relogio.js';
 import { contarVagasOcupadas } from './contagem.js';
 
+const ALFABETO_CODIGO = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+
+function codigoDoEncontro(encontroId, inicioMinutoMs) {
+  const digest = crypto.createHash('sha256').update(`${encontroId}|${inicioMinutoMs}`).digest();
+  let codigo = '';
+  for (let i = 0; i < 6; i += 1) {
+    codigo += ALFABETO_CODIGO[digest[i] % ALFABETO_CODIGO.length];
+  }
+  return codigo;
+}
+
 export function criarServidor({ banco = novoBanco(':memory:') } = {}) {
   resetarBanco(banco);
 
@@ -715,6 +726,7 @@ export function criarServidor({ banco = novoBanco(':memory:') } = {}) {
   });
 
   const encontroPorId = banco.prepare('SELECT id, atividadeId, inicio, fim FROM encontros WHERE id = ?');
+  const atividadeCancelada = banco.prepare('SELECT cancelada FROM atividades WHERE id = ?');
 
   function exigirEncontro(req, res, next) {
     const encontro = encontroPorId.get(req.params.id);
@@ -726,7 +738,28 @@ export function criarServidor({ banco = novoBanco(':memory:') } = {}) {
   }
 
   app.get('/encontros/:id/codigo', exigirUsuario, exigirOrganizacao, exigirEncontro, (req, res) => {
-    res.status(501).json({ erro: 'NAO_IMPLEMENTADO' });
+    const atividade = atividadeCancelada.get(req.encontro.atividadeId);
+    if (atividade && atividade.cancelada) {
+      return res.status(422).json({
+        erro: 'ATIVIDADE_CANCELADA',
+        mensagem: 'Atividade cancelada.',
+      });
+    }
+    const agoraMs = agora().getTime();
+    const inicioMs = Date.parse(req.encontro.inicio);
+    if (agoraMs < inicioMs - 15 * 60000 || agoraMs > inicioMs + 30 * 60000) {
+      return res.status(422).json({
+        erro: 'FORA_DA_JANELA',
+        mensagem: 'O código só pode ser obtido de 15 min antes a 30 min depois do início do encontro.',
+      });
+    }
+    const inicioMinutoMs = Math.floor(agoraMs / 60000) * 60000;
+    res.json({
+      encontroId: req.encontro.id,
+      codigo: codigoDoEncontro(req.encontro.id, inicioMinutoMs),
+      trocaEm: formatarIsoBrasilia(new Date(inicioMinutoMs + 60000)),
+      validoAte: formatarIsoBrasilia(new Date(inicioMinutoMs + 120000)),
+    });
   });
 
   app.post('/encontros/:id/presencas', exigirUsuario, exigirParticipante, exigirEncontro, (req, res) => {
