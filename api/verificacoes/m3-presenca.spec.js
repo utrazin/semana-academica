@@ -46,6 +46,10 @@ function semearInscricao(
     .run(id, atividadeId, participanteId, status, posicaoNaEspera, convocadaAte, criadaEm);
 }
 
+function semearUsuario(banco, id, nome, papel) {
+  banco.prepare('INSERT INTO usuarios (id, nome, papel) VALUES (?, ?, ?)').run(id, nome, papel);
+}
+
 async function fixarRelogio(base, agora) {
   await fetch(`${base}/_teste/relogio`, {
     method: 'PUT',
@@ -1068,6 +1072,455 @@ test('R20: ordem da rota QR — NAO_INSCRITO, presenca existente, SINCRONIZACAO_
     const ambasRecusariam = await enviar('p-diego', { codigo: 'ZZZZZZ', lidoEm: '2026-10-20T18:00:00-03:00' });
     assert.equal(ambasRecusariam.status, 422, 'lidoEm fora da janela e envio apos fim + 2h: SINCRONIZACAO_TARDIA vence FORA_DA_JANELA');
     assert.equal((await ambasRecusariam.json()).erro, 'SINCRONIZACAO_TARDIA');
+  } finally {
+    await servidor.fechar();
+  }
+});
+
+test('R18: presenca manual exige justificativa de no minimo 10 caracteres; ausente, vazia ou curta -> 422 JUSTIFICATIVA_OBRIGATORIA e com 12 caracteres -> 201', async () => {
+  const banco = novoBanco(':memory:');
+  const servidor = await subirServidor({ banco });
+  try {
+    await fetch(`${servidor.base}/_teste/reset`, { method: 'POST' });
+    semearAtividade(banco, {
+      id: 'atv_r18',
+      titulo: 'Atividade R18',
+      tipo: 'palestra',
+      salaId: 'auditorio',
+      vagas: 10,
+      encontros: [
+        { id: 'enc_r18', inicio: '2026-10-20T19:00:00-03:00', fim: '2026-10-20T22:00:00-03:00' },
+      ],
+    });
+    for (const [indice, participanteId] of ['p-carla', 'p-diego'].entries()) {
+      semearInscricao(banco, {
+        id: `ins_r18_${indice}`,
+        atividadeId: 'atv_r18',
+        participanteId,
+        status: 'confirmada',
+      });
+    }
+
+    await fixarRelogio(servidor.base, '2026-10-20T19:00:00-03:00');
+    const enviar = (participanteId, corpo) =>
+      fetch(`${servidor.base}/encontros/enc_r18/presencas/manual`, {
+        method: 'POST',
+        headers: { 'X-Usuario': 'org-ana', 'Content-Type': 'application/json' },
+        body: JSON.stringify({ participanteId, ...corpo }),
+      });
+
+    const casos = [
+      { corpo: {}, descricao: 'justificativa ausente' },
+      { corpo: { justificativa: '' }, descricao: 'justificativa vazia' },
+      { corpo: { justificativa: '123456789' }, descricao: 'justificativa com 9 caracteres' },
+    ];
+    for (const { corpo, descricao } of casos) {
+      const res = await enviar('p-carla', corpo);
+      assert.equal(res.status, 422, descricao);
+      assert.equal((await res.json()).erro, 'JUSTIFICATIVA_OBRIGATORIA', descricao);
+    }
+
+    const valida = await enviar('p-diego', { justificativa: '123456789012' });
+    assert.equal(valida.status, 201, 'justificativa com 12 caracteres registra');
+    const presenca = await valida.json();
+    assert.equal(presenca.participanteId, 'p-diego');
+    assert.equal(presenca.justificativa, '123456789012');
+  } finally {
+    await servidor.fechar();
+  }
+});
+
+test('R10: a janela da presenca manual vai de 15 min antes do inicio ate 2 horas depois do fim, bordas incluidas', async () => {
+  const banco = novoBanco(':memory:');
+  const servidor = await subirServidor({ banco });
+  try {
+    await fetch(`${servidor.base}/_teste/reset`, { method: 'POST' });
+    semearAtividade(banco, {
+      id: 'atv_r10',
+      titulo: 'Atividade R10',
+      tipo: 'palestra',
+      salaId: 'auditorio',
+      vagas: 30,
+      encontros: [
+        { id: 'enc_r10', inicio: '2026-10-20T19:00:00-03:00', fim: '2026-10-20T22:00:00-03:00' },
+      ],
+    });
+    for (let i = 1; i <= 20; i += 1) {
+      const id = i <= 7 ? ['p-carla', 'p-diego', 'p-elisa', 'p-fabio', 'p-gabriela', 'p-heitor', 'p-isadora'][i - 1] : `p-r10-${i}`;
+      if (id.startsWith('p-r10')) semearUsuario(banco, id, `Participante R10 ${i}`, 'participante');
+      semearInscricao(banco, {
+        id: `ins_r10_${i}`,
+        atividadeId: 'atv_r10',
+        participanteId: id,
+        status: 'confirmada',
+      });
+    }
+
+    const casos = [
+      { agora: '2026-10-20T18:45:00-03:00', participanteId: 'p-carla', status: 201, erro: null },
+      { agora: '2026-10-20T18:44:59-03:00', participanteId: 'p-diego', status: 422, erro: 'FORA_DA_JANELA' },
+      { agora: '2026-10-20T23:00:00-03:00', participanteId: 'p-elisa', status: 201, erro: null },
+      { agora: '2026-10-21T00:00:01-03:00', participanteId: 'p-fabio', status: 422, erro: 'FORA_DA_JANELA' },
+    ];
+
+    for (const { agora, participanteId, status, erro } of casos) {
+      await fixarRelogio(servidor.base, agora);
+      const res = await fetch(`${servidor.base}/encontros/enc_r10/presencas/manual`, {
+        method: 'POST',
+        headers: { 'X-Usuario': 'org-ana', 'Content-Type': 'application/json' },
+        body: JSON.stringify({ participanteId, justificativa: '123456789012' }),
+      });
+      assert.equal(res.status, status, agora);
+      if (erro) {
+        assert.equal((await res.json()).erro, erro, agora);
+      } else {
+        assert.equal((await res.json()).origem, 'manual', agora);
+      }
+    }
+  } finally {
+    await servidor.fechar();
+  }
+});
+
+test('R6 na manual: quem e conferido e o participanteId do corpo, nao a organizacao chamadora — confirmada registra; demais status e sem inscricao dao 403 NAO_INSCRITO; participanteId ausente ou nao-string e DADOS_INVALIDOS', async () => {
+  const banco = novoBanco(':memory:');
+  const servidor = await subirServidor({ banco });
+  try {
+    await fetch(`${servidor.base}/_teste/reset`, { method: 'POST' });
+    semearAtividade(banco, {
+      id: 'atv_r6m',
+      titulo: 'Atividade R6 Manual',
+      tipo: 'palestra',
+      salaId: 'auditorio',
+      vagas: 10,
+      encontros: [
+        { id: 'enc_r6m', inicio: '2026-10-20T19:00:00-03:00', fim: '2026-10-20T22:00:00-03:00' },
+      ],
+    });
+    const inscricoes = [
+      { participanteId: 'p-carla', status: 'confirmada' },
+      { participanteId: 'p-diego', status: 'em_espera' },
+      { participanteId: 'p-elisa', status: 'convocada' },
+      { participanteId: 'p-fabio', status: 'cancelada' },
+      { participanteId: 'p-gabriela', status: 'expirada' },
+    ];
+    for (const [indice, { participanteId, status }] of inscricoes.entries()) {
+      semearInscricao(banco, {
+        id: `ins_r6m_${indice}`,
+        atividadeId: 'atv_r6m',
+        participanteId,
+        status,
+        posicaoNaEspera: status === 'em_espera' ? 1 : null,
+      });
+    }
+
+    await fixarRelogio(servidor.base, '2026-10-20T19:00:00-03:00');
+    const enviar = (participanteId, corpo) =>
+      fetch(`${servidor.base}/encontros/enc_r6m/presencas/manual`, {
+        method: 'POST',
+        headers: { 'X-Usuario': 'org-ana', 'Content-Type': 'application/json' },
+        body: JSON.stringify({ participanteId, ...corpo }),
+      });
+
+    const semId = await enviar(undefined, { justificativa: '123456789012' });
+    assert.equal(semId.status, 422, 'participanteId ausente');
+    assert.equal((await semId.json()).erro, 'DADOS_INVALIDOS');
+
+    const idNum = await enviar(123, { justificativa: '123456789012' });
+    assert.equal(idNum.status, 422, 'participanteId nao-string');
+    assert.equal((await idNum.json()).erro, 'DADOS_INVALIDOS');
+
+    const confirmada = await enviar('p-carla', { justificativa: '123456789012' });
+    assert.equal(confirmada.status, 201, 'confirmada registra na manual');
+    assert.equal((await confirmada.json()).participanteId, 'p-carla');
+
+    const recusados = [
+      { participanteId: 'p-diego', status: 'em_espera' },
+      { participanteId: 'p-elisa', status: 'convocada' },
+      { participanteId: 'p-fabio', status: 'cancelada' },
+      { participanteId: 'p-gabriela', status: 'expirada' },
+      { participanteId: 'p-heitor', status: 'sem inscricao' },
+    ];
+    for (const { participanteId, status } of recusados) {
+      const res = await enviar(participanteId, { justificativa: '123456789012' });
+      assert.equal(res.status, 403, `${participanteId} (${status})`);
+      assert.equal((await res.json()).erro, 'NAO_INSCRITO', `${participanteId} (${status})`);
+    }
+  } finally {
+    await servidor.fechar();
+  }
+});
+
+test('R24: presenca manual nasce com origem manual, lidoEm igual ao instante do envio e justificativa preenchida', async () => {
+  const banco = novoBanco(':memory:');
+  const servidor = await subirServidor({ banco });
+  try {
+    await fetch(`${servidor.base}/_teste/reset`, { method: 'POST' });
+    semearAtividade(banco, {
+      id: 'atv_r24m',
+      titulo: 'Atividade R24 Manual',
+      tipo: 'palestra',
+      salaId: 'auditorio',
+      vagas: 10,
+      encontros: [
+        { id: 'enc_r24m', inicio: '2026-10-20T19:00:00-03:00', fim: '2026-10-20T22:00:00-03:00' },
+      ],
+    });
+    semearInscricao(banco, {
+      id: 'ins_r24m_0',
+      atividadeId: 'atv_r24m',
+      participanteId: 'p-carla',
+      status: 'confirmada',
+    });
+
+    await fixarRelogio(servidor.base, '2026-10-20T19:00:00-03:00');
+    const res = await fetch(`${servidor.base}/encontros/enc_r24m/presencas/manual`, {
+      method: 'POST',
+      headers: { 'X-Usuario': 'org-ana', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ participanteId: 'p-carla', justificativa: '123456789012' }),
+    });
+    assert.equal(res.status, 201);
+    const presenca = await res.json();
+    assert.match(presenca.id, /^pre_[0-9a-f]{8}$/);
+    assert.equal(presenca.encontroId, 'enc_r24m');
+    assert.equal(presenca.participanteId, 'p-carla');
+    assert.equal(presenca.origem, 'manual');
+    assert.equal(presenca.justificativa, '123456789012');
+    assert.equal(
+      Date.parse(presenca.lidoEm),
+      Date.parse('2026-10-20T19:00:00-03:00'),
+      'lidoEm e o instante do envio que valeu para as regras',
+    );
+    assert.equal(
+      Date.parse(presenca.lidoEm),
+      Date.parse(presenca.registradaEm),
+      'na manual nao ha leitura previa: lidoEm iguala o instante do registro',
+    );
+  } finally {
+    await servidor.fechar();
+  }
+});
+
+test('R19: limite de presencas manuais por encontro e 10% das confirmadas arredondado para cima (5 -> 1; 20 -> 2; 21 -> 3), e so as de origem manual contam', async () => {
+  const banco = novoBanco(':memory:');
+  const servidor = await subirServidor({ banco });
+  try {
+    await fetch(`${servidor.base}/_teste/reset`, { method: 'POST' });
+    for (let i = 1; i <= 21; i += 1) {
+      const id = `p-teto${String(i).padStart(2, '0')}`;
+      semearUsuario(banco, id, `Participante Teto ${i}`, 'participante');
+    }
+
+    const cenarios = [
+      { atividadeId: 'atv_teto1', encontroId: 'enc_teto1', confirmadas: 5, teto: 1 },
+      { atividadeId: 'atv_teto2', encontroId: 'enc_teto2', confirmadas: 20, teto: 2 },
+      { atividadeId: 'atv_teto3', encontroId: 'enc_teto3', confirmadas: 21, teto: 3 },
+    ];
+    for (const { atividadeId, encontroId, confirmadas, teto } of cenarios) {
+      semearAtividade(banco, {
+        id: atividadeId,
+        titulo: `Atividade ${atividadeId}`,
+        tipo: 'palestra',
+        salaId: 'auditorio',
+        vagas: 30,
+        encontros: [
+          { id: encontroId, inicio: '2026-10-20T19:00:00-03:00', fim: '2026-10-20T22:00:00-03:00' },
+        ],
+      });
+      for (let i = 1; i <= confirmadas; i += 1) {
+        semearInscricao(banco, {
+          id: `ins_${atividadeId}_${i}`,
+          atividadeId,
+          participanteId: `p-teto${String(i).padStart(2, '0')}`,
+          status: 'confirmada',
+        });
+      }
+    }
+
+    await fixarRelogio(servidor.base, '2026-10-20T19:00:00-03:00');
+    const registrar = (encontroId, participanteId) =>
+      fetch(`${servidor.base}/encontros/${encontroId}/presencas/manual`, {
+        method: 'POST',
+        headers: { 'X-Usuario': 'org-ana', 'Content-Type': 'application/json' },
+        body: JSON.stringify({ participanteId, justificativa: '123456789012' }),
+      });
+
+    for (const { encontroId, teto } of cenarios) {
+      const participantes = Array.from(
+        { length: teto + 1 },
+        (_, i) => `p-teto${String(i + 1).padStart(2, '0')}`,
+      );
+      for (let i = 0; i < teto; i += 1) {
+        const res = await registrar(encontroId, participantes[i]);
+        assert.equal(
+          res.status,
+          201,
+          `${encontroId}: a ${i + 1}a manual do teto ${teto} registra`,
+        );
+      }
+      const estouro = await registrar(encontroId, participantes[teto]);
+      assert.equal(
+        estouro.status,
+        422,
+        `${encontroId}: a ${teto + 1}a manual do teto ${teto} estoura o limite`,
+      );
+      assert.equal((await estouro.json()).erro, 'LIMITE_DE_MANUAIS', encontroId);
+    }
+  } finally {
+    await servidor.fechar();
+  }
+});
+
+test('R21: ordem da rota manual — JUSTIFICATIVA_OBRIGATORIA antes da presenca existente, depois presenca (200), NAO_INSCRITO, FORA_DA_JANELA e LIMITE_DE_MANUAIS', async () => {
+  const banco = novoBanco(':memory:');
+  const servidor = await subirServidor({ banco });
+  try {
+    await fetch(`${servidor.base}/_teste/reset`, { method: 'POST' });
+    semearAtividade(banco, {
+      id: 'atv_r21',
+      titulo: 'Atividade R21',
+      tipo: 'palestra',
+      salaId: 'auditorio',
+      vagas: 10,
+      encontros: [
+        { id: 'enc_r21', inicio: '2026-10-20T19:00:00-03:00', fim: '2026-10-20T22:00:00-03:00' },
+      ],
+    });
+    for (const [indice, participanteId] of ['p-carla', 'p-diego', 'p-elisa', 'p-fabio', 'p-gabriela'].entries()) {
+      semearInscricao(banco, {
+        id: `ins_r21_${indice}`,
+        atividadeId: 'atv_r21',
+        participanteId,
+        status: 'confirmada',
+      });
+    }
+
+    const manual = (participanteId, justificativa) =>
+      fetch(`${servidor.base}/encontros/enc_r21/presencas/manual`, {
+        method: 'POST',
+        headers: { 'X-Usuario': 'org-ana', 'Content-Type': 'application/json' },
+        body: JSON.stringify({ participanteId, justificativa }),
+      });
+
+    await fixarRelogio(servidor.base, '2026-10-20T19:00:00-03:00');
+    const respostaCodigo = await fetch(`${servidor.base}/encontros/enc_r21/codigo`, {
+      headers: { 'X-Usuario': 'org-ana' },
+    });
+    assert.equal(respostaCodigo.status, 200);
+    const { codigo } = await respostaCodigo.json();
+
+    const qr = await fetch(`${servidor.base}/encontros/enc_r21/presencas`, {
+      method: 'POST',
+      headers: { 'X-Usuario': 'p-carla', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ codigo }),
+    });
+    assert.equal(qr.status, 201, 'p-carla registra por QR');
+
+    const presencaExistenteComJustificativaCurta = await manual('p-carla', 'curta');
+    assert.equal(
+      presencaExistenteComJustificativaCurta.status,
+      422,
+      'presenca ja registrada com justificativa invalida: JUSTIFICATIVA_OBRIGATORIA vem antes do 200',
+    );
+    assert.equal((await presencaExistenteComJustificativaCurta.json()).erro, 'JUSTIFICATIVA_OBRIGATORIA');
+
+    const presencaExistenteComJustificativaValida = await manual('p-carla', '123456789012');
+    assert.equal(presencaExistenteComJustificativaValida.status, 200, 'ja registrado com justificativa valida devolve 200');
+    const presenca = await presencaExistenteComJustificativaValida.json();
+    assert.equal(presenca.origem, 'qr', 'a presenca de QR existente e preservada, nao vira manual');
+    assert.equal(presenca.justificativa, null);
+
+    const primeiraManual = await manual('p-fabio', '123456789012');
+    assert.equal(primeiraManual.status, 201, 'a presenca de QR de p-carla nao ocupa o teto de manuais: p-fabio registra');
+    assert.equal((await primeiraManual.json()).origem, 'manual');
+
+    await fixarRelogio(servidor.base, '2026-10-21T00:00:01-03:00');
+    const naoInscritoForaDaJanela = await manual('p-heitor', '123456789012');
+    assert.equal(naoInscritoForaDaJanela.status, 403, 'nao inscrito fora da janela: NAO_INSCRITO vem antes de FORA_DA_JANELA');
+    assert.equal((await naoInscritoForaDaJanela.json()).erro, 'NAO_INSCRITO');
+
+    const inscritoForaComTetoCheio = await manual('p-diego', '123456789012');
+    assert.equal(inscritoForaComTetoCheio.status, 422, 'inscrito fora da janela com teto cheio: FORA_DA_JANELA vem antes de LIMITE_DE_MANUAIS');
+    assert.equal((await inscritoForaComTetoCheio.json()).erro, 'FORA_DA_JANELA');
+
+    await fixarRelogio(servidor.base, '2026-10-20T19:00:00-03:00');
+    const inscritoNaJanelaComTetoCheio = await manual('p-elisa', '123456789012');
+    assert.equal(inscritoNaJanelaComTetoCheio.status, 422, 'inscrito na janela com teto cheio: LIMITE_DE_MANUAIS');
+    assert.equal((await inscritoNaJanelaComTetoCheio.json()).erro, 'LIMITE_DE_MANUAIS');
+  } finally {
+    await servidor.fechar();
+  }
+});
+
+test('R17: manual em cima de presenca de QR devolve 200 preservando origem qr e justificativa; QR em cima de manual preserva origem manual e a justificativa', async () => {
+  const banco = novoBanco(':memory:');
+  const servidor = await subirServidor({ banco });
+  try {
+    await fetch(`${servidor.base}/_teste/reset`, { method: 'POST' });
+    semearAtividade(banco, {
+      id: 'atv_r17x',
+      titulo: 'Atividade R17 Cruzamento',
+      tipo: 'palestra',
+      salaId: 'auditorio',
+      vagas: 10,
+      encontros: [
+        { id: 'enc_r17x', inicio: '2026-10-20T19:00:00-03:00', fim: '2026-10-20T22:00:00-03:00' },
+      ],
+    });
+    for (const [indice, participanteId] of ['p-carla', 'p-diego'].entries()) {
+      semearInscricao(banco, {
+        id: `ins_r17x_${indice}`,
+        atividadeId: 'atv_r17x',
+        participanteId,
+        status: 'confirmada',
+      });
+    }
+
+    await fixarRelogio(servidor.base, '2026-10-20T19:00:00-03:00');
+    const respostaCodigo = await fetch(`${servidor.base}/encontros/enc_r17x/codigo`, {
+      headers: { 'X-Usuario': 'org-ana' },
+    });
+    assert.equal(respostaCodigo.status, 200);
+    const { codigo } = await respostaCodigo.json();
+
+    const qrDaCarla = await fetch(`${servidor.base}/encontros/enc_r17x/presencas`, {
+      method: 'POST',
+      headers: { 'X-Usuario': 'p-carla', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ codigo }),
+    });
+    assert.equal(qrDaCarla.status, 201);
+    const presencaQr = await qrDaCarla.json();
+    assert.equal(presencaQr.origem, 'qr');
+
+    const manualSobreQr = await fetch(`${servidor.base}/encontros/enc_r17x/presencas/manual`, {
+      method: 'POST',
+      headers: { 'X-Usuario': 'org-ana', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ participanteId: 'p-carla', justificativa: '123456789012' }),
+    });
+    assert.equal(manualSobreQr.status, 200, 'manual em cima de QR devolve 200');
+    assert.deepEqual(
+      await manualSobreQr.json(),
+      presencaQr,
+      'preserve origem qr e justificativa null, sem criar outra',
+    );
+
+    const manualDoDiego = await fetch(`${servidor.base}/encontros/enc_r17x/presencas/manual`, {
+      method: 'POST',
+      headers: { 'X-Usuario': 'org-ana', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ participanteId: 'p-diego', justificativa: '123456789012' }),
+    });
+    assert.equal(manualDoDiego.status, 201);
+    const presencaManual = await manualDoDiego.json();
+    assert.equal(presencaManual.origem, 'manual');
+    assert.equal(presencaManual.justificativa, '123456789012');
+
+    const qrSobreManual = await fetch(`${servidor.base}/encontros/enc_r17x/presencas`, {
+      method: 'POST',
+      headers: { 'X-Usuario': 'p-diego', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ codigo }),
+    });
+    assert.equal(qrSobreManual.status, 200, 'QR em cima de manual devolve 200');
+    assert.deepEqual(await qrSobreManual.json(), presencaManual, 'preserve origem manual e a justificativa');
   } finally {
     await servidor.fechar();
   }

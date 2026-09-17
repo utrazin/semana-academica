@@ -864,7 +864,77 @@ export function criarServidor({ banco = novoBanco(':memory:') } = {}) {
   });
 
   app.post('/encontros/:id/presencas/manual', exigirUsuario, exigirOrganizacao, exigirEncontro, (req, res) => {
-    res.status(501).json({ erro: 'NAO_IMPLEMENTADO' });
+    const corpo = req.body || {};
+    if (typeof corpo.participanteId !== 'string') {
+      return res.status(422).json({
+        erro: 'DADOS_INVALIDOS',
+        mensagem: 'participanteId precisa ser uma string.',
+      });
+    }
+    const justificativa = corpo.justificativa;
+    if (typeof justificativa !== 'string' || justificativa.length < 10) {
+      return res.status(422).json({
+        erro: 'JUSTIFICATIVA_OBRIGATORIA',
+        mensagem: 'A justificativa da presenca manual precisa ter no minimo 10 caracteres.',
+      });
+    }
+
+    const presencaExistente = presencaPorEncontroEParticipante.get(req.encontro.id, corpo.participanteId);
+    if (presencaExistente) {
+      return res.status(200).json(serializarPresenca(presencaExistente));
+    }
+
+    if (!inscricaoConfirmada.get(req.encontro.atividadeId, corpo.participanteId)) {
+      return res.status(403).json({
+        erro: 'NAO_INSCRITO',
+        mensagem: 'So quem tem inscricao confirmada registra presenca.',
+      });
+    }
+
+    const inicioMs = Date.parse(req.encontro.inicio);
+    const fimMs = Date.parse(req.encontro.fim);
+    const agoraMs = agora().getTime();
+    if (agoraMs < inicioMs - 15 * 60000 || agoraMs > fimMs + 2 * 3600 * 1000) {
+      return res.status(422).json({
+        erro: 'FORA_DA_JANELA',
+        mensagem: 'A presenca manual vale de 15 min antes do inicio ate 2 horas depois do fim do encontro.',
+      });
+    }
+
+    const confirmadas = banco
+      .prepare("SELECT COUNT(*) AS total FROM inscricoes WHERE atividadeId = ? AND status = 'confirmada'")
+      .get(req.encontro.atividadeId).total;
+    const teto = Math.ceil(confirmadas * 0.1);
+    const manuais = banco
+      .prepare('SELECT COUNT(*) AS total FROM presencas WHERE encontroId = ? AND origem = ?')
+      .get(req.encontro.id, 'manual').total;
+    if (manuais >= teto) {
+      return res.status(422).json({
+        erro: 'LIMITE_DE_MANUAIS',
+        mensagem: 'As presencas manuais desse encontro estao no limite de 10% das inscricoes confirmadas.',
+      });
+    }
+
+    const registradaEm = formatarIsoBrasilia(agora());
+    const presenca = {
+      id: gerarId('pre_'),
+      encontroId: req.encontro.id,
+      participanteId: corpo.participanteId,
+      origem: 'manual',
+      lidoEm: registradaEm,
+      registradaEm,
+      justificativa,
+    };
+    inserirPresenca.run(
+      presenca.id,
+      presenca.encontroId,
+      presenca.participanteId,
+      presenca.origem,
+      presenca.lidoEm,
+      presenca.registradaEm,
+      presenca.justificativa,
+    );
+    res.status(201).json(serializarPresenca(presenca));
   });
 
   app.get('/encontros/:id/presencas', exigirUsuario, exigirOrganizacao, exigirEncontro, (req, res) => {
