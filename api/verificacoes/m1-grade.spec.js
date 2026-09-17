@@ -110,6 +110,88 @@ test('R1: GET /atividades devolve todas as atividades, inclusive a cancelada', a
   }
 });
 
+test('R4: ?dia= filtra pelo dia de Brasília do instante, e não pelo texto nem pelo dia em UTC', async () => {
+  const banco = novoBanco(':memory:');
+  const servidor = await subirServidor({ banco });
+  try {
+    await fetch(`${servidor.base}/_teste/reset`, { method: 'POST' });
+    semearGradeDeTeste(banco);
+    semearAtividade(banco, {
+      id: 'atv_00000004',
+      titulo: 'Depois do expediente',
+      tipo: 'palestra',
+      salaId: 'auditorio',
+      vagas: 10,
+      encontros: [
+        { id: 'enc_00000005', inicio: '2026-10-20T21:00:00-03:00', fim: '2026-10-20T23:00:00-03:00' },
+      ],
+    });
+
+    const idsDoDia = async (dia) => {
+      const resposta = await fetch(`${servidor.base}/atividades?dia=${dia}`, {
+        headers: { 'X-Usuario': 'p-carla' },
+      });
+      assert.equal(resposta.status, 200);
+      return (await resposta.json()).map((a) => a.id).sort();
+    };
+
+    assert.deepEqual(
+      await idsDoDia('2026-10-20'),
+      ['atv_00000001', 'atv_00000002', 'atv_00000003', 'atv_00000004'],
+    );
+    assert.deepEqual(await idsDoDia('2026-10-19'), ['atv_00000002']);
+    assert.deepEqual(await idsDoDia('2026-10-21'), []);
+  } finally {
+    await servidor.fechar();
+  }
+});
+
+test('R5: ?tipo= diferente de palestra ou minicurso devolve 422 DADOS_INVALIDOS', async () => {
+  const banco = novoBanco(':memory:');
+  const servidor = await subirServidor({ banco });
+  try {
+    await fetch(`${servidor.base}/_teste/reset`, { method: 'POST' });
+    semearGradeDeTeste(banco);
+
+    const resposta = await fetch(`${servidor.base}/atividades?tipo=oficina`, {
+      headers: { 'X-Usuario': 'p-carla' },
+    });
+
+    assert.equal(resposta.status, 422);
+    const corpo = await resposta.json();
+    assert.equal(corpo.erro, 'DADOS_INVALIDOS');
+  } finally {
+    await servidor.fechar();
+  }
+});
+
+test('R6: ?dia= e ?tipo= combinam (AND) e canceladas entram no resultado filtrado', async () => {
+  const banco = novoBanco(':memory:');
+  const servidor = await subirServidor({ banco });
+  try {
+    await fetch(`${servidor.base}/_teste/reset`, { method: 'POST' });
+    semearGradeDeTeste(banco);
+
+    const idsComFiltros = async (query) => {
+      const resposta = await fetch(`${servidor.base}/atividades?${query}`, {
+        headers: { 'X-Usuario': 'p-carla' },
+      });
+      assert.equal(resposta.status, 200);
+      return (await resposta.json()).map((a) => a.id).sort();
+    };
+
+    assert.deepEqual(
+      await idsComFiltros('dia=2026-10-20&tipo=palestra'),
+      ['atv_00000001', 'atv_00000003'],
+    );
+    assert.deepEqual(await idsComFiltros('dia=2026-10-20&tipo=minicurso'), ['atv_00000002']);
+    assert.deepEqual(await idsComFiltros('dia=2026-10-19&tipo=minicurso'), ['atv_00000002']);
+    assert.deepEqual(await idsComFiltros('dia=2026-10-19&tipo=palestra'), []);
+  } finally {
+    await servidor.fechar();
+  }
+});
+
 test('R2: GET /atividades ordena pelo início do 1º encontro, empate por título', async () => {
   const banco = novoBanco(':memory:');
   const servidor = await subirServidor({ banco });

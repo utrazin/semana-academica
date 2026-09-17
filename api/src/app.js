@@ -87,8 +87,32 @@ export function criarServidor({ banco = novoBanco(':memory:') } = {}) {
     };
   }
 
+  function diaEmBrasilia(iso) {
+    const partes = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/Sao_Paulo',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).formatToParts(new Date(iso));
+    const pegar = (tipo) => partes.find((p) => p.type === tipo).value;
+    return `${pegar('year')}-${pegar('month')}-${pegar('day')}`;
+  }
+
   app.get('/atividades', exigirUsuario, (req, res) => {
-    const linhas = banco.prepare('SELECT id, titulo, tipo, salaId, vagas, cancelada FROM atividades').all();
+    const dia = req.query.dia;
+    const tipo = req.query.tipo;
+    if (tipo !== undefined && tipo !== 'palestra' && tipo !== 'minicurso') {
+      return res.status(422).json({ erro: 'DADOS_INVALIDOS', mensagem: '?tipo só aceita palestra ou minicurso.' });
+    }
+    let linhas = banco.prepare('SELECT id, titulo, tipo, salaId, vagas, cancelada FROM atividades').all();
+    if (dia !== undefined) {
+      linhas = linhas.filter((linha) =>
+        encontrosPorAtividade.all(linha.id).some((e) => diaEmBrasilia(e.inicio) === dia),
+      );
+    }
+    if (tipo !== undefined) {
+      linhas = linhas.filter((linha) => linha.tipo === tipo);
+    }
     const porInicio = linhas.map((linha) => {
       const encontros = encontrosPorAtividade.all(linha.id);
       return { linha, inicio: encontros.length ? Date.parse(encontros[0].inicio) : Infinity };
