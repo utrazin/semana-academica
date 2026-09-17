@@ -1,6 +1,6 @@
 # Entrevista M3 — Presença por QR
 
-- Dono: Matheus Chiaratti Schenider (Matzikaaa)
+- Dono: Matheus Chiaratti Schneider (Matzikaaa)
 - Início: 2026-09-17
 - Fonte do que a API responde: `contrato-api.md` seção M3 (fixo, não se negocia)
 - Fonte do **quando** cada regra vale: documento de requisitos (RN-\*).
@@ -38,7 +38,7 @@
 | P6 | O que separa `trocaEm` de `validoAte` (por que são dois instantes e não um)? | `validoAte` fica depois de `trocaEm`, com um minuto de sobreposição: são aceitos o código do minuto corrente e o do minuto anterior. Para o código da janela das 19:03, `trocaEm` é 19:04:00 (quando a tela busca o próximo) e `validoAte` é 19:05:00 (primeiro instante em que ele deixa de ser aceito). Exemplo do cliente: código obtido às 19:03:20 e enviado às 19:04:59 ainda vale; às 19:05:00 dá `CODIGO_INVALIDO`. Código de outro encontro também é recusado. | RN-304 |
 | P7 | O que conta como `CODIGO_INVALIDO`? | Tudo que não é um código aceito para aquele encontro no instante que vale (P11): código inexistente, de outro encontro, já fora do `validoAte`, tamanho errado. Separar de corpo mal formado: `codigo` ausente ou não-string → `DADOS_INVALIDOS` (seção 1); string de 3 letras → `CODIGO_INVALIDO` (tipo certo, valor que não serve). | decisão do grupo |
 | P8 | Quem pode registrar / `NAO_INSCRITO`: vale igual para presença QR **e** presença manual? | Só registra presença quem tem inscrição com status `confirmada`. `convocada`, `em_espera`, `cancelada` e `expirada` não registram: 403 `NAO_INSCRITO`. Vale igual nas duas rotas — a manual também exige inscrito confirmado. | RN-306 e RN-311 |
-| P9 | Segundo registro na mesma rota (201 → 200): devolve a mesma `Presenca`, sem sobrescrever? | A presença é única por participante e encontro. O primeiro registro devolve 201; qualquer repetição devolve 200 com a mesma presença, sem alterar campo nenhum. Essa verificação vem antes de todas as outras regras do módulo, de propósito: é o que permite ao app offline reenviar a fila sem medo. | RN-307 |
+| P9 | Segundo registro na mesma rota (201 → 200): devolve a mesma `Presenca`, sem sobrescrever? | A presença é única por participante e encontro. O primeiro registro devolve 201; qualquer repetição devolve 200 com a mesma presença, sem alterar campo nenhum — é o que permite ao app offline reenviar a fila sem medo. Na rota de leitura por QR, essa verificação é a primeira regra do módulo (depois do 404); na rota manual, vem logo depois da justificativa, conforme a ordem da RN-314 registrada no P19. A ordem de cada rota é a do P18 e a do P19. | RN-307 |
 | P10 | Cruzamento das rotas: manual em cima de presença QR existente, e QR depois de uma manual — o que acontece? | Mesma regra da RN-307, e ela não olha origem: a presença é única por participante e encontro, venha de onde vier. Manual em cima de uma presença de QR devolve 200 com a presença que já existe, preservando origem e justificativa; QR depois de manual, idem. | RN-307 |
 | P11 | `lidoEm` presente: contra qual instante as regras (janela, validade do código) são aplicadas — o da leitura ou o da chegada? | Quando a leitura chega com `lidoEm`, a janela e a validade do código são conferidas no instante da leitura, não no do envio. | RN-308 |
 | P12 | `lidoEm` adiantado (futuro) ou de muito tempo atrás: o que acontece? | `lidoEm` adiantado (posterior ao envio, celular com relógio errado) não é erro: vale como se fosse o instante do envio. `lidoEm` antigo não tem regra própria — quem limita é o prazo da RN-310 (ver P13). | RN-309 |
@@ -51,7 +51,7 @@
 | P19 | Ordem de precedência na presença manual (`FORA_DA_JANELA`, `NAO_INSCRITO`, `JUSTIFICATIVA_OBRIGATORIA`, `LIMITE_DE_MANUAIS` — sem `ATIVIDADE_CANCELADA`, corrigido). | `JUSTIFICATIVA_OBRIGATORIA` → presença já registrada (devolve 200) → `NAO_INSCRITO` → `FORA_DA_JANELA` → `LIMITE_DE_MANUAIS`. A justificativa é conferida antes de tudo, inclusive antes da presença existente. | RN-314 |
 | P20 | Ordem da listagem `GET /encontros/:id/presencas`. | Por nome do participante; desempate por `participanteId`. Não usar `registradaEm`: no modo de teste o relógio fica parado, várias presenças na mesma janela teriam `registradaEm` idêntico e a ordem ficaria indefinida. | decisão do grupo |
 | P21 | Passagem de tempo sem acesso: janelas e validade do código calculadas na leitura (relógio parado no teste); código com `validoAte` no passado é recusado mesmo sem a rotação ter sido buscada? | Sim — tudo calculado na leitura, pelo relógio; código com `validoAte` vencido é recusado mesmo sem ninguém ter buscado a rotação. Mesmo padrão do M1 (`situacao`) e do M2 (expiração em cascata na leitura). | decisão do grupo |
-| P22 | Quando cada valor de origem se aplica? | `qr` quando a leitura é enviada na hora, sem `lidoEm`; `qr_offline` quando o envio traz `lidoEm`; `manual` no registro feito pela organização. | RN-315 |
+| P22 | Quando cada valor de origem se aplica? | `qr` quando a leitura é enviada na hora, sem `lidoEm`; `qr_offline` quando o envio traz `lidoEm`; `manual` no registro feito pela organização. No campo `lidoEm` da `Presenca`: quando o corpo não traz `lidoEm`, ele recebe o instante do envio (`registradaEm`), que foi o instante que valeu para as regras; quando o corpo traz `lidoEm`, ele guarda o instante da leitura. | RN-315, RN-308, RN-309 |
 
 *Nota: P22 foi aberta em rodada extra durante a rodada 2.*
 
@@ -59,18 +59,18 @@
 
 | # | Pergunta | Status |
 |---|---|---|
-| P2 | Janela para obter código | RESOLVIDA |
-| P3 | Janela para presença por QR | RESOLVIDA |
-| P4 | Janela para presença manual | RESOLVIDA |
-| P5 | Duração do período de validade/rotação do código (mecânica já decidida) | RESOLVIDA |
-| P6 | Relação `trocaEm` × `validoAte` (se `validoAte` fica depois de `trocaEm` e quanto) | RESOLVIDA |
-| P8 | `NAO_INSCRITO` — quem pode registrar (QR e manual) | RESOLVIDA |
-| P9 | Segundo registro na mesma rota (201 → 200) | RESOLVIDA |
-| P10 | Cruzamento manual × QR | RESOLVIDA |
-| P11 | Instante das regras com `lidoEm` (leitura × chegada) | RESOLVIDA |
-| P12 | `lidoEm` adiantado (futuro) ou muito antigo | RESOLVIDA |
-| P13 | Tolerância de `SINCRONIZACAO_TARDIA` | RESOLVIDA |
-| P16 | Atividade cancelada — ordem no obter código e registro em atividade cancelada | RESOLVIDA |
-| P17 | `LIMITE_DE_MANUAIS` — unidade e teto | RESOLVIDA |
-| P18 | Ordem de precedência na presença QR | RESOLVIDA |
-| P19 | Ordem de precedência na presença manual | RESOLVIDA |
+| P2 | Janela para obter código | Respondida (RN-302) |
+| P3 | Janela para presença por QR | Respondida (RN-301) |
+| P4 | Janela para presença manual | Respondida (RN-312) |
+| P5 | Duração do período de validade/rotação do código (mecânica já decidida) | Respondida (RN-303) |
+| P6 | Relação `trocaEm` × `validoAte` (se `validoAte` fica depois de `trocaEm` e quanto) | Respondida (RN-304) |
+| P8 | `NAO_INSCRITO` — quem pode registrar (QR e manual) | Respondida (RN-306, RN-311) |
+| P9 | Segundo registro na mesma rota (201 → 200) | Respondida (RN-307) |
+| P10 | Cruzamento manual × QR | Respondida (RN-307) |
+| P11 | Instante das regras com `lidoEm` (leitura × chegada) | Respondida (RN-308) |
+| P12 | `lidoEm` adiantado (futuro) ou muito antigo | Respondida (RN-309) |
+| P13 | Tolerância de `SINCRONIZACAO_TARDIA` | Respondida (RN-310) |
+| P16 | Atividade cancelada — ordem no obter código e registro em atividade cancelada | Respondida (RN-302 + decisão do grupo) |
+| P17 | `LIMITE_DE_MANUAIS` — unidade e teto | Respondida (RN-313) |
+| P18 | Ordem de precedência na presença QR | Respondida (RN-314) |
+| P19 | Ordem de precedência na presença manual | Respondida (RN-314) |
