@@ -12,7 +12,11 @@ Requisições são chamadas ao modelo: cada passo do agente é uma. Skills conta
 
 | Início | Sessão | Requisições | Skills | Subagentes | Vermelhas / verdes | Ciclos | Nasceu verde | Juntos | Alertas |
 |---|---|---|---|---|---|---|---|---|---|
+| 17/09 14:17 | [New session - 2026-09-17T17:17:23.364Z](ses_f4fa081dbffeyz8v5yknd3J4WF.md) | 16 | — | — | 0 / 0 | 0 | 0 | 0 | — |
+| 17/09 15:26 | [New session - 2026-09-17T18:26:45.561Z](ses_f4f60ff46ffeyaiQ9hJm7D8qTG.md) | 68 | — | — | 0 / 0 | 0 | 0 | 0 | leu 1 |
+| 17/09 16:16 | [Spec M3-presenca a partir de entrevistas](ses_f4f330d42ffeqUKIxHpnT7PI6v.md) | 9 | to-spec | — | 0 / 0 | 0 | 0 | 0 | — |
 | 17/09 16:21 | [Spec M3-presenca a partir de entrevista](ses_f4f2eeb29ffeJiIdpr2hQoihpG.md) | 19 | to-spec | — | 0 / 0 | 0 | 0 | 0 | — |
+| 17/09 16:35 | [Criar skill regra-de-tempo](ses_f4f226a88ffenFd0j3aNA28UE5.md) | 12 | — | — | 0 / 0 | 0 | 0 | 0 | — |
 | 17/09 16:38 | [TDD fatia 1 de M3-presenca e ajuste da spec](ses_f4f1f5400ffehe4xM0ZIyVLuMY.md) | 111 | tdd (2), regra-de-tempo (2) | — | 13 / 29 | 12 | 4 | 0 | — |
 | 17/09 17:05 | [Presença offline (lidoEm) e ordem rota QR](ses_f4f06ebb0ffeEqmAg7R4w6XnyW.md) | 39 | tdd, regra-de-tempo | — | 7 / 7 | 4 | 2 | 0 | — |
 | 17/09 17:10 | [Fatia 5 M3-presenca: Presença manual (TDD)](ses_f4f01fc33ffeuCzaSyWcCP34Pq.md) | 5 | tdd, regra-de-tempo | — | 0 / 0 | 0 | 0 | 0 | — |
@@ -28,4 +32,4 @@ Requisições são chamadas ao modelo: cada passo do agente é uma. Skills conta
 | 17/09 18:13 | [Fila offline para tela do participante](ses_f4ec8c68effespqTR93qYE5SvP.md) | 18 | nova-tela | — | 1 / 2 | 1 | 0 | 0 | — |
 | 17/09 18:17 | [Criar AGENTS.md para api e web](ses_f4ec46762ffeaoUziXJKL3HRD6.md) | 4 | — | — | 0 / 0 | 0 | 0 | 0 | — |
 | 17/09 18:19 | [Revisão módulo M3 contra contrato-api.md](ses_f4ec32a8affe04InSEkMFiE3gf.md) | 6 | — | revisor-de-contrato | 0 / 0 | 0 | 0 | 0 | — |
-| | **Total: 16 sessões** | 375 | to-spec, tdd (8), regra-de-tempo (5), novo-subagente, nova-tela (2) | auditor (2), revisor-de-contrato (2) | 32 / 61 | 26 | 11 | 2 | — |
+| | **Total: 20 sessões** | 480 | to-spec (2), tdd (8), regra-de-tempo (5), novo-subagente, nova-tela (2) | auditor (2), revisor-de-contrato (2) | 32 / 61 | 26 | 11 | 2 | leu 1 |
