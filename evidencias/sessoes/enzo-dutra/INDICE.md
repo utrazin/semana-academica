@@ -23,4 +23,7 @@ Requisições são chamadas ao modelo: cada passo do agente é uma. Skills conta
 | 16/09 22:10 | [Fatia 6: cancelamento e GET atividade](ses_f5315ee57ffeuj3mBQBQnZmo2U.md) | 34 | tdd | — | 2 / 7 | 2 | 3 | 0 | — |
 | 16/09 22:16 | [Auditoria do módulo M1 contra specs](ses_f53109b7cffelfGDVQcAvG436l.md) | 7 | — | auditor (2) | 0 / 0 | 0 | 0 | 0 | — |
 | 16/09 22:26 | [Navigate to api directory](ses_f5306af74ffezvPh9ELstVNeb5.md) | 13 | — | — | 0 / 1 | 0 | 1 | 0 | — |
-| | **Total: 11 sessões** | 274 | grilling, to-spec (2), tdd (6) | auditor (2) | 25 / 41 | 16 | 14 | 2 | — |
+| 16/09 22:36 | [Esqueleto web da tela de programação M1](ses_f52fe23c6ffex64fAe77RFqJ6k.md) | 26 | — | — | 1 / 1 | 0 | 1 | 1 | — |
+| 16/09 22:43 | [Tela detalhe M1: GET /atividades/:id e 404](ses_f52f7266fffeVbIa43cfvqpisy.md) | 23 | — | — | 3 / 4 | 0 | 2 | 1 | — |
+| 16/09 22:47 | [Formulário de atividade POST /atividades](ses_f52f43ba2ffe66AU3XJ17HGO3Q.md) | 27 | — | — | 1 / 2 | 1 | 0 | 1 | — |
+| | **Total: 14 sessões** | 350 | grilling, to-spec (2), tdd (6) | auditor (2) | 30 / 48 | 17 | 17 | 5 | — |
