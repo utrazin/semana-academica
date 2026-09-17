@@ -1,0 +1,16 @@
+{
+  "name": "semana-academica-api",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "API da Semana Acadêmica 2026 — Express + SQLite",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test \"verificacoes/*.spec.js\""
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.10.0",
+    "express": "^4.21.2"
+  }
+}
