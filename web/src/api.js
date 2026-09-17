@@ -62,6 +62,10 @@ export function listarAtividades({ dia, tipo } = {}) {
   return chamar(`/atividades${sufixo ? `?${sufixo}` : ''}`);
 }
 
+export function obterAtividade(id) {
+  return chamar(`/atividades/${encodeURIComponent(id)}`);
+}
+
 export function listarSalas() {
   return chamar('/salas');
 }
@@ -72,5 +76,6 @@ export default {
   definirUsuario,
   obterUsuarioAtual,
   listarAtividades,
+  obterAtividade,
   listarSalas,
 };

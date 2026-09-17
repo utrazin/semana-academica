@@ -51,6 +51,16 @@ describe('api.js', () => {
     );
   });
 
+  it('busca uma atividade por id', async () => {
+    api.definirUsuario('p-carla');
+    await api.obterAtividade('atv_1a2b3c4d');
+
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      `${API_URL}/atividades/atv_1a2b3c4d`,
+      expect.objectContaining({ headers: { 'X-Usuario': 'p-carla' } }),
+    );
+  });
+
   it('rejeita com o erro da API quando a resposta não é ok', async () => {
     globalThis.fetch = vi.fn(async () => ({
       ok: false,
