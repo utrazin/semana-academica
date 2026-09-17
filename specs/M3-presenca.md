@@ -2,7 +2,7 @@
 
 ## 1. Objetivo
 
-Registrar presença por QR nos encontros da Semana Acadêmica 2026: a organização gera o código de cada encontro (6 caracteres, troca a cada minuto, com um minuto de sobreposição) e pode registrar presença manualmente com justificativa; participantes inscritos com status `confirmada` registram presença dentro da janela do encontro (de 15 minutos antes do início até 30 minutos depois, nunca depois do fim), inclusive offline — o envio atrasado com `lidoEm` é aceito até 2 horas depois do fim. A presença é única por participante e encontro: repetições devolvem a mesma presença (200), permitindo ao app offline reenviar a fila sem risco. A organização lista as presenças do encontro.
+Registrar presença por QR nos encontros da Semana Acadêmica 2026: a organização gera o código de cada encontro (6 caracteres, troca a cada minuto, com um minuto de sobreposição) e pode registrar presença manualmente com justificativa; participantes inscritos com status `confirmada` registram presença dentro da janela do encontro (de 15 minutos antes do início até 30 minutos depois), inclusive offline — o envio atrasado com `lidoEm` é aceito até 2 horas depois do fim. A presença é única por participante e encontro: repetições devolvem a mesma presença (200), permitindo ao app offline reenviar a fila sem risco. A organização lista as presenças do encontro.
 
 ## 2. Fora de escopo
 
@@ -86,7 +86,7 @@ Cada regra cita a pergunta da entrevista (`P-xx`) que a originou e, quando exist
 - **R21** (P19, RN-314): Ordem de precedência na presença manual (`POST /encontros/:id/presencas/manual`): `JUSTIFICATIVA_OBRIGATORIA` → presença já registrada (devolve 200) → `NAO_INSCRITO` → `FORA_DA_JANELA` → `LIMITE_DE_MANUAIS`. A justificativa é conferida antes de tudo, inclusive antes da presença existente.
 - **R22** (P20, decisão do grupo): A listagem `GET /encontros/:id/presencas` ordena por nome do participante; desempate por `participanteId`. `registradaEm` não é usada na ordenação — no modo de teste o relógio fica parado e várias presenças na mesma janela teriam `registradaEm` idêntico, deixando a ordem indefinida.
 - **R23** (P21, decisão do grupo): Tudo é calculado na leitura, pelo relógio: código com `validoAte` vencido é recusado mesmo sem ninguém ter buscado a rotação. Mesmo padrão do M1 (`situacao`) e do M2 (expiração em cascata na leitura).
-- **R24** (P22, RN-315, RN-308, RN-309): `origem` é `qr` quando a leitura é enviada na hora, sem `lidoEm`; `qr_offline` quando o envio traz `lidoEm`; `manual` no registro feito pela organização. No campo `lidoEm` da `Presenca`: quando o corpo não traz `lidoEm`, ele recebe o instante do envio (`registradaEm`), que foi o instante que valeu para as regras; quando o corpo traz `lidoEm`, ele guarda o instante da leitura.
+- **R24** (P22, RN-315, RN-308, RN-309): `origem` é `qr` quando a leitura é enviada na hora, sem `lidoEm`; `qr_offline` quando o envio traz `lidoEm`, em qualquer caso; `manual` no registro feito pela organização. No campo `lidoEm` da `Presenca`, o valor guardado é sempre o instante que valeu para as regras: quando o corpo não traz `lidoEm`, recebe o instante do envio (`registradaEm`); quando o corpo traz `lidoEm` anterior ao envio, guarda o instante da leitura (o valor do corpo); quando o corpo traz `lidoEm` adiantado (posterior ao envio), guarda o instante do envio, como no R15.
 
 ## 6. Critérios de aceite
 
@@ -99,12 +99,12 @@ Cada regra cita a pergunta da entrevista (`P-xx`) que a originou e, quando exist
 7. (R7) Encontro das 19:00: `GET /encontros/:id/codigo` às 18:45:00 → 200; às 18:44:59 → 422 `FORA_DA_JANELA`; às 19:30:00 → 200; às 19:30:01 → 422 `FORA_DA_JANELA`.
 8. (R8) Encontro de atividade cancelada com relógio dentro da janela: `GET /encontros/:id/codigo` → 422 `ATIVIDADE_CANCELADA` (antes de `FORA_DA_JANELA`); registro de presença por QR ou manual → 403 `NAO_INSCRITO` (as inscrições ativas foram canceladas pelo M2).
 9. (R9) Encontro das 19:00 às 22:00: registro por QR às 18:45:00 (início − 15min) → 201; às 18:44:59 → 422 `FORA_DA_JANELA`; às 19:30:00 (início + 30min, borda incluída) → 201; às 19:30:01 → 422 `FORA_DA_JANELA`. [Cenário precisa de inscrição `confirmada` e código válido.]
-10. (R10) Encontro das 19:00 às 22:00: presença manual às 18:45:00 → 201; às 18:44:59 → 422 `FORA_DA_JANELA`; às 21:00 (dentro das 2h após o fim) → 201; após fim + 2h (00:00:01, sendo fim 22:00) → 422 `FORA_DA_JANELA`.
+10. (R10) Encontro das 19:00 às 22:00: presença manual às 18:45:00 → 201; às 18:44:59 → 422 `FORA_DA_JANELA`; às 23:00 (depois do fim, dentro das 2h) → 201; após fim + 2h (00:00:01, sendo fim 22:00) → 422 `FORA_DA_JANELA`.
 11. (R11) Relógio em 19:03:10: GET código duas vezes no mesmo minuto devolve o mesmo `codigo`, com `trocaEm`/`validoAte` calculados do relógio e iguais; avançar o relógio 1 minuto → GET devolve um `codigo` diferente.
 12. (R12) Código obtido às 19:03:20 (janela das 19:03, `trocaEm` 19:04:00, `validoAte` 19:05:00): enviado às 19:03:59 → 201; enviado às 19:04:59 (minuto anterior ainda aceito) → 201; enviado às 19:05:00 → 422 `CODIGO_INVALIDO`; código de outro encontro → 422 `CODIGO_INVALIDO`.
 13. (R13) `codigo` enviado em minúsculas e/ou com espaços (ex.: `" k7m2qx "`) → 201 — a comparação sobe para maiúsculas e descarta espaços antes de comparar; `codigo` com caractere fora do alfabeto → 422 `CODIGO_INVALIDO`.
-14. (R14) Envio sem `lidoEm` às 20:00 (fora da janela) com código ainda aceito naquele instante → 422 `FORA_DA_JANELA`; o mesmo envio com `lidoEm` 19:20 → 201 (regras no instante da leitura).
-15. (R15) Envio dentro da janela com `lidoEm` no futuro (relógio do celular adiantado) → 201: o instante do envio é o que vale, e adiantamento não é erro.
+14. (R14) Pôr o relógio em 19:20 e obter o código do encontro; avançar o relógio para 20:00 (fora da janela) e enviar esse código com `lidoEm` 19:20 → 201 (regras no instante da leitura, código ainda válido); o mesmo envio sem `lidoEm`, com o relógio em 20:00 → 422 `FORA_DA_JANELA`.
+15. (R15, R24) Envio dentro da janela com `lidoEm` no futuro (relógio do celular adiantado) → 201: o instante do envio é o que vale, e adiantamento não é erro; a resposta tem `origem: qr_offline` (o corpo trouxe `lidoEm`) e o campo `lidoEm` igual ao instante do envio.
 16. (R16) Encontro das 19:00 às 22:00, leitura offline às 19:10: envio às 23:59 → 201; envio às 00:00:01 → 422 `SINCRONIZACAO_TARDIA`.
 17. (R17) Primeiro registro por QR → 201, `origem: qr`; reenviar o mesmo corpo → 200 com a mesma `Presenca`, inalterada; presença manual do mesmo participante em cima da de QR → 200 preservando `origem: qr` e `justificativa: null`; QR em cima de presença manual → 200 preservando `origem: manual` e a justificativa.
 18. (R18) Presença manual com `justificativa` ausente, vazia ou com menos de 10 caracteres → 422 `JUSTIFICATIVA_OBRIGATORIA`; com 12 caracteres → 201.
@@ -113,7 +113,7 @@ Cada regra cita a pergunta da entrevista (`P-xx`) que a originou e, quando exist
 21. (R21) Ordem na rota manual: já registrado com justificativa inválida → 422 `JUSTIFICATIVA_OBRIGATORIA` (conferida antes da presença existente); já registrado com justificativa válida → 200; não inscrito fora da janela → 403 `NAO_INSCRITO` (antes de `FORA_DA_JANELA`); inscrito fora da janela com teto de manuais cheio → 422 `FORA_DA_JANELA` (antes de `LIMITE_DE_MANUAIS`); inscrito na janela com teto cheio → 422 `LIMITE_DE_MANUAIS`.
 22. (R22) `GET /encontros/:id/presencas` → 200 `[Presenca]` ordenado por nome do participante; empates de nome resolvidos por `participanteId`.
 23. (R23) Avançar o relógio 10 minutos sem chamar o GET do código de novo e enviar o código da janela anterior → 422 `CODIGO_INVALIDO` (vencido mesmo sem a rotação ter sido buscada).
-24. (R24) Envio com `lidoEm` no corpo → `origem: qr_offline` e `lidoEm` = o instante da leitura; envio sem `lidoEm` → `origem: qr` e `lidoEm` = `registradaEm`; manual → `origem: manual`, `lidoEm` = o instante do envio que valeu para as regras e `justificativa` preenchida.
+24. (R24) Envio com `lidoEm` no corpo anterior ao envio → `origem: qr_offline` e `lidoEm` = o instante da leitura (valor do corpo); envio com `lidoEm` adiantado → `origem: qr_offline` e `lidoEm` = o instante do envio (ver critério 15); envio sem `lidoEm` → `origem: qr` e `lidoEm` = `registradaEm`; manual → `origem: manual`, `lidoEm` = o instante do envio que valeu para as regras e `justificativa` preenchida.
 
 ## 7. Como isto será verificado
 
