@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import express from 'express';
 import { novoBanco, resetarBanco } from './banco.js';
 import { ehModoTeste, agora, resetarRelogio, definirRelogio } from './relogio.js';
+import { contarVagasOcupadas } from './contagem.js';
 
 export function criarServidor({ banco = novoBanco(':memory:') } = {}) {
   resetarBanco(banco);
@@ -190,6 +191,17 @@ export function criarServidor({ banco = novoBanco(':memory:') } = {}) {
     'INSERT INTO encontros (id, atividadeId, inicio, fim) VALUES (?, ?, ?, ?)',
   );
 
+  function vagasOcupadas(atividadeId) {
+    const existeInscricoes = banco
+      .prepare(`SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'inscricoes'`)
+      .get();
+    if (!existeInscricoes) return 0;
+    const inscricoes = banco
+      .prepare('SELECT status FROM inscricoes WHERE atividadeId = ?')
+      .all(atividadeId);
+    return contarVagasOcupadas(inscricoes);
+  }
+
   app.post('/atividades', exigirUsuario, exigirOrganizacao, (req, res) => {
     const corpo = req.body;
     if (!corpo || typeof corpo !== 'object' || Array.isArray(corpo)) {
@@ -200,6 +212,12 @@ export function criarServidor({ banco = novoBanco(':memory:') } = {}) {
     const sala = typeof salaId === 'string' ? salaExiste.get(salaId) : undefined;
     if (typeof salaId === 'string' && !sala) {
       return res.status(404).json({ erro: 'NAO_ENCONTRADO', mensagem: 'Sala inexistente.' });
+    }
+
+    const camposDoContrato = ['titulo', 'tipo', 'salaId', 'vagas', 'encontros', 'cargaHorariaMinutos'];
+    const desconhecido = Object.keys(corpo).find((campo) => !camposDoContrato.includes(campo));
+    if (desconhecido) {
+      return res.status(422).json({ erro: 'DADOS_INVALIDOS', mensagem: `"${desconhecido}" não existe no contrato.` });
     }
 
     const titulo = typeof corpo.titulo === 'string' ? corpo.titulo.trim() : corpo.titulo;
@@ -262,6 +280,72 @@ export function criarServidor({ banco = novoBanco(':memory:') } = {}) {
     }
     const linha = banco.prepare('SELECT id, titulo, tipo, salaId, vagas, cancelada FROM atividades WHERE id = ?').get(id);
     res.status(201).json(serializarAtividade(linha));
+  });
+
+  app.patch('/atividades/:id', exigirUsuario, exigirOrganizacao, (req, res) => {
+    const atividade = banco
+      .prepare('SELECT id, titulo, tipo, salaId, vagas, cancelada FROM atividades WHERE id = ?')
+      .get(req.params.id);
+    if (!atividade) {
+      return res.status(404).json({ erro: 'NAO_ENCONTRADO', mensagem: 'Atividade inexistente.' });
+    }
+
+    const corpo = req.body;
+    if (!corpo || typeof corpo !== 'object' || Array.isArray(corpo)) {
+      return res.status(422).json({ erro: 'DADOS_INVALIDOS', mensagem: 'Envie um objeto JSON no corpo.' });
+    }
+    if (Object.keys(corpo).length === 0) {
+      return res.status(422).json({ erro: 'DADOS_INVALIDOS', mensagem: 'O corpo precisa de pelo menos um campo editável.' });
+    }
+    const camposDoContrato = ['id', 'titulo', 'tipo', 'salaId', 'vagas', 'encontros', 'cargaHorariaMinutos', 'situacao', 'ocupadas', 'vagasRestantes', 'emEspera'];
+    const desconhecido = Object.keys(corpo).find((campo) => !camposDoContrato.includes(campo));
+    if (desconhecido) {
+      return res.status(422).json({ erro: 'DADOS_INVALIDOS', mensagem: `"${desconhecido}" não existe no contrato.` });
+    }
+    if ('titulo' in corpo) {
+      const titulo = typeof corpo.titulo === 'string' ? corpo.titulo.trim() : corpo.titulo;
+      if (typeof titulo !== 'string' || titulo.length < 1 || titulo.length > 120) {
+        return res.status(422).json({ erro: 'DADOS_INVALIDOS', mensagem: 'titulo vai de 1 a 120 caracteres após trim.' });
+      }
+    }
+    if ('vagas' in corpo && (!Number.isInteger(corpo.vagas) || corpo.vagas < 1)) {
+      return res.status(422).json({ erro: 'DADOS_INVALIDOS', mensagem: 'vagas precisa ser inteiro de no mínimo 1.' });
+    }
+    if (atividade.cancelada) {
+      return res.status(422).json({ erro: 'ATIVIDADE_CANCELADA', mensagem: 'Atividade cancelada não pode ser alterada.' });
+    }
+    const naoEditavel = Object.keys(corpo).find((campo) => !['titulo', 'vagas'].includes(campo));
+    if (naoEditavel) {
+      return res.status(422).json({ erro: 'CAMPO_NAO_EDITAVEL', mensagem: 'Só titulo e vagas são editáveis.' });
+    }
+
+    if ('vagas' in corpo) {
+      const sala = salaExiste.get(atividade.salaId);
+      if (corpo.vagas > sala.capacidade) {
+        return res.status(422).json({
+          erro: 'VAGAS_ACIMA_DA_CAPACIDADE',
+          mensagem: `vagas não pode passar da capacidade da sala (${sala.capacidade}).`,
+        });
+      }
+      if (corpo.vagas < vagasOcupadas(atividade.id)) {
+        return res.status(409).json({
+          erro: 'VAGAS_ABAIXO_DOS_INSCRITOS',
+          mensagem: 'vagas não pode ficar abaixo dos inscritos atuais.',
+        });
+      }
+    }
+
+    banco
+      .prepare('UPDATE atividades SET titulo = ?, vagas = ? WHERE id = ?')
+      .run(
+        'titulo' in corpo ? corpo.titulo.trim() : atividade.titulo,
+        'vagas' in corpo ? corpo.vagas : atividade.vagas,
+        atividade.id,
+      );
+    const linha = banco
+      .prepare('SELECT id, titulo, tipo, salaId, vagas, cancelada FROM atividades WHERE id = ?')
+      .get(atividade.id);
+    res.status(200).json(serializarAtividade(linha));
   });
 
   return app;
