@@ -805,3 +805,270 @@ test('R1: registrar presenca por QR nao altera a inscricao deixada pelo M2', asy
     await servidor.fechar();
   }
 });
+
+test('R4: POST presencas com lidoEm nao-string ou que nao da para interpretar como data -> 422 DADOS_INVALIDOS', async () => {
+  const banco = novoBanco(':memory:');
+  const servidor = await subirServidor({ banco });
+  try {
+    await fetch(`${servidor.base}/_teste/reset`, { method: 'POST' });
+    semearAtividade(banco, {
+      id: 'atv_r4',
+      titulo: 'Atividade R4',
+      tipo: 'palestra',
+      salaId: 'auditorio',
+      vagas: 10,
+      encontros: [
+        { id: 'enc_r4', inicio: '2026-10-20T19:00:00-03:00', fim: '2026-10-20T22:00:00-03:00' },
+      ],
+    });
+    semearInscricao(banco, {
+      id: 'ins_r4_0',
+      atividadeId: 'atv_r4',
+      participanteId: 'p-carla',
+      status: 'confirmada',
+    });
+
+    await fixarRelogio(servidor.base, '2026-10-20T19:00:00-03:00');
+    const respostaCodigo = await fetch(`${servidor.base}/encontros/enc_r4/codigo`, {
+      headers: { 'X-Usuario': 'org-ana' },
+    });
+    assert.equal(respostaCodigo.status, 200);
+    const { codigo } = await respostaCodigo.json();
+
+    const casos = [
+      { corpo: { codigo, lidoEm: 123 }, descricao: 'lidoEm nao-string' },
+      { corpo: { codigo, lidoEm: 'abc' }, descricao: 'lidoEm nao interpretavel como data' },
+    ];
+    for (const { corpo, descricao } of casos) {
+      const res = await fetch(`${servidor.base}/encontros/enc_r4/presencas`, {
+        method: 'POST',
+        headers: { 'X-Usuario': 'p-carla', 'Content-Type': 'application/json' },
+        body: JSON.stringify(corpo),
+      });
+      assert.equal(res.status, 422, descricao);
+      assert.equal((await res.json()).erro, 'DADOS_INVALIDOS', descricao);
+    }
+  } finally {
+    await servidor.fechar();
+  }
+});
+
+test('R14: o lidoEm anterior ao envio guia a janela e a validade do codigo; sem lidoEm o envio vale o instante do envio', async () => {
+  const banco = novoBanco(':memory:');
+  const servidor = await subirServidor({ banco });
+  try {
+    await fetch(`${servidor.base}/_teste/reset`, { method: 'POST' });
+    semearAtividade(banco, {
+      id: 'atv_r14',
+      titulo: 'Atividade R14',
+      tipo: 'palestra',
+      salaId: 'auditorio',
+      vagas: 10,
+      encontros: [
+        { id: 'enc_r14', inicio: '2026-10-20T19:00:00-03:00', fim: '2026-10-20T22:00:00-03:00' },
+      ],
+    });
+    for (const [indice, participanteId] of ['p-carla', 'p-diego'].entries()) {
+      semearInscricao(banco, {
+        id: `ins_r14_${indice}`,
+        atividadeId: 'atv_r14',
+        participanteId,
+        status: 'confirmada',
+      });
+    }
+
+    await fixarRelogio(servidor.base, '2026-10-20T19:20:00-03:00');
+    const respostaCodigo = await fetch(`${servidor.base}/encontros/enc_r14/codigo`, {
+      headers: { 'X-Usuario': 'org-ana' },
+    });
+    assert.equal(respostaCodigo.status, 200);
+    const { codigo } = await respostaCodigo.json();
+
+    await fixarRelogio(servidor.base, '2026-10-20T20:00:00-03:00');
+    const comLidoEm = await fetch(`${servidor.base}/encontros/enc_r14/presencas`, {
+      method: 'POST',
+      headers: { 'X-Usuario': 'p-carla', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ codigo, lidoEm: '2026-10-20T19:20:00-03:00' }),
+    });
+    assert.equal(comLidoEm.status, 201, 'fora da janela do envio, mas dentro no lidoEm: registra');
+    const presenca = await comLidoEm.json();
+    assert.equal(presenca.origem, 'qr_offline', 'o corpo trouxe lidoEm: origem qr_offline');
+    assert.equal(presenca.lidoEm, '2026-10-20T19:20:00-03:00', 'lidoEm guardado e o instante da leitura (valor do corpo)');
+
+    const semLidoEm = await fetch(`${servidor.base}/encontros/enc_r14/presencas`, {
+      method: 'POST',
+      headers: { 'X-Usuario': 'p-diego', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ codigo }),
+    });
+    assert.equal(semLidoEm.status, 422, 'sem lidoEm o instante que vale e o do envio (20:00)');
+    assert.equal((await semLidoEm.json()).erro, 'FORA_DA_JANELA');
+  } finally {
+    await servidor.fechar();
+  }
+});
+
+test('R15 e R24: lidoEm adiantado nao e erro, vale o instante do envio; origem qr_offline e lidoEm guardado = envio', async () => {
+  const banco = novoBanco(':memory:');
+  const servidor = await subirServidor({ banco });
+  try {
+    await fetch(`${servidor.base}/_teste/reset`, { method: 'POST' });
+    semearAtividade(banco, {
+      id: 'atv_r15',
+      titulo: 'Atividade R15',
+      tipo: 'palestra',
+      salaId: 'auditorio',
+      vagas: 10,
+      encontros: [
+        { id: 'enc_r15', inicio: '2026-10-20T19:00:00-03:00', fim: '2026-10-20T22:00:00-03:00' },
+      ],
+    });
+    semearInscricao(banco, {
+      id: 'ins_r15_0',
+      atividadeId: 'atv_r15',
+      participanteId: 'p-carla',
+      status: 'confirmada',
+    });
+
+    await fixarRelogio(servidor.base, '2026-10-20T19:00:00-03:00');
+    const respostaCodigo = await fetch(`${servidor.base}/encontros/enc_r15/codigo`, {
+      headers: { 'X-Usuario': 'org-ana' },
+    });
+    assert.equal(respostaCodigo.status, 200);
+    const { codigo } = await respostaCodigo.json();
+
+    const res = await fetch(`${servidor.base}/encontros/enc_r15/presencas`, {
+      method: 'POST',
+      headers: { 'X-Usuario': 'p-carla', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ codigo, lidoEm: '2026-10-20T20:00:00-03:00' }),
+    });
+    assert.equal(res.status, 201, 'lidoEm no futuro nao e erro');
+    const presenca = await res.json();
+    assert.equal(presenca.origem, 'qr_offline', 'o corpo trouxe lidoEm, mesmo adiantado');
+    assert.equal(presenca.lidoEm, presenca.registradaEm, 'lidoEm guardado = o instante do envio');
+    assert.equal(
+      Date.parse(presenca.lidoEm),
+      Date.parse('2026-10-20T19:00:00-03:00'),
+      'lidoEm guardado e o envio, nao o valor cru adiantado',
+    );
+  } finally {
+    await servidor.fechar();
+  }
+});
+
+test('R16: envio com lidoEm e aceito ate o fim do encontro + 2h; dali em diante e SINCRONIZACAO_TARDIA (limite preso ao fim)', async () => {
+  const banco = novoBanco(':memory:');
+  const servidor = await subirServidor({ banco });
+  try {
+    await fetch(`${servidor.base}/_teste/reset`, { method: 'POST' });
+    semearAtividade(banco, {
+      id: 'atv_r16',
+      titulo: 'Atividade R16',
+      tipo: 'palestra',
+      salaId: 'auditorio',
+      vagas: 10,
+      encontros: [
+        { id: 'enc_r16', inicio: '2026-10-20T19:00:00-03:00', fim: '2026-10-20T22:00:00-03:00' },
+      ],
+    });
+    for (const [indice, participanteId] of ['p-carla', 'p-diego', 'p-elisa'].entries()) {
+      semearInscricao(banco, {
+        id: `ins_r16_${indice}`,
+        atividadeId: 'atv_r16',
+        participanteId,
+        status: 'confirmada',
+      });
+    }
+
+    await fixarRelogio(servidor.base, '2026-10-20T19:10:00-03:00');
+    const respostaCodigo = await fetch(`${servidor.base}/encontros/enc_r16/codigo`, {
+      headers: { 'X-Usuario': 'org-ana' },
+    });
+    assert.equal(respostaCodigo.status, 200);
+    const { codigo } = await respostaCodigo.json();
+    const lidoEm = '2026-10-20T19:10:00-03:00';
+
+    const enviar = (participanteId) =>
+      fetch(`${servidor.base}/encontros/enc_r16/presencas`, {
+        method: 'POST',
+        headers: { 'X-Usuario': participanteId, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ codigo, lidoEm }),
+      });
+
+    await fixarRelogio(servidor.base, '2026-10-20T23:59:00-03:00');
+    const antesDoLimite = await enviar('p-carla');
+    assert.equal(antesDoLimite.status, 201, '23:59 ainda e aceito (22:00 + 2h)');
+
+    await fixarRelogio(servidor.base, '2026-10-21T00:00:00-03:00');
+    const noLimite = await enviar('p-diego');
+    assert.equal(noLimite.status, 201, 'fim + 2h exato ainda e aceito');
+
+    await fixarRelogio(servidor.base, '2026-10-21T00:00:01-03:00');
+    const tardio = await enviar('p-elisa');
+    assert.equal(tardio.status, 422, 'depois de fim + 2h e tardio, mesmo com lidoEm dentro da janela');
+    assert.equal((await tardio.json()).erro, 'SINCRONIZACAO_TARDIA');
+  } finally {
+    await servidor.fechar();
+  }
+});
+
+test('R20: ordem da rota QR — NAO_INSCRITO, presenca existente, SINCRONIZACAO_TARDIA, FORA_DA_JANELA, CODIGO_INVALIDO', async () => {
+  const banco = novoBanco(':memory:');
+  const servidor = await subirServidor({ banco });
+  try {
+    await fetch(`${servidor.base}/_teste/reset`, { method: 'POST' });
+    semearAtividade(banco, {
+      id: 'atv_r20',
+      titulo: 'Atividade R20',
+      tipo: 'palestra',
+      salaId: 'auditorio',
+      vagas: 10,
+      encontros: [
+        { id: 'enc_r20', inicio: '2026-10-20T19:00:00-03:00', fim: '2026-10-20T22:00:00-03:00' },
+      ],
+    });
+    for (const [indice, participanteId] of ['p-carla', 'p-diego', 'p-elisa'].entries()) {
+      semearInscricao(banco, {
+        id: `ins_r20_${indice}`,
+        atividadeId: 'atv_r20',
+        participanteId,
+        status: 'confirmada',
+      });
+    }
+    const enviar = (participanteId, corpo) =>
+      fetch(`${servidor.base}/encontros/enc_r20/presencas`, {
+        method: 'POST',
+        headers: { 'X-Usuario': participanteId, 'Content-Type': 'application/json' },
+        body: JSON.stringify(corpo),
+      });
+
+    await fixarRelogio(servidor.base, '2026-10-20T19:00:00-03:00');
+    const respostaCodigo = await fetch(`${servidor.base}/encontros/enc_r20/codigo`, {
+      headers: { 'X-Usuario': 'org-ana' },
+    });
+    assert.equal(respostaCodigo.status, 200);
+    const { codigo } = await respostaCodigo.json();
+
+    const naoInscrito = await enviar('p-heitor', { codigo: 'ZZZZZZ' });
+    assert.equal(naoInscrito.status, 403, 'nao inscrito com codigo invalido: NAO_INSCRITO vem antes de CODIGO_INVALIDO');
+    assert.equal((await naoInscrito.json()).erro, 'NAO_INSCRITO');
+
+    await fixarRelogio(servidor.base, '2026-10-20T19:45:00-03:00');
+    const foraDaJanelaCodigoRuim = await enviar('p-elisa', { codigo: 'ZZZZZZ' });
+    assert.equal(foraDaJanelaCodigoRuim.status, 422, 'inscrito fora da janela com codigo invalido: FORA_DA_JANELA vem antes');
+    assert.equal((await foraDaJanelaCodigoRuim.json()).erro, 'FORA_DA_JANELA');
+
+    await fixarRelogio(servidor.base, '2026-10-20T19:00:00-03:00');
+    const primeira = await enviar('p-carla', { codigo });
+    assert.equal(primeira.status, 201);
+
+    await fixarRelogio(servidor.base, '2026-10-21T00:00:01-03:00');
+    const reenvio = await enviar('p-carla', { codigo: 'ZZZZZZ', lidoEm: '2026-10-20T19:10:00-03:00' });
+    assert.equal(reenvio.status, 200, 'presenca ja registrada para por aí, mesmo com lidoEm tardio e codigo invalido');
+
+    const ambasRecusariam = await enviar('p-diego', { codigo: 'ZZZZZZ', lidoEm: '2026-10-20T18:00:00-03:00' });
+    assert.equal(ambasRecusariam.status, 422, 'lidoEm fora da janela e envio apos fim + 2h: SINCRONIZACAO_TARDIA vence FORA_DA_JANELA');
+    assert.equal((await ambasRecusariam.json()).erro, 'SINCRONIZACAO_TARDIA');
+  } finally {
+    await servidor.fechar();
+  }
+});

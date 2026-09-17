@@ -791,6 +791,12 @@ export function criarServidor({ banco = novoBanco(':memory:') } = {}) {
         mensagem: 'codigo precisa ser uma string.',
       });
     }
+    if ('lidoEm' in corpo && (typeof corpo.lidoEm !== 'string' || Number.isNaN(Date.parse(corpo.lidoEm)))) {
+      return res.status(422).json({
+        erro: 'DADOS_INVALIDOS',
+        mensagem: 'lidoEm precisa ser uma data em ISO 8601.',
+      });
+    }
 
     const presencaExistente = presencaPorEncontroEParticipante.get(req.encontro.id, req.usuario.id);
     if (presencaExistente) {
@@ -804,16 +810,25 @@ export function criarServidor({ banco = novoBanco(':memory:') } = {}) {
       });
     }
 
-    const inicioMs = Date.parse(req.encontro.inicio);
     const agoraMs = agora().getTime();
-    if (agoraMs < inicioMs - 15 * 60000 || agoraMs > inicioMs + 30 * 60000) {
+    const temLidoEm = 'lidoEm' in corpo;
+    if (temLidoEm && agoraMs > Date.parse(req.encontro.fim) + 2 * 3600 * 1000) {
+      return res.status(422).json({
+        erro: 'SINCRONIZACAO_TARDIA',
+        mensagem: 'A sincronização offline só vale até 2 horas depois do fim do encontro.',
+      });
+    }
+
+    const inicioMs = Date.parse(req.encontro.inicio);
+    const instanteQueVale = temLidoEm ? Math.min(Date.parse(corpo.lidoEm), agoraMs) : agoraMs;
+    if (instanteQueVale < inicioMs - 15 * 60000 || instanteQueVale > inicioMs + 30 * 60000) {
       return res.status(422).json({
         erro: 'FORA_DA_JANELA',
         mensagem: 'A presença só pode ser registrada de 15 min antes a 30 min depois do início do encontro.',
       });
     }
 
-    const inicioMinutoMs = Math.floor(agoraMs / 60000) * 60000;
+    const inicioMinutoMs = Math.floor(instanteQueVale / 60000) * 60000;
     const codigoNormalizado = corpo.codigo.toUpperCase().replace(/\s+/g, '');
     const codigosAceitos = [
       codigoDoEncontro(req.encontro.id, inicioMinutoMs),
@@ -831,8 +846,8 @@ export function criarServidor({ banco = novoBanco(':memory:') } = {}) {
       id: gerarId('pre_'),
       encontroId: req.encontro.id,
       participanteId: req.usuario.id,
-      origem: 'qr',
-      lidoEm: registradaEm,
+      origem: temLidoEm ? 'qr_offline' : 'qr',
+      lidoEm: formatarIsoBrasilia(new Date(instanteQueVale)),
       registradaEm,
       justificativa: null,
     };
