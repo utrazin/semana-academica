@@ -418,7 +418,7 @@ export function criarServidor({ banco = novoBanco(':memory:') } = {}) {
 
   app.post('/atividades/:id/inscricoes', exigirUsuario, exigirParticipante, (req, res) => {
     const atividade = banco
-      .prepare('SELECT id, vagas, cancelada FROM atividades WHERE id = ?')
+      .prepare('SELECT id, tipo, vagas, cancelada FROM atividades WHERE id = ?')
       .get(req.params.id);
     if (!atividade) {
       return res.status(404).json({ erro: 'NAO_ENCONTRADO', mensagem: 'Atividade inexistente.' });
@@ -440,7 +440,48 @@ export function criarServidor({ banco = novoBanco(':memory:') } = {}) {
     }
 
     const ocupadas = vagasOcupadas(atividade.id);
-    const status = ocupadas < atividade.vagas ? 'confirmada' : 'em_espera';
+    const vaiOcuparVaga = ocupadas < atividade.vagas;
+
+    if (vaiOcuparVaga) {
+      const inscricoesAtivas = banco.prepare(
+        'SELECT atividadeId FROM inscricoes WHERE participanteId = ? AND status IN (\'confirmada\', \'convocada\')'
+      ).all(req.usuario.id);
+
+      const novosEncontros = encontrosPorAtividade.all(atividade.id);
+
+      for (const ins of inscricoesAtivas) {
+        const exsEncontros = encontrosPorAtividade.all(ins.atividadeId);
+        for (const exs of exsEncontros) {
+          for (const novo of novosEncontros) {
+            const inicioExs = Date.parse(exs.inicio);
+            const fimExs = Date.parse(exs.fim);
+            const inicioNovo = Date.parse(novo.inicio);
+            const fimNovo = Date.parse(novo.fim);
+            const sobreposto = Math.max(inicioExs, inicioNovo) < Math.min(fimExs, fimNovo);
+            if (sobreposto) {
+              return res.status(409).json({ erro: 'CONFLITO_DE_HORARIO', mensagem: 'Conflito de horário.' });
+            }
+          }
+        }
+      }
+
+      if (atividade.tipo === 'minicurso') {
+        const minicursosOcupados = banco.prepare(`
+          SELECT COUNT(*) as count 
+          FROM inscricoes i
+          JOIN atividades a ON a.id = i.atividadeId
+          WHERE i.participanteId = ? 
+            AND i.status IN ('confirmada', 'convocada')
+            AND a.tipo = 'minicurso'
+        `).get(req.usuario.id);
+
+        if (minicursosOcupados && minicursosOcupados.count >= 3) {
+          return res.status(422).json({ erro: 'LIMITE_DE_MINICURSOS', mensagem: 'Limite de 3 minicursos atingido.' });
+        }
+      }
+    }
+
+    const status = vaiOcuparVaga ? 'confirmada' : 'em_espera';
     const id = gerarId('ins_');
     const criadaEm = agora().toISOString();
 

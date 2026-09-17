@@ -360,6 +360,268 @@ test('R9 & R10: cancelar inscricao ja cancelada da 422 INSCRICAO_INATIVA, verifi
   }
 });
 
+test('R6: participante com vaga ocupada tenta se inscrever em atividade com encontro sobreposto da 409 CONFLITO_DE_HORARIO', async () => {
+  const banco = novoBanco(':memory:');
+  const servidor = await subirServidor({ banco });
+  try {
+    await fetch(`${servidor.base}/_teste/reset`, { method: 'POST' });
+    semearAtividade(banco, {
+      id: 'atv_a',
+      titulo: 'Atividade A',
+      tipo: 'palestra',
+      salaId: 'auditorio',
+      vagas: 10,
+      encontros: [
+        { id: 'enc_a1', inicio: '2026-10-20T14:00:00-03:00', fim: '2026-10-20T17:00:00-03:00' },
+      ],
+    });
+    semearAtividade(banco, {
+      id: 'atv_b',
+      titulo: 'Atividade B',
+      tipo: 'palestra',
+      salaId: 'sala-101',
+      vagas: 10,
+      encontros: [
+        { id: 'enc_b1', inicio: '2026-10-20T16:00:00-03:00', fim: '2026-10-20T19:00:00-03:00' },
+      ],
+    });
+
+    const res1 = await fetch(`${servidor.base}/atividades/atv_a/inscricoes`, {
+      method: 'POST',
+      headers: { 'X-Usuario': 'p-carla' },
+    });
+    assert.equal(res1.status, 201);
+
+    const res2 = await fetch(`${servidor.base}/atividades/atv_b/inscricoes`, {
+      method: 'POST',
+      headers: { 'X-Usuario': 'p-carla' },
+    });
+    assert.equal(res2.status, 409);
+    assert.equal((await res2.json()).erro, 'CONFLITO_DE_HORARIO');
+  } finally {
+    await servidor.fechar();
+  }
+});
+
+test('R6: encostar (fim = inicio) nao conflita -> 201', async () => {
+  const banco = novoBanco(':memory:');
+  const servidor = await subirServidor({ banco });
+  try {
+    await fetch(`${servidor.base}/_teste/reset`, { method: 'POST' });
+    semearAtividade(banco, {
+      id: 'atv_a1',
+      titulo: 'Atividade A1',
+      tipo: 'palestra',
+      salaId: 'auditorio',
+      vagas: 10,
+      encontros: [
+        { id: 'enc_aa1', inicio: '2026-10-20T14:00:00-03:00', fim: '2026-10-20T17:00:00-03:00' },
+      ],
+    });
+    semearAtividade(banco, {
+      id: 'atv_a2',
+      titulo: 'Atividade A2',
+      tipo: 'palestra',
+      salaId: 'sala-101',
+      vagas: 10,
+      encontros: [
+        { id: 'enc_aa2', inicio: '2026-10-20T17:00:00-03:00', fim: '2026-10-20T19:00:00-03:00' },
+      ],
+    });
+
+    const res1 = await fetch(`${servidor.base}/atividades/atv_a1/inscricoes`, {
+      method: 'POST',
+      headers: { 'X-Usuario': 'p-carla' },
+    });
+    assert.equal(res1.status, 201);
+
+    const res2 = await fetch(`${servidor.base}/atividades/atv_a2/inscricoes`, {
+      method: 'POST',
+      headers: { 'X-Usuario': 'p-carla' },
+    });
+    assert.equal(res2.status, 201);
+  } finally {
+    await servidor.fechar();
+  }
+});
+
+test('R6: quem esta so em_espera nao e verificado para conflito -> 201', async () => {
+  const banco = novoBanco(':memory:');
+  const servidor = await subirServidor({ banco });
+  try {
+    await fetch(`${servidor.base}/_teste/reset`, { method: 'POST' });
+    semearAtividade(banco, {
+      id: 'atv_lotada',
+      titulo: 'Atividade Lotada',
+      tipo: 'palestra',
+      salaId: 'auditorio',
+      vagas: 1,
+      encontros: [
+        { id: 'enc_l', inicio: '2026-10-20T14:00:00-03:00', fim: '2026-10-20T17:00:00-03:00' },
+      ],
+    });
+    semearAtividade(banco, {
+      id: 'atv_sobre',
+      titulo: 'Atividade Sobreposta',
+      tipo: 'palestra',
+      salaId: 'sala-101',
+      vagas: 10,
+      encontros: [
+        { id: 'enc_s', inicio: '2026-10-20T15:00:00-03:00', fim: '2026-10-20T18:00:00-03:00' },
+      ],
+    });
+
+    // Carla takes the only vaga in atv_lotada
+    const resCarla = await fetch(`${servidor.base}/atividades/atv_lotada/inscricoes`, {
+      method: 'POST',
+      headers: { 'X-Usuario': 'p-carla' },
+    });
+    assert.equal(resCarla.status, 201);
+
+    // Diego gets em_espera in atv_lotada
+    const resDiegoEspera = await fetch(`${servidor.base}/atividades/atv_lotada/inscricoes`, {
+      method: 'POST',
+      headers: { 'X-Usuario': 'p-diego' },
+    });
+    assert.equal(resDiegoEspera.status, 201);
+    assert.equal((await resDiegoEspera.json()).status, 'em_espera');
+
+    // Diego registers for atv_sobre (overlapping). Since Diego is only em_espera in atv_lotada, atv_sobre should succeed (201).
+    const resDiegoSobre = await fetch(`${servidor.base}/atividades/atv_sobre/inscricoes`, {
+      method: 'POST',
+      headers: { 'X-Usuario': 'p-diego' },
+    });
+    assert.equal(resDiegoSobre.status, 201);
+  } finally {
+    await servidor.fechar();
+  }
+});
+
+test('R7: participante com 3 minicursos ocupando vaga tenta se inscrever num 4o minicurso -> 422 LIMITE_DE_MINICURSOS; palestras e espera nao contam', async () => {
+  const banco = novoBanco(':memory:');
+  const servidor = await subirServidor({ banco });
+  try {
+    await fetch(`${servidor.base}/_teste/reset`, { method: 'POST' });
+    
+    // Semear 3 minicursos (m1, m2, m3) em horários diferentes
+    semearAtividade(banco, {
+      id: 'm_1',
+      titulo: 'Minicurso 1',
+      tipo: 'minicurso',
+      salaId: 'sala-101',
+      vagas: 10,
+      encontros: [
+        { id: 'en_m1_1', inicio: '2026-10-20T10:00:00-03:00', fim: '2026-10-20T12:00:00-03:00' },
+        { id: 'en_m1_2', inicio: '2026-10-21T10:00:00-03:00', fim: '2026-10-21T12:00:00-03:00' },
+      ],
+    });
+    semearAtividade(banco, {
+      id: 'm_2',
+      titulo: 'Minicurso 2',
+      tipo: 'minicurso',
+      salaId: 'sala-101',
+      vagas: 10,
+      encontros: [
+        { id: 'en_m2_1', inicio: '2026-10-20T14:00:00-03:00', fim: '2026-10-20T16:00:00-03:00' },
+        { id: 'en_m2_2', inicio: '2026-10-21T14:00:00-03:00', fim: '2026-10-21T16:00:00-03:00' },
+      ],
+    });
+    semearAtividade(banco, {
+      id: 'm_3',
+      titulo: 'Minicurso 3',
+      tipo: 'minicurso',
+      salaId: 'sala-101',
+      vagas: 10,
+      encontros: [
+        { id: 'en_m3_1', inicio: '2026-10-22T10:00:00-03:00', fim: '2026-10-22T12:00:00-03:00' },
+        { id: 'en_m3_2', inicio: '2026-10-23T10:00:00-03:00', fim: '2026-10-23T12:00:00-03:00' },
+      ],
+    });
+    // Um 4o minicurso (m_4)
+    semearAtividade(banco, {
+      id: 'm_4',
+      titulo: 'Minicurso 4',
+      tipo: 'minicurso',
+      salaId: 'sala-101',
+      vagas: 10,
+      encontros: [
+        { id: 'en_m4_1', inicio: '2026-10-22T14:00:00-03:00', fim: '2026-10-22T16:00:00-03:00' },
+        { id: 'en_m4_2', inicio: '2026-10-23T14:00:00-03:00', fim: '2026-10-23T16:00:00-03:00' },
+      ],
+    });
+    // Uma palestra (palestra_1) no mesmo horário do 4o ou outro
+    semearAtividade(banco, {
+      id: 'p_1',
+      titulo: 'Palestra 1',
+      tipo: 'palestra',
+      salaId: 'auditorio',
+      vagas: 10,
+      encontros: [
+        { id: 'en_p1_1', inicio: '2026-10-24T10:00:00-03:00', fim: '2026-10-24T12:00:00-03:00' },
+      ],
+    });
+
+    // Inscreve em m_1, m_2, m_3
+    for (const id of ['m_1', 'm_2', 'm_3', 'p_1']) {
+      const res = await fetch(`${servidor.base}/atividades/${id}/inscricoes`, {
+        method: 'POST',
+        headers: { 'X-Usuario': 'p-carla' },
+      });
+      assert.equal(res.status, 201);
+    }
+
+    // Tentar o 4o minicurso (m_4) -> 422 LIMITE_DE_MINICURSOS
+    const resM4 = await fetch(`${servidor.base}/atividades/m_4/inscricoes`, {
+      method: 'POST',
+      headers: { 'X-Usuario': 'p-carla' },
+    });
+    assert.equal(resM4.status, 422);
+    assert.equal((await resM4.json()).erro, 'LIMITE_DE_MINICURSOS');
+  } finally {
+    await servidor.fechar();
+  }
+});
+
+test('R8: ordem de precedencia - JA_INSCRITO vence CONFLITO_DE_HORARIO quando ambos se aplicam', async () => {
+  const banco = novoBanco(':memory:');
+  const servidor = await subirServidor({ banco });
+  try {
+    await fetch(`${servidor.base}/_teste/reset`, { method: 'POST' });
+    semearAtividade(banco, {
+      id: 'atv_ordem',
+      titulo: 'Atividade Ordem',
+      tipo: 'palestra',
+      salaId: 'auditorio',
+      vagas: 10,
+      encontros: [
+        { id: 'enc_o1', inicio: '2026-10-20T14:00:00-03:00', fim: '2026-10-20T17:00:00-03:00' },
+      ],
+    });
+
+    // Carla se inscreve em atv_ordem
+    const res1 = await fetch(`${servidor.base}/atividades/atv_ordem/inscricoes`, {
+      method: 'POST',
+      headers: { 'X-Usuario': 'p-carla' },
+    });
+    assert.equal(res1.status, 201);
+
+    // Carla tenta se inscrever de novo em atv_ordem (já está inscrita e tem conflito consigo mesma se contado)
+    const res2 = await fetch(`${servidor.base}/atividades/atv_ordem/inscricoes`, {
+      method: 'POST',
+      headers: { 'X-Usuario': 'p-carla' },
+    });
+    assert.equal(res2.status, 409);
+    assert.equal((await res2.json()).erro, 'JA_INSCRITO');
+  } finally {
+    await servidor.fechar();
+  }
+});
+
+
+
+
+
+
 
 
 
