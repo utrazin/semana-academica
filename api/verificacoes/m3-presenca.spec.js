@@ -313,6 +313,68 @@ test('R8: atividade cancelada recusa o obter codigo com ATIVIDADE_CANCELADA, ant
   }
 });
 
+test('R8 parte 2: atividade cancelada pela rota do M1 -> presenca por QR e manual devolvem 403 NAO_INSCRITO (bloqueio herdado do M2)', async () => {
+  const banco = novoBanco(':memory:');
+  const servidor = await subirServidor({ banco });
+  try {
+    await fetch(`${servidor.base}/_teste/reset`, { method: 'POST' });
+    semearAtividade(banco, {
+      id: 'atv_r8p2',
+      titulo: 'Atividade R8 Parte 2',
+      tipo: 'palestra',
+      salaId: 'auditorio',
+      vagas: 10,
+      cancelada: 0,
+      encontros: [
+        { id: 'enc_r8p2', inicio: '2026-10-20T19:00:00-03:00', fim: '2026-10-20T22:00:00-03:00' },
+      ],
+    });
+    semearInscricao(banco, {
+      id: 'ins_r8p2_0',
+      atividadeId: 'atv_r8p2',
+      participanteId: 'p-carla',
+      status: 'confirmada',
+    });
+
+    await fixarRelogio(servidor.base, '2026-10-20T18:45:00-03:00');
+    const respostaCodigo = await fetch(`${servidor.base}/encontros/enc_r8p2/codigo`, {
+      headers: { 'X-Usuario': 'org-ana' },
+    });
+    assert.equal(respostaCodigo.status, 200, 'o codigo sai enquanto a atividade esta ativa');
+    const { codigo } = await respostaCodigo.json();
+
+    const cancelamento = await fetch(`${servidor.base}/atividades/atv_r8p2/cancelamento`, {
+      method: 'POST',
+      headers: { 'X-Usuario': 'org-ana' },
+    });
+    assert.equal(cancelamento.status, 200, 'cancelamento antes do inicio funciona');
+
+    const inscricoes = await fetch(`${servidor.base}/inscricoes?atividadeId=atv_r8p2`, {
+      headers: { 'X-Usuario': 'org-ana' },
+    });
+    assert.equal((await inscricoes.json())[0].status, 'cancelada', 'R11 do M2: o cancelamento da atividade cancela a inscricao ativa');
+
+    await fixarRelogio(servidor.base, '2026-10-20T18:46:00-03:00');
+    const qr = await fetch(`${servidor.base}/encontros/enc_r8p2/presencas`, {
+      method: 'POST',
+      headers: { 'X-Usuario': 'p-carla', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ codigo }),
+    });
+    assert.equal(qr.status, 403, 'QR em atividade cancelada');
+    assert.equal((await qr.json()).erro, 'NAO_INSCRITO', 'QR em atividade cancelada');
+
+    const manual = await fetch(`${servidor.base}/encontros/enc_r8p2/presencas/manual`, {
+      method: 'POST',
+      headers: { 'X-Usuario': 'org-ana', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ participanteId: 'p-carla', justificativa: '123456789012' }),
+    });
+    assert.equal(manual.status, 403, 'presenca manual em atividade cancelada');
+    assert.equal((await manual.json()).erro, 'NAO_INSCRITO', 'presenca manual em atividade cancelada');
+  } finally {
+    await servidor.fechar();
+  }
+});
+
 test('infra: POST /_teste/reset limpa a tabela presencas', async () => {
   const banco = novoBanco(':memory:');
   const servidor = await subirServidor({ banco });
