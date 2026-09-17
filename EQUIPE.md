@@ -5,7 +5,7 @@ Cada integrante é dono de um módulo inteiro: entrevista, spec, testes, API, te
 | Módulo | Dono | Usuário do GitHub |
 |---|---|---|
 | M1 — Grade de atividades | Enzo | utrazin |
-| M2 — Inscrições e lista de espera | | |
+| M2 — Inscrições e lista de espera | Ithallo Emanuel | ithalloe |
 | M3 — Presença por QR | | |
 | M4 — Certificados (grupos de 4 e 5) | | |
 | M5 — Painel da organização (grupos de 5) | | |
