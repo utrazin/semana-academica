@@ -881,6 +881,292 @@ test('Cascata com relogio pulando: atividade com 1 vaga, Carla confirmada, fila 
   }
 });
 
+test('1. Convocada confirma no prazo -> 200 confirmada, convocadaAte null', async () => {
+  const banco = novoBanco(':memory:');
+  const servidor = await subirServidor({ banco });
+  try {
+    await fetch(`${servidor.base}/_teste/reset`, { method: 'POST' });
+    semearAtividade(banco, {
+      id: 'atv_conf1',
+      titulo: 'Atividade Conf 1',
+      tipo: 'palestra',
+      salaId: 'auditorio',
+      vagas: 1,
+      encontros: [
+        { id: 'enc_cf1', inicio: '2026-10-20T19:00:00-03:00', fim: '2026-10-20T20:00:00-03:00' },
+      ],
+    });
+
+    await fetch(`${servidor.base}/_teste/relogio`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ agora: '2026-10-20T10:00:00-03:00' }),
+    });
+
+    const resCarla = await fetch(`${servidor.base}/atividades/atv_conf1/inscricoes`, {
+      method: 'POST',
+      headers: { 'X-Usuario': 'p-carla' },
+    });
+    const carlaIns = await resCarla.json();
+
+    const resDiego = await fetch(`${servidor.base}/atividades/atv_conf1/inscricoes`, {
+      method: 'POST',
+      headers: { 'X-Usuario': 'p-diego' },
+    });
+    const diegoIns = await resDiego.json();
+
+    await fetch(`${servidor.base}/_teste/relogio`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ agora: '2026-10-20T10:30:00-03:00' }),
+    });
+
+    await fetch(`${servidor.base}/inscricoes/${carlaIns.id}/cancelamento`, {
+      method: 'POST',
+      headers: { 'X-Usuario': 'p-carla' },
+    });
+
+    await fetch(`${servidor.base}/_teste/relogio`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ agora: '2026-10-20T11:00:00-03:00' }),
+    });
+
+    const resConf = await fetch(`${servidor.base}/inscricoes/${diegoIns.id}/confirmacao`, {
+      method: 'POST',
+      headers: { 'X-Usuario': 'p-diego' },
+    });
+
+    assert.equal(resConf.status, 200);
+    const confIns = await resConf.json();
+    assert.equal(confIns.status, 'confirmada');
+    assert.equal(confIns.convocadaAte, null);
+  } finally {
+    await servidor.fechar();
+  }
+});
+
+test('2. Confirmar inscricao nao convocada -> 422 SEM_CONVOCACAO', async () => {
+  const banco = novoBanco(':memory:');
+  const servidor = await subirServidor({ banco });
+  try {
+    await fetch(`${servidor.base}/_teste/reset`, { method: 'POST' });
+    semearAtividade(banco, {
+      id: 'atv_conf2',
+      titulo: 'Atividade Conf 2',
+      tipo: 'palestra',
+      salaId: 'auditorio',
+      vagas: 1,
+      encontros: [
+        { id: 'enc_cf2', inicio: '2026-10-20T19:00:00-03:00', fim: '2026-10-20T20:00:00-03:00' },
+      ],
+    });
+
+    const resCarla = await fetch(`${servidor.base}/atividades/atv_conf2/inscricoes`, {
+      method: 'POST',
+      headers: { 'X-Usuario': 'p-carla' },
+    });
+    const carlaIns = await resCarla.json();
+    assert.equal(carlaIns.status, 'confirmada');
+
+    const resConf = await fetch(`${servidor.base}/inscricoes/${carlaIns.id}/confirmacao`, {
+      method: 'POST',
+      headers: { 'X-Usuario': 'p-carla' },
+    });
+
+    assert.equal(resConf.status, 422);
+    assert.equal((await resConf.json()).erro, 'SEM_CONVOCACAO');
+  } finally {
+    await servidor.fechar();
+  }
+});
+
+test('3. Confirmar apos o prazo -> 422 CONVOCACAO_EXPIRADA', async () => {
+  const banco = novoBanco(':memory:');
+  const servidor = await subirServidor({ banco });
+  try {
+    await fetch(`${servidor.base}/_teste/reset`, { method: 'POST' });
+    semearAtividade(banco, {
+      id: 'atv_conf3',
+      titulo: 'Atividade Conf 3',
+      tipo: 'palestra',
+      salaId: 'auditorio',
+      vagas: 1,
+      encontros: [
+        { id: 'enc_cf3', inicio: '2026-10-20T19:00:00-03:00', fim: '2026-10-20T20:00:00-03:00' },
+      ],
+    });
+
+    await fetch(`${servidor.base}/_teste/relogio`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ agora: '2026-10-20T10:00:00-03:00' }),
+    });
+
+    const resCarla = await fetch(`${servidor.base}/atividades/atv_conf3/inscricoes`, {
+      method: 'POST',
+      headers: { 'X-Usuario': 'p-carla' },
+    });
+    const carlaIns = await resCarla.json();
+
+    const resDiego = await fetch(`${servidor.base}/atividades/atv_conf3/inscricoes`, {
+      method: 'POST',
+      headers: { 'X-Usuario': 'p-diego' },
+    });
+    const diegoIns = await resDiego.json();
+
+    await fetch(`${servidor.base}/_teste/relogio`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ agora: '2026-10-20T10:30:00-03:00' }),
+    });
+
+    await fetch(`${servidor.base}/inscricoes/${carlaIns.id}/cancelamento`, {
+      method: 'POST',
+      headers: { 'X-Usuario': 'p-carla' },
+    });
+
+    await fetch(`${servidor.base}/_teste/relogio`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ agora: '2026-10-20T12:35:00-03:00' }),
+    });
+
+    const resConf = await fetch(`${servidor.base}/inscricoes/${diegoIns.id}/confirmacao`, {
+      method: 'POST',
+      headers: { 'X-Usuario': 'p-diego' },
+    });
+
+    assert.equal(resConf.status, 422);
+    assert.equal((await resConf.json()).erro, 'CONVOCACAO_EXPIRADA');
+  } finally {
+    await servidor.fechar();
+  }
+});
+
+test('4. Confirmacao com limite de minicursos estourado -> 422 LIMITE_DE_MINICURSOS, e a inscricao continua convocada; apos liberar espaco, confirma com sucesso', async () => {
+  const banco = novoBanco(':memory:');
+  const servidor = await subirServidor({ banco });
+  try {
+    await fetch(`${servidor.base}/_teste/reset`, { method: 'POST' });
+
+    semearAtividade(banco, {
+      id: 'm_a',
+      titulo: 'Minicurso A',
+      tipo: 'minicurso',
+      salaId: 'sala-101',
+      vagas: 10,
+      encontros: [
+        { id: 'enc_ma1', inicio: '2026-10-20T10:00:00-03:00', fim: '2026-10-20T12:00:00-03:00' },
+        { id: 'enc_ma2', inicio: '2026-10-21T10:00:00-03:00', fim: '2026-10-21T12:00:00-03:00' },
+      ],
+    });
+    semearAtividade(banco, {
+      id: 'm_b',
+      titulo: 'Minicurso B',
+      tipo: 'minicurso',
+      salaId: 'sala-101',
+      vagas: 10,
+      encontros: [
+        { id: 'enc_mb1', inicio: '2026-10-20T14:00:00-03:00', fim: '2026-10-20T16:00:00-03:00' },
+        { id: 'enc_mb2', inicio: '2026-10-21T14:00:00-03:00', fim: '2026-10-21T16:00:00-03:00' },
+      ],
+    });
+    semearAtividade(banco, {
+      id: 'm_c',
+      titulo: 'Minicurso C',
+      tipo: 'minicurso',
+      salaId: 'sala-101',
+      vagas: 10,
+      encontros: [
+        { id: 'enc_mc1', inicio: '2026-10-22T10:00:00-03:00', fim: '2026-10-22T12:00:00-03:00' },
+        { id: 'enc_mc2', inicio: '2026-10-23T10:00:00-03:00', fim: '2026-10-23T12:00:00-03:00' },
+      ],
+    });
+    semearAtividade(banco, {
+      id: 'm_d',
+      titulo: 'Minicurso D',
+      tipo: 'minicurso',
+      salaId: 'sala-101',
+      vagas: 1,
+      encontros: [
+        { id: 'enc_md1', inicio: '2026-10-22T14:00:00-03:00', fim: '2026-10-22T16:00:00-03:00' },
+        { id: 'enc_md2', inicio: '2026-10-23T14:00:00-03:00', fim: '2026-10-23T16:00:00-03:00' },
+      ],
+    });
+
+    await fetch(`${servidor.base}/_teste/relogio`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ agora: '2026-10-20T08:00:00-03:00' }),
+    });
+
+    const resDiegoMd = await fetch(`${servidor.base}/atividades/m_d/inscricoes`, {
+      method: 'POST',
+      headers: { 'X-Usuario': 'p-diego' },
+    });
+    assert.equal(resDiegoMd.status, 201);
+
+    const resCarlaMd = await fetch(`${servidor.base}/atividades/m_d/inscricoes`, {
+      method: 'POST',
+      headers: { 'X-Usuario': 'p-carla' },
+    });
+    const carlaMdIns = await resCarlaMd.json();
+    assert.equal(carlaMdIns.status, 'em_espera');
+
+    for (const id of ['m_a', 'm_b', 'm_c']) {
+      const res = await fetch(`${servidor.base}/atividades/${id}/inscricoes`, {
+        method: 'POST',
+        headers: { 'X-Usuario': 'p-carla' },
+      });
+      assert.equal(res.status, 201);
+    }
+
+    const resCancelDiego = await fetch(`${servidor.base}/inscricoes/${(await (await fetch(`${servidor.base}/inscricoes?atividadeId=m_d`, { headers: { 'X-Usuario': 'org-ana' } })).json()).find(i => i.participanteId === 'p-diego').id}/cancelamento`, {
+      method: 'POST',
+      headers: { 'X-Usuario': 'p-diego' },
+    });
+    assert.equal(resCancelDiego.status, 200);
+
+    const resCarlaMdCheck = await fetch(`${servidor.base}/inscricoes/${carlaMdIns.id}`, {
+      headers: { 'X-Usuario': 'p-carla' },
+    });
+    const carlaMdAtualizada = await resCarlaMdCheck.json();
+    assert.equal(carlaMdAtualizada.status, 'convocada');
+
+    const resConfLimit = await fetch(`${servidor.base}/inscricoes/${carlaMdIns.id}/confirmacao`, {
+      method: 'POST',
+      headers: { 'X-Usuario': 'p-carla' },
+    });
+    assert.equal(resConfLimit.status, 422);
+    assert.equal((await resConfLimit.json()).erro, 'LIMITE_DE_MINICURSOS');
+
+    const resCheckAgain = await fetch(`${servidor.base}/inscricoes/${carlaMdIns.id}`, {
+      headers: { 'X-Usuario': 'p-carla' },
+    });
+    assert.equal((await resCheckAgain.json()).status, 'convocada');
+
+    const carlaList = await (await fetch(`${servidor.base}/inscricoes`, { headers: { 'X-Usuario': 'p-carla' } })).json();
+    const maIns = carlaList.find(i => i.atividadeId === 'm_a');
+    const resCancelMa = await fetch(`${servidor.base}/inscricoes/${maIns.id}/cancelamento`, {
+      method: 'POST',
+      headers: { 'X-Usuario': 'p-carla' },
+    });
+    assert.equal(resCancelMa.status, 200);
+
+    const resConfSuccess = await fetch(`${servidor.base}/inscricoes/${carlaMdIns.id}/confirmacao`, {
+      method: 'POST',
+      headers: { 'X-Usuario': 'p-carla' },
+    });
+    assert.equal(resConfSuccess.status, 200);
+    const finalIns = await resConfSuccess.json();
+    assert.equal(finalIns.status, 'confirmada');
+    assert.equal(finalIns.convocadaAte, null);
+  } finally {
+    await servidor.fechar();
+  }
+});
+
 
 
 

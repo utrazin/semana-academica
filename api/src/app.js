@@ -648,5 +648,70 @@ export function criarServidor({ banco = novoBanco(':memory:') } = {}) {
     res.status(200).json(serializarInscricao(atualizada));
   });
 
+  app.post('/inscricoes/:id/confirmacao', exigirUsuario, exigirParticipante, (req, res) => {
+    let linha = banco
+      .prepare('SELECT id, atividadeId, participanteId, status, convocadaAte, criadaEm FROM inscricoes WHERE id = ?')
+      .get(req.params.id);
+    if (!linha || linha.participanteId !== req.usuario.id) {
+      return res.status(404).json({ erro: 'NAO_ENCONTRADO', mensagem: 'Inscrição inexistente.' });
+    }
+
+    if (linha.status === 'convocada' && linha.convocadaAte && agora().getTime() > Date.parse(linha.convocadaAte)) {
+      processarFilaEExpiracoes(linha.atividadeId);
+      return res.status(422).json({ erro: 'CONVOCACAO_EXPIRADA', mensagem: 'Convocação expirada.' });
+    }
+
+    processarFilaEExpiracoes(linha.atividadeId);
+    linha = banco
+      .prepare('SELECT id, atividadeId, participanteId, status, convocadaAte, criadaEm FROM inscricoes WHERE id = ?')
+      .get(req.params.id);
+
+    if (linha.status !== 'convocada') {
+      return res.status(422).json({ erro: 'SEM_CONVOCACAO', mensagem: 'Inscrição não está convocada.' });
+    }
+
+    const atividade = banco.prepare('SELECT tipo FROM atividades WHERE id = ?').get(linha.atividadeId);
+    const novosEncontros = encontrosPorAtividade.all(linha.atividadeId);
+    const inscricoesAtivas = banco.prepare(
+      'SELECT atividadeId FROM inscricoes WHERE participanteId = ? AND id != ? AND status IN (\'confirmada\', \'convocada\')'
+    ).all(req.usuario.id, linha.id);
+
+    for (const ins of inscricoesAtivas) {
+      const exsEncontros = encontrosPorAtividade.all(ins.atividadeId);
+      for (const exs of exsEncontros) {
+        for (const novo of novosEncontros) {
+          const inicioExs = Date.parse(exs.inicio);
+          const fimExs = Date.parse(exs.fim);
+          const inicioNovo = Date.parse(novo.inicio);
+          const fimNovo = Date.parse(novo.fim);
+          const sobreposto = Math.max(inicioExs, inicioNovo) < Math.min(fimExs, fimNovo);
+          if (sobreposto) {
+            return res.status(409).json({ erro: 'CONFLITO_DE_HORARIO', mensagem: 'Conflito de horário.' });
+          }
+        }
+      }
+    }
+
+    if (atividade.tipo === 'minicurso') {
+      const minicursosOcupados = banco.prepare(`
+        SELECT COUNT(*) as count 
+        FROM inscricoes i
+        JOIN atividades a ON a.id = i.atividadeId
+        WHERE i.participanteId = ? 
+          AND i.id != ?
+          AND i.status IN ('confirmada', 'convocada')
+          AND a.tipo = 'minicurso'
+      `).get(req.usuario.id, linha.id);
+
+      if (minicursosOcupados && minicursosOcupados.count >= 3) {
+        return res.status(422).json({ erro: 'LIMITE_DE_MINICURSOS', mensagem: 'Limite de 3 minicursos atingido.' });
+      }
+    }
+
+    banco.prepare('UPDATE inscricoes SET status = \'confirmada\', convocadaAte = NULL WHERE id = ?').run(linha.id);
+    const atualizada = banco.prepare('SELECT id, atividadeId, participanteId, status, convocadaAte, criadaEm FROM inscricoes WHERE id = ?').get(linha.id);
+    res.status(200).json(serializarInscricao(atualizada));
+  });
+
   return app;
 }
