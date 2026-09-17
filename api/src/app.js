@@ -971,7 +971,7 @@ export function criarServidor({ banco = novoBanco(':memory:') } = {}) {
   });
 
   const certificadoPorCodigo = banco.prepare(
-    'SELECT codigo, atividadeId, participanteId, cargaHorariaMinutos, presencas, encontros, emitidoEm FROM certificados WHERE codigo = ?',
+    'SELECT codigo, atividadeId, participanteId, cargaHorariaMinutos, presencas, encontros, emitidoEm FROM certificados WHERE codigo = ? COLLATE NOCASE',
   );
   const certificadosDoParticipante = banco.prepare(
     'SELECT codigo, atividadeId, participanteId, cargaHorariaMinutos, presencas, encontros, emitidoEm FROM certificados WHERE participanteId = ? ORDER BY emitidoEm, codigo',
@@ -1069,12 +1069,33 @@ export function criarServidor({ banco = novoBanco(':memory:') } = {}) {
     res.json(certificadosDoParticipante.all(req.usuario.id).map(serializarCertificado));
   });
 
+  function abreviarNome(nomeCompleto) {
+    const particulas = new Set(['de', 'da', 'do', 'das', 'dos']);
+    const partes = nomeCompleto.trim().split(/\s+/);
+    const primeiro = partes[0];
+    const resto = partes.slice(1).map((parte) => {
+      if (particulas.has(parte.toLowerCase())) {
+        return parte.toLowerCase();
+      }
+      return `${parte[0].toUpperCase()}.`;
+    });
+    return [primeiro, ...resto].join(' ');
+  }
+
   app.get('/certificados/:codigo', (req, res) => {
     const linha = certificadoPorCodigo.get(req.params.codigo);
     if (!linha) {
       return res.status(404).json({ erro: 'NAO_ENCONTRADO', mensagem: 'Certificado inexistente.' });
     }
-    return res.status(501).json({ erro: 'NAO_IMPLEMENTADO', mensagem: 'Verificação fora da fatia 1.' });
+    const usuario = usuarioPorId.get(linha.participanteId);
+    const atividade = banco.prepare('SELECT titulo FROM atividades WHERE id = ?').get(linha.atividadeId);
+    return res.json({
+      codigo: linha.codigo,
+      participante: abreviarNome(usuario.nome),
+      atividade: atividade.titulo,
+      cargaHorariaMinutos: linha.cargaHorariaMinutos,
+      emitidoEm: linha.emitidoEm,
+    });
   });
 
   app.get('/extrato', exigirUsuario, exigirParticipante, (req, res) => {

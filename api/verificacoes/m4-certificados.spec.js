@@ -641,3 +641,227 @@ test('R2: certificado emitido aparece em GET /certificados com os mesmos sete ca
     await servidor.fechar();
   }
 });
+
+// ---- Fatia 4: verificação pública (R10, R11) ----
+
+test('R10/R11: GET /certificados/:codigo sem X-Usuario -> 200 com corpo exato da Verificacao', async () => {
+  const banco = novoBanco(':memory:');
+  const servidor = await subirServidor({ banco });
+  try {
+    await fetch(`${servidor.base}/_teste/reset`, { method: 'POST' });
+    semearAtividadeM4(banco, {
+      id: 'atv_f4_ver',
+      titulo: 'Flutter do zero',
+      tipo: 'minicurso',
+      salaId: 'lab-3',
+      vagas: 20,
+      encontros: [
+        { id: 'enc_f4_ver1', inicio: '2026-10-20T19:00:00-03:00', fim: '2026-10-20T22:00:00-03:00' },
+        { id: 'enc_f4_ver2', inicio: '2026-10-21T19:00:00-03:00', fim: '2026-10-21T22:00:00-03:00' },
+      ],
+    });
+    semearCertificado(banco, {
+      codigo: 'SA26-AB2D-EF3H',
+      atividadeId: 'atv_f4_ver',
+      participanteId: 'p-carla',
+      cargaHorariaMinutos: 360,
+      presencas: 2,
+      encontros: 2,
+      emitidoEm: '2026-10-21T22:00:00-03:00',
+    });
+
+    const res = await fetch(`${servidor.base}/certificados/SA26-AB2D-EF3H`);
+    assert.equal(res.status, 200);
+    const corpo = await res.json();
+    assert.deepEqual(corpo, {
+      codigo: 'SA26-AB2D-EF3H',
+      participante: 'Carla M. S.',
+      atividade: 'Flutter do zero',
+      cargaHorariaMinutos: 360,
+      emitidoEm: '2026-10-21T22:00:00-03:00',
+    });
+    assert.deepEqual(Object.keys(corpo).sort(), ['atividade', 'cargaHorariaMinutos', 'codigo', 'emitidoEm', 'participante']);
+    assert.ok(!('participanteId' in corpo), 'nao expoe participanteId');
+    assert.ok(!JSON.stringify(corpo).includes('Carla Mendes Souza'), 'nao expoe nome completo');
+  } finally {
+    await servidor.fechar();
+  }
+});
+
+test('R10: codigo em minusculas encontra o mesmo certificado', async () => {
+  const banco = novoBanco(':memory:');
+  const servidor = await subirServidor({ banco });
+  try {
+    await fetch(`${servidor.base}/_teste/reset`, { method: 'POST' });
+    semearAtividadeM4(banco, {
+      id: 'atv_f4_lower',
+      titulo: 'Flutter do zero',
+      tipo: 'minicurso',
+      salaId: 'lab-3',
+      vagas: 20,
+      encontros: [
+        { id: 'enc_f4_lower1', inicio: '2026-10-20T19:00:00-03:00', fim: '2026-10-20T22:00:00-03:00' },
+        { id: 'enc_f4_lower2', inicio: '2026-10-21T19:00:00-03:00', fim: '2026-10-21T22:00:00-03:00' },
+      ],
+    });
+    semearCertificado(banco, {
+      codigo: 'SA26-AB2D-EF3H',
+      atividadeId: 'atv_f4_lower',
+      participanteId: 'p-carla',
+      cargaHorariaMinutos: 360,
+      presencas: 2,
+      encontros: 2,
+      emitidoEm: '2026-10-21T22:00:00-03:00',
+    });
+
+    const res = await fetch(`${servidor.base}/certificados/sa26-ab2d-ef3h`);
+    assert.equal(res.status, 200);
+    const corpo = await res.json();
+    assert.deepEqual(corpo, {
+      codigo: 'SA26-AB2D-EF3H',
+      participante: 'Carla M. S.',
+      atividade: 'Flutter do zero',
+      cargaHorariaMinutos: 360,
+      emitidoEm: '2026-10-21T22:00:00-03:00',
+    });
+  } finally {
+    await servidor.fechar();
+  }
+});
+
+test('R10: codigo inexistente -> 404 NAO_ENCONTRADO', async () => {
+  const banco = novoBanco(':memory:');
+  const servidor = await subirServidor({ banco });
+  try {
+    await fetch(`${servidor.base}/_teste/reset`, { method: 'POST' });
+
+    const res = await fetch(`${servidor.base}/certificados/SA26-ZZZZ-ZZZZ`);
+    assert.equal(res.status, 404);
+    assert.equal((await res.json()).erro, 'NAO_ENCONTRADO');
+
+    const minusculo = await fetch(`${servidor.base}/certificados/sa26-zzzz-zzzz`);
+    assert.equal(minusculo.status, 404);
+    assert.equal((await minusculo.json()).erro, 'NAO_ENCONTRADO');
+  } finally {
+    await servidor.fechar();
+  }
+});
+
+test('R10: verificacao continua publica com X-Usuario desconhecido ou da organizacao', async () => {
+  const banco = novoBanco(':memory:');
+  const servidor = await subirServidor({ banco });
+  try {
+    await fetch(`${servidor.base}/_teste/reset`, { method: 'POST' });
+    semearAtividadeM4(banco, {
+      id: 'atv_f4_pub',
+      titulo: 'Flutter do zero',
+      tipo: 'minicurso',
+      salaId: 'lab-3',
+      vagas: 20,
+      encontros: [
+        { id: 'enc_f4_pub1', inicio: '2026-10-20T19:00:00-03:00', fim: '2026-10-20T22:00:00-03:00' },
+        { id: 'enc_f4_pub2', inicio: '2026-10-21T19:00:00-03:00', fim: '2026-10-21T22:00:00-03:00' },
+      ],
+    });
+    semearCertificado(banco, {
+      codigo: 'SA26-AB2D-EF3H',
+      atividadeId: 'atv_f4_pub',
+      participanteId: 'p-carla',
+      cargaHorariaMinutos: 360,
+      presencas: 2,
+      encontros: 2,
+      emitidoEm: '2026-10-21T22:00:00-03:00',
+    });
+
+    const desconhecido = await fetch(`${servidor.base}/certificados/SA26-AB2D-EF3H`, {
+      headers: { 'X-Usuario': 'nao-existe' },
+    });
+    assert.equal(desconhecido.status, 200);
+    assert.equal((await desconhecido.json()).codigo, 'SA26-AB2D-EF3H');
+
+    const organizacao = await fetch(`${servidor.base}/certificados/SA26-AB2D-EF3H`, {
+      headers: { 'X-Usuario': 'org-ana' },
+    });
+    assert.equal(organizacao.status, 200);
+    assert.equal((await organizacao.json()).codigo, 'SA26-AB2D-EF3H');
+  } finally {
+    await servidor.fechar();
+  }
+});
+
+test('R11: abreviacao com particula "da" — Elisa Fernandes da Rocha -> Elisa F. da R.', async () => {
+  const banco = novoBanco(':memory:');
+  const servidor = await subirServidor({ banco });
+  try {
+    await fetch(`${servidor.base}/_teste/reset`, { method: 'POST' });
+    semearAtividadeM4(banco, {
+      id: 'atv_f4_da',
+      titulo: 'Flutter do zero',
+      tipo: 'minicurso',
+      salaId: 'lab-3',
+      vagas: 20,
+      encontros: [
+        { id: 'enc_f4_da1', inicio: '2026-10-20T19:00:00-03:00', fim: '2026-10-20T22:00:00-03:00' },
+        { id: 'enc_f4_da2', inicio: '2026-10-21T19:00:00-03:00', fim: '2026-10-21T22:00:00-03:00' },
+      ],
+    });
+    semearCertificado(banco, {
+      codigo: 'SA26-DA11-DA22',
+      atividadeId: 'atv_f4_da',
+      participanteId: 'p-elisa',
+      cargaHorariaMinutos: 360,
+      presencas: 2,
+      encontros: 2,
+      emitidoEm: '2026-10-21T22:00:00-03:00',
+    });
+
+    const res = await fetch(`${servidor.base}/certificados/SA26-DA11-DA22`);
+    assert.equal(res.status, 200);
+    const corpo = await res.json();
+    assert.equal(corpo.participante, 'Elisa F. da R.');
+    assert.deepEqual(corpo, {
+      codigo: 'SA26-DA11-DA22',
+      participante: 'Elisa F. da R.',
+      atividade: 'Flutter do zero',
+      cargaHorariaMinutos: 360,
+      emitidoEm: '2026-10-21T22:00:00-03:00',
+    });
+  } finally {
+    await servidor.fechar();
+  }
+});
+
+test('R11: abreviacao com particula "dos" — Isadora Ribeiro dos Santos -> Isadora R. dos S.', async () => {
+  const banco = novoBanco(':memory:');
+  const servidor = await subirServidor({ banco });
+  try {
+    await fetch(`${servidor.base}/_teste/reset`, { method: 'POST' });
+    semearAtividadeM4(banco, {
+      id: 'atv_f4_dos',
+      titulo: 'Flutter do zero',
+      tipo: 'minicurso',
+      salaId: 'lab-3',
+      vagas: 20,
+      encontros: [
+        { id: 'enc_f4_dos1', inicio: '2026-10-20T19:00:00-03:00', fim: '2026-10-20T22:00:00-03:00' },
+        { id: 'enc_f4_dos2', inicio: '2026-10-21T19:00:00-03:00', fim: '2026-10-21T22:00:00-03:00' },
+      ],
+    });
+    semearCertificado(banco, {
+      codigo: 'SA26-DS33-DS44',
+      atividadeId: 'atv_f4_dos',
+      participanteId: 'p-isadora',
+      cargaHorariaMinutos: 360,
+      presencas: 2,
+      encontros: 2,
+      emitidoEm: '2026-10-21T22:00:00-03:00',
+    });
+
+    const res = await fetch(`${servidor.base}/certificados/SA26-DS33-DS44`);
+    assert.equal(res.status, 200);
+    const corpo = await res.json();
+    assert.equal(corpo.participante, 'Isadora R. dos S.');
+  } finally {
+    await servidor.fechar();
+  }
+});
