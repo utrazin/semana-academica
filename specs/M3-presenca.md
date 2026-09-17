@@ -117,7 +117,7 @@ Cada regra cita a pergunta da entrevista (`P-xx`) que a originou e, quando exist
 
 ## 7. Como isto será verificado
 
-Pela costura mais externa que já existe: **HTTP**, na API subida por `npm start` dentro de `api/` (stack do `projeto.json`), com `MODO_TESTE=1`. Cada cenário começa com `POST /_teste/reset`, usa `PUT /_teste/relogio` para fixar o tempo e `X-Usuario` para autenticação e perfil. Como o encontro vem de M1 e a inscrição `confirmada` de M2, os cenários preparam a base pelas rotas já testadas de M1 (`POST /atividades`) e M2 (`POST /atividades/:id/inscricoes`) e depois movem o relógio para dentro das janelas. O juiz do contrato confere status, `erro` e corpo nas mesmas rotas, então o teste que exercita a rota real cobre automaticamente regra e contrato.
+Pela costura mais externa que já existe: **HTTP**, na API subida por `criarServidor()` em porta efêmera (mesmo padrão de `verificacoes/m2-inscricoes.spec.js`), com `MODO_TESTE=1`. Cada cenário começa com `POST /_teste/reset`, usa `PUT /_teste/relogio` para fixar o tempo e `X-Usuario` para autenticação e perfil. Como o encontro vem de M1 e a inscrição `confirmada` de M2, os cenários preparam a base semeando direto no banco com um helper (como `semearAtividade` em `verificacoes/m2-inscricoes.spec.js`) e depois movem o relógio para dentro das janelas. O juiz do contrato confere status, `erro` e corpo nas mesmas rotas, então o teste que exercita a rota real cobre automaticamente regra e contrato.
 
 ## 8. Fatias de entrega
 

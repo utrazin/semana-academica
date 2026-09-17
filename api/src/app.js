@@ -714,5 +714,32 @@ export function criarServidor({ banco = novoBanco(':memory:') } = {}) {
     res.status(200).json(serializarInscricao(atualizada));
   });
 
+  const encontroPorId = banco.prepare('SELECT id, atividadeId, inicio, fim FROM encontros WHERE id = ?');
+
+  function exigirEncontro(req, res, next) {
+    const encontro = encontroPorId.get(req.params.id);
+    if (!encontro) {
+      return res.status(404).json({ erro: 'NAO_ENCONTRADO', mensagem: 'Encontro inexistente.' });
+    }
+    req.encontro = encontro;
+    next();
+  }
+
+  app.get('/encontros/:id/codigo', exigirUsuario, exigirOrganizacao, exigirEncontro, (req, res) => {
+    res.status(501).json({ erro: 'NAO_IMPLEMENTADO' });
+  });
+
+  app.post('/encontros/:id/presencas', exigirUsuario, exigirParticipante, exigirEncontro, (req, res) => {
+    res.status(501).json({ erro: 'NAO_IMPLEMENTADO' });
+  });
+
+  app.post('/encontros/:id/presencas/manual', exigirUsuario, exigirOrganizacao, exigirEncontro, (req, res) => {
+    res.status(501).json({ erro: 'NAO_IMPLEMENTADO' });
+  });
+
+  app.get('/encontros/:id/presencas', exigirUsuario, exigirOrganizacao, exigirEncontro, (req, res) => {
+    res.status(501).json({ erro: 'NAO_IMPLEMENTADO' });
+  });
+
   return app;
 }
