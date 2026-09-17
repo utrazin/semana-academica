@@ -34,7 +34,7 @@ function formatarCargaHoraria(minutos) {
   return `${horas}h${resto}`;
 }
 
-export default function Atividade({ api, id }) {
+export default function Atividade({ api, id, aoSelecionarEncontro }) {
   const [atividade, setAtividade] = useState(null);
   const [erro, setErro] = useState(null);
   const [sucesso, setSucesso] = useState(null);
@@ -135,6 +135,11 @@ export default function Atividade({ api, id }) {
             {encontros.map((encontro) => (
               <li key={encontro.id}>
                 {horarioEmBrasilia(encontro.inicio)}–{horarioEmBrasilia(encontro.fim)}
+                {aoSelecionarEncontro && (
+                  <button type="button" onClick={() => aoSelecionarEncontro(encontro.id)}>
+                    Presença por QR
+                  </button>
+                )}
               </li>
             ))}
           </ul>

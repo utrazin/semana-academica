@@ -91,4 +91,18 @@ describe('Atividade', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent('JA_INSCRITO: Participante já inscrito.');
   });
+
+  it('abre a presença do encontro clicado pelo botão de QR', async () => {
+    const api = criarApiFalsa();
+    const aoSelecionarEncontro = vi.fn();
+    render(
+      <Atividade api={api} id="atv_minicurso02" aoSelecionarEncontro={aoSelecionarEncontro} />,
+    );
+
+    const botoes = await screen.findAllByRole('button', { name: 'Presença por QR' });
+    expect(botoes).toHaveLength(2);
+    fireEvent.click(botoes[0]);
+
+    expect(aoSelecionarEncontro).toHaveBeenCalledWith('enc_1');
+  });
 });

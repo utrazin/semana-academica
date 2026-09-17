@@ -185,4 +185,70 @@ describe('api.js', () => {
       status: 409,
     });
   });
+
+  it('obtém o código de um encontro com GET /encontros/:id/codigo', async () => {
+    globalThis.fetch = vi.fn(async () => ({
+      ok: true,
+      json: async () => ({ encontroId: 'enc_1', codigo: 'K7M2QX', trocaEm: '…', validoAte: '…' }),
+    }));
+    api.definirUsuario('org-ana');
+    const codigo = await api.obterCodigoDoEncontro('enc_1');
+
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      `${API_URL}/encontros/enc_1/codigo`,
+      expect.objectContaining({ headers: { 'X-Usuario': 'org-ana' } }),
+    );
+    expect(codigo.codigo).toBe('K7M2QX');
+  });
+
+  it('registra presença por QR com POST /encontros/:id/presencas', async () => {
+    globalThis.fetch = vi.fn(async () => ({
+      ok: true,
+      status: 201,
+      json: async () => ({ id: 'pre_1', origem: 'qr' }),
+    }));
+    api.definirUsuario('p-carla');
+    await api.registrarPresenca('enc_1', { codigo: 'K7M2QX', lidoEm: '2026-10-19T19:03:20-03:00' });
+
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      `${API_URL}/encontros/enc_1/presencas`,
+      expect.objectContaining({
+        method: 'POST',
+        headers: { 'X-Usuario': 'p-carla', 'Content-Type': 'application/json' },
+        body: JSON.stringify({ codigo: 'K7M2QX', lidoEm: '2026-10-19T19:03:20-03:00' }),
+      }),
+    );
+  });
+
+  it('registra presença manual com POST /encontros/:id/presencas/manual', async () => {
+    globalThis.fetch = vi.fn(async () => ({
+      ok: true,
+      status: 201,
+      json: async () => ({ id: 'pre_2', origem: 'manual' }),
+    }));
+    api.definirUsuario('org-ana');
+    await api.registrarPresencaManual('enc_1', {
+      participanteId: 'p-carla',
+      justificativa: 'Esqueceu o celular.',
+    });
+
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      `${API_URL}/encontros/enc_1/presencas/manual`,
+      expect.objectContaining({
+        method: 'POST',
+        headers: { 'X-Usuario': 'org-ana', 'Content-Type': 'application/json' },
+        body: JSON.stringify({ participanteId: 'p-carla', justificativa: 'Esqueceu o celular.' }),
+      }),
+    );
+  });
+
+  it('lista presenças de um encontro com GET /encontros/:id/presencas', async () => {
+    api.definirUsuario('org-ana');
+    await api.listarPresencas('enc_1');
+
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      `${API_URL}/encontros/enc_1/presencas`,
+      expect.objectContaining({ headers: { 'X-Usuario': 'org-ana' } }),
+    );
+  });
 });

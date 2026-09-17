@@ -101,6 +101,28 @@ export function confirmarConvocacao(id) {
   return chamar(`/inscricoes/${encodeURIComponent(id)}/confirmacao`, { metodo: 'POST' });
 }
 
+export function obterCodigoDoEncontro(encontroId) {
+  return chamar(`/encontros/${encodeURIComponent(encontroId)}/codigo`);
+}
+
+export function registrarPresenca(encontroId, { codigo, lidoEm } = {}) {
+  return chamar(`/encontros/${encodeURIComponent(encontroId)}/presencas`, {
+    metodo: 'POST',
+    corpo: { codigo, lidoEm },
+  });
+}
+
+export function registrarPresencaManual(encontroId, { participanteId, justificativa }) {
+  return chamar(`/encontros/${encodeURIComponent(encontroId)}/presencas/manual`, {
+    metodo: 'POST',
+    corpo: { participanteId, justificativa },
+  });
+}
+
+export function listarPresencas(encontroId) {
+  return chamar(`/encontros/${encodeURIComponent(encontroId)}/presencas`);
+}
+
 export default {
   API_URL,
   USUARIOS,
@@ -115,4 +137,8 @@ export default {
   obterInscricao,
   cancelarInscricao,
   confirmarConvocacao,
+  obterCodigoDoEncontro,
+  registrarPresenca,
+  registrarPresencaManual,
+  listarPresencas,
 };
