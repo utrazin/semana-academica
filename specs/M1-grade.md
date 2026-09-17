@@ -157,7 +157,8 @@ do documento de requisitos (RN-xxx). Sem RN, a fonte é decisão do grupo.
   encontros, em minutos. Qualquer valor no corpo é ignorado.
 - **R28** (P17, RN-114): `situacao` segue o relógio: `prevista` até o início do 1º encontro;
   `em_andamento` do início do 1º encontro até o fim do último (entre encontros segue
-  `em_andamento`); `encerrada` depois do fim do último. `cancelada` prevalece sempre.
+  `em_andamento`); `encerrada` a partir do fim do último encontro — o fim é inclusivo, ou seja,
+  no instante exato do fim do último encontro já vale `encerrada`. `cancelada` prevalece sempre.
 - **R29** (P1, contrato): `ocupadas`, `vagasRestantes` e `emEspera` são calculadas na leitura
   (não persistidas). Em M1, sem inscrições no banco, valem 0 (e `vagasRestantes` = `vagas`).
 
