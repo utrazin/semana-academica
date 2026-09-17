@@ -1167,6 +1167,134 @@ test('4. Confirmacao com limite de minicursos estourado -> 422 LIMITE_DE_MINICUR
   }
 });
 
+test('1. Atividade com inscricoes confirmada, em_espera e convocada e cancelada pela organizacao -> todas passam a cancelada', async () => {
+  const banco = novoBanco(':memory:');
+  const servidor = await subirServidor({ banco });
+  try {
+    await fetch(`${servidor.base}/_teste/reset`, { method: 'POST' });
+    semearAtividade(banco, {
+      id: 'atv_r11_1',
+      titulo: 'Atividade R11 1',
+      tipo: 'palestra',
+      salaId: 'auditorio',
+      vagas: 1,
+      encontros: [
+        { id: 'enc_r11_1', inicio: '2026-10-20T19:00:00-03:00', fim: '2026-10-20T20:00:00-03:00' },
+      ],
+    });
+
+    await fetch(`${servidor.base}/_teste/relogio`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ agora: '2026-10-20T10:00:00-03:00' }),
+    });
+
+    const resCarla = await fetch(`${servidor.base}/atividades/atv_r11_1/inscricoes`, {
+      method: 'POST',
+      headers: { 'X-Usuario': 'p-carla' },
+    });
+    const carlaIns = await resCarla.json();
+    assert.equal(carlaIns.status, 'confirmada');
+
+    const resDiego = await fetch(`${servidor.base}/atividades/atv_r11_1/inscricoes`, {
+      method: 'POST',
+      headers: { 'X-Usuario': 'p-diego' },
+    });
+    const diegoIns = await resDiego.json();
+    assert.equal(diegoIns.status, 'em_espera');
+
+    const resElisa = await fetch(`${servidor.base}/atividades/atv_r11_1/inscricoes`, {
+      method: 'POST',
+      headers: { 'X-Usuario': 'p-elisa' },
+    });
+    const elisaIns = await resElisa.json();
+    assert.equal(elisaIns.status, 'em_espera');
+
+    await fetch(`${servidor.base}/inscricoes/${carlaIns.id}/cancelamento`, {
+      method: 'POST',
+      headers: { 'X-Usuario': 'p-carla' },
+    });
+    const diegoCheck = await (await fetch(`${servidor.base}/inscricoes/${diegoIns.id}`, { headers: { 'X-Usuario': 'p-diego' } })).json();
+    assert.equal(diegoCheck.status, 'convocada');
+
+    const resCancAtv = await fetch(`${servidor.base}/atividades/atv_r11_1/cancelamento`, {
+      method: 'POST',
+      headers: { 'X-Usuario': 'org-ana' },
+    });
+    assert.equal(resCancAtv.status, 200);
+
+    const listRes = await fetch(`${servidor.base}/inscricoes?atividadeId=atv_r11_1`, {
+      headers: { 'X-Usuario': 'org-ana' },
+    });
+    assert.equal(listRes.status, 200);
+    const inscricoes = await listRes.json();
+
+    const carla = inscricoes.find(i => i.id === carlaIns.id);
+    const diego = inscricoes.find(i => i.id === diegoIns.id);
+    const elisa = inscricoes.find(i => i.id === elisaIns.id);
+
+    assert.equal(carla.status, 'cancelada');
+    assert.equal(diego.status, 'cancelada');
+    assert.equal(elisa.status, 'cancelada');
+  } finally {
+    await servidor.fechar();
+  }
+});
+
+test('2. Uma inscricao que ja estava cancelada antes do cancelamento da atividade permanece cancelada (nao gera erro nem efeito duplicado)', async () => {
+  const banco = novoBanco(':memory:');
+  const servidor = await subirServidor({ banco });
+  try {
+    await fetch(`${servidor.base}/_teste/reset`, { method: 'POST' });
+    semearAtividade(banco, {
+      id: 'atv_r11_2',
+      titulo: 'Atividade R11 2',
+      tipo: 'palestra',
+      salaId: 'auditorio',
+      vagas: 10,
+      encontros: [
+        { id: 'enc_r11_2', inicio: '2026-10-20T19:00:00-03:00', fim: '2026-10-20T20:00:00-03:00' },
+      ],
+    });
+
+    await fetch(`${servidor.base}/_teste/relogio`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ agora: '2026-10-20T10:00:00-03:00' }),
+    });
+
+    const resCarla = await fetch(`${servidor.base}/atividades/atv_r11_2/inscricoes`, {
+      method: 'POST',
+      headers: { 'X-Usuario': 'p-carla' },
+    });
+    const carlaIns = await resCarla.json();
+    assert.equal(carlaIns.status, 'confirmada');
+
+    const resCancel = await fetch(`${servidor.base}/inscricoes/${carlaIns.id}/cancelamento`, {
+      method: 'POST',
+      headers: { 'X-Usuario': 'p-carla' },
+    });
+    assert.equal(resCancel.status, 200);
+    const carlaCancelled = await resCancel.json();
+    assert.equal(carlaCancelled.status, 'cancelada');
+
+    const resCancAtv = await fetch(`${servidor.base}/atividades/atv_r11_2/cancelamento`, {
+      method: 'POST',
+      headers: { 'X-Usuario': 'org-ana' },
+    });
+    assert.equal(resCancAtv.status, 200);
+
+    const resCheck = await fetch(`${servidor.base}/inscricoes/${carlaIns.id}`, {
+      headers: { 'X-Usuario': 'org-ana' },
+    });
+    assert.equal(resCheck.status, 200);
+    const carlaFinal = await resCheck.json();
+    assert.equal(carlaFinal.status, 'cancelada');
+  } finally {
+    await servidor.fechar();
+  }
+});
+
 
 
 

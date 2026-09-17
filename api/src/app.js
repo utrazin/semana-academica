@@ -461,6 +461,7 @@ export function criarServidor({ banco = novoBanco(':memory:') } = {}) {
       });
     }
     banco.prepare('UPDATE atividades SET cancelada = 1 WHERE id = ?').run(atividade.id);
+    banco.prepare('UPDATE inscricoes SET status = \'cancelada\', convocadaAte = NULL WHERE atividadeId = ? AND status IN (\'confirmada\', \'em_espera\', \'convocada\')').run(atividade.id);
     const linha = banco
       .prepare('SELECT id, titulo, tipo, salaId, vagas, cancelada FROM atividades WHERE id = ?')
       .get(atividade.id);
