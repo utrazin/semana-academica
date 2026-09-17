@@ -970,5 +970,49 @@ export function criarServidor({ banco = novoBanco(':memory:') } = {}) {
     res.json(presencasPorEncontro.all(req.encontro.id).map(serializarPresenca));
   });
 
+  const certificadoPorCodigo = banco.prepare(
+    'SELECT codigo, atividadeId, participanteId, cargaHorariaMinutos, presencas, encontros, emitidoEm FROM certificados WHERE codigo = ?',
+  );
+  const certificadosDoParticipante = banco.prepare(
+    'SELECT codigo, atividadeId, participanteId, cargaHorariaMinutos, presencas, encontros, emitidoEm FROM certificados WHERE participanteId = ? ORDER BY emitidoEm, codigo',
+  );
+  const atividadePorId = banco.prepare('SELECT id FROM atividades WHERE id = ?');
+
+  function serializarCertificado(linha) {
+    return {
+      codigo: linha.codigo,
+      atividadeId: linha.atividadeId,
+      participanteId: linha.participanteId,
+      cargaHorariaMinutos: linha.cargaHorariaMinutos,
+      presencas: linha.presencas,
+      encontros: linha.encontros,
+      emitidoEm: linha.emitidoEm,
+    };
+  }
+
+  app.post('/atividades/:id/certificado', exigirUsuario, exigirParticipante, (req, res) => {
+    const atividade = atividadePorId.get(req.params.id);
+    if (!atividade) {
+      return res.status(404).json({ erro: 'NAO_ENCONTRADO', mensagem: 'Atividade inexistente.' });
+    }
+    return res.status(501).json({ erro: 'NAO_IMPLEMENTADO', mensagem: 'Emissão fora da fatia 1.' });
+  });
+
+  app.get('/certificados', exigirUsuario, exigirParticipante, (req, res) => {
+    res.json(certificadosDoParticipante.all(req.usuario.id).map(serializarCertificado));
+  });
+
+  app.get('/certificados/:codigo', (req, res) => {
+    const linha = certificadoPorCodigo.get(req.params.codigo);
+    if (!linha) {
+      return res.status(404).json({ erro: 'NAO_ENCONTRADO', mensagem: 'Certificado inexistente.' });
+    }
+    return res.status(501).json({ erro: 'NAO_IMPLEMENTADO', mensagem: 'Verificação fora da fatia 1.' });
+  });
+
+  app.get('/extrato', exigirUsuario, exigirParticipante, (req, res) => {
+    return res.status(501).json({ erro: 'NAO_IMPLEMENTADO', mensagem: 'Extrato fora da fatia 1.' });
+  });
+
   return app;
 }
