@@ -88,6 +88,10 @@ export function criarServidor({ banco = novoBanco(':memory:') } = {}) {
     } else if (agoraMs >= Date.parse(encontros[0].inicio)) {
       situacao = 'em_andamento';
     }
+    const ocupadas = vagasOcupadas(linha.id);
+    const vagasRestantes = Math.max(0, linha.vagas - ocupadas);
+    const emEsperaLinhas = banco.prepare('SELECT COUNT(*) as count FROM inscricoes WHERE atividadeId = ? AND status = ?').get(linha.id, 'em_espera');
+    const emEspera = emEsperaLinhas ? emEsperaLinhas.count : 0;
     return {
       id: linha.id,
       titulo: linha.titulo,
@@ -97,9 +101,9 @@ export function criarServidor({ banco = novoBanco(':memory:') } = {}) {
       encontros: encontros.map((e) => ({ id: e.id, inicio: e.inicio, fim: e.fim })),
       cargaHorariaMinutos,
       situacao,
-      ocupadas: 0,
-      vagasRestantes: linha.vagas,
-      emEspera: 0,
+      ocupadas,
+      vagasRestantes,
+      emEspera,
     };
   }
 
@@ -380,6 +384,115 @@ export function criarServidor({ banco = novoBanco(':memory:') } = {}) {
       .prepare('SELECT id, titulo, tipo, salaId, vagas, cancelada FROM atividades WHERE id = ?')
       .get(atividade.id);
     res.status(200).json(serializarAtividade(linha));
+  });
+
+  function exigirParticipante(req, res, next) {
+    if (req.usuario.papel !== 'participante') {
+      return res.status(403).json({
+        erro: 'SOMENTE_PARTICIPANTE',
+        mensagem: 'Apenas participantes podem realizar inscrições.',
+      });
+    }
+    next();
+  }
+
+  function serializarInscricao(linha) {
+    let posicaoNaEspera = null;
+    if (linha.status === 'em_espera') {
+      const emEsperaList = banco.prepare(
+        'SELECT id FROM inscricoes WHERE atividadeId = ? AND status = ? ORDER BY rowid ASC'
+      ).all(linha.atividadeId, 'em_espera');
+      const index = emEsperaList.findIndex((i) => i.id === linha.id);
+      posicaoNaEspera = index >= 0 ? index + 1 : null;
+    }
+    return {
+      id: linha.id,
+      atividadeId: linha.atividadeId,
+      participanteId: linha.participanteId,
+      status: linha.status,
+      posicaoNaEspera,
+      convocadaAte: linha.convocadaAte || null,
+      criadaEm: linha.criadaEm,
+    };
+  }
+
+  app.post('/atividades/:id/inscricoes', exigirUsuario, exigirParticipante, (req, res) => {
+    const atividade = banco
+      .prepare('SELECT id, vagas, cancelada FROM atividades WHERE id = ?')
+      .get(req.params.id);
+    if (!atividade) {
+      return res.status(404).json({ erro: 'NAO_ENCONTRADO', mensagem: 'Atividade inexistente.' });
+    }
+
+    const inscricaoAtiva = banco
+      .prepare('SELECT id FROM inscricoes WHERE atividadeId = ? AND participanteId = ? AND status IN (\'confirmada\', \'em_espera\', \'convocada\')')
+      .get(atividade.id, req.usuario.id);
+    if (inscricaoAtiva) {
+      return res.status(409).json({ erro: 'JA_INSCRITO', mensagem: 'Participante já possui inscrição ativa nesta atividade.' });
+    }
+
+    const ocupadas = vagasOcupadas(atividade.id);
+    const status = ocupadas < atividade.vagas ? 'confirmada' : 'em_espera';
+    const id = gerarId('ins_');
+    const criadaEm = agora().toISOString();
+
+    banco
+      .prepare('INSERT INTO inscricoes (id, atividadeId, participanteId, status, posicaoNaEspera, convocadaAte, criadaEm) VALUES (?, ?, ?, ?, NULL, NULL, ?)')
+      .run(id, atividade.id, req.usuario.id, status, criadaEm);
+
+    const linha = banco.prepare('SELECT id, atividadeId, participanteId, status, convocadaAte, criadaEm FROM inscricoes WHERE id = ?').get(id);
+    res.status(201).json(serializarInscricao(linha));
+  });
+
+  app.get('/inscricoes', exigirUsuario, (req, res) => {
+    const atividadeId = req.query.atividadeId;
+    let query = 'SELECT id, atividadeId, participanteId, status, convocadaAte, criadaEm FROM inscricoes';
+    const params = [];
+    const conditions = [];
+
+    if (req.usuario.papel === 'participante') {
+      conditions.push('participanteId = ?');
+      params.push(req.usuario.id);
+    }
+    if (atividadeId !== undefined) {
+      conditions.push('atividadeId = ?');
+      params.push(atividadeId);
+    }
+    if (conditions.length > 0) {
+      query += ' WHERE ' + conditions.join(' AND ');
+    }
+    query += ' ORDER BY criadaEm';
+
+    const linhas = banco.prepare(query).all(...params);
+    res.json(linhas.map(serializarInscricao));
+  });
+
+  app.get('/inscricoes/:id', exigirUsuario, (req, res) => {
+    const linha = banco
+      .prepare('SELECT id, atividadeId, participanteId, status, convocadaAte, criadaEm FROM inscricoes WHERE id = ?')
+      .get(req.params.id);
+    if (!linha) {
+      return res.status(404).json({ erro: 'NAO_ENCONTRADO', mensagem: 'Inscrição inexistente.' });
+    }
+    if (req.usuario.papel === 'participante' && linha.participanteId !== req.usuario.id) {
+      return res.status(404).json({ erro: 'NAO_ENCONTRADO', mensagem: 'Inscrição inexistente.' });
+    }
+    res.json(serializarInscricao(linha));
+  });
+
+  app.post('/inscricoes/:id/cancelamento', exigirUsuario, exigirParticipante, (req, res) => {
+    const linha = banco
+      .prepare('SELECT id, atividadeId, participanteId, status, convocadaAte, criadaEm FROM inscricoes WHERE id = ?')
+      .get(req.params.id);
+    if (!linha) {
+      return res.status(404).json({ erro: 'NAO_ENCONTRADO', mensagem: 'Inscrição inexistente.' });
+    }
+    if (linha.participanteId !== req.usuario.id) {
+      return res.status(404).json({ erro: 'NAO_ENCONTRADO', mensagem: 'Inscrição inexistente.' });
+    }
+    banco.prepare('UPDATE inscricoes SET status = \'cancelada\', convocadaAte = NULL WHERE id = ?').run(linha.id);
+    const atualizada = banco.prepare('SELECT id, atividadeId, participanteId, status, convocadaAte, criadaEm FROM inscricoes WHERE id = ?').get(linha.id);
+    res.status(200).json(serializarInscricao(atualizada));
   });
 
   return app;
