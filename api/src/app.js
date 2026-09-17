@@ -1053,7 +1053,18 @@ export function criarServidor({ banco = novoBanco(':memory:') } = {}) {
     );
     const codigo = gerarCodigoCertificado();
     const emitidoEm = agora().toISOString();
-    inserirCertificado.run(codigo, atividade.id, req.usuario.id, cargaHorariaMinutos, totalPresencas, totalEncontros, emitidoEm);
+    try {
+      inserirCertificado.run(codigo, atividade.id, req.usuario.id, cargaHorariaMinutos, totalPresencas, totalEncontros, emitidoEm);
+    } catch (erro) {
+      const ehConflito = erro && typeof erro.code === 'string' && erro.code.startsWith('SQLITE_CONSTRAINT');
+      if (ehConflito) {
+        const concorrente = certificadoPorAtividadeEParticipante.get(atividade.id, req.usuario.id);
+        if (concorrente) {
+          return res.status(200).json(serializarCertificado(concorrente));
+        }
+      }
+      throw erro;
+    }
     return res.status(201).json({
       codigo,
       atividadeId: atividade.id,

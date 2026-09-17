@@ -51,7 +51,8 @@ export function novoBanco(caminho) {
       encontros INTEGER NOT NULL,
       emitidoEm TEXT NOT NULL,
       FOREIGN KEY (atividadeId) REFERENCES atividades(id),
-      FOREIGN KEY (participanteId) REFERENCES usuarios(id)
+      FOREIGN KEY (participanteId) REFERENCES usuarios(id),
+      UNIQUE (atividadeId, participanteId)
     );
     CREATE TABLE IF NOT EXISTS presencas (
       id TEXT PRIMARY KEY,
@@ -64,6 +65,10 @@ export function novoBanco(caminho) {
       FOREIGN KEY (encontroId) REFERENCES encontros(id),
       FOREIGN KEY (participanteId) REFERENCES usuarios(id)
     );
+  `);
+  banco.exec(`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_certificados_atividade_participante
+      ON certificados (atividadeId, participanteId);
   `);
   return banco;
 }
