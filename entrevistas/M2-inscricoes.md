@@ -29,6 +29,10 @@
 | P9 | Privacidade e escopo de visualização/cancelamento | O participante só vê e mexe nas próprias inscrições. A inscrição de outro participante responde 404, não 403, para não revelar que ela existe. | RN-218 |
 | P10 | Participação da organização | Só participante se inscreve, cancela e confirma convocação. A organização lista todas as inscrições, mas não se inscreve nem cancela nem confirma por ninguém. Logo, organização nessas rotas de escrita recebe 403 SOMENTE_PARTICIPANTE. | RN-201, RN-219 |
 | P11 | Reinscrição | Vale uma única inscrição ativa (confirmada, em espera ou convocada) por participante e atividade. Quem cancelou pode se inscrever de novo, entrando pelo fim da fila. | RN-204 |
+| P12 | Confirmação de convocação (sucesso e efeito) | A confirmação é aceita quando a inscrição está convocada e dentro do prazo (`convocadaAte`); ao confirmar, o status vira `confirmada` e `convocadaAte` passa a `null`, ocupando a vaga. | RN-215 |
+| P13 | Inscrição não convocada | Confirmar uma inscrição que não está convocada (`em_espera`, `confirmada`, `cancelada` ou `expirada`) → 422 `SEM_CONVOCACAO`. | RN-215 |
+| P14 | Prazo de convocação vencido | Confirmar após o prazo (`convocadaAte` vencido pelo relógio) → 422 `CONVOCACAO_EXPIRADA`. | RN-215 |
+| P15 | Conflito/limite na confirmação | Se a confirmação bateria em conflito de horário ou no limite de minicursos, ela é recusada (`CONFLITO_DE_HORARIO` ou `LIMITE_DE_MINICURSOS`), mas a convocação não é perdida: continua valendo até o prazo original, permitindo nova tentativa se o participante resolver o impedimento antes do vencimento. | RN-214 |
 
 ## Rodada 2 (Questões de regra de negócio / PENDENTES)
 
@@ -44,3 +48,7 @@
 | P9 | Privacidade e escopo de visualização/cancelamento | Respondida (RN-218) |
 | P10 | Participação da organização | Respondida (RN-201, RN-219) |
 | P11 | Reinscrição | Respondida (RN-204) |
+| P12 | Confirmação de convocação (sucesso e efeito) | Respondida (RN-215) |
+| P13 | Inscrição não convocada | Respondida (RN-215) |
+| P14 | Prazo de convocação vencido | Respondida (RN-215) |
+| P15 | Conflito/limite na confirmação | Respondida (RN-214) |
