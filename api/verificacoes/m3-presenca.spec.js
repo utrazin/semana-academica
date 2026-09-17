@@ -1525,3 +1525,111 @@ test('R17: manual em cima de presenca de QR devolve 200 preservando origem qr e 
     await servidor.fechar();
   }
 });
+
+test('R22: GET /encontros/:id/presencas devolve [Presenca] ordenado por nome do participante, com desempate por participanteId', async () => {
+  const banco = novoBanco(':memory:');
+  const servidor = await subirServidor({ banco });
+  try {
+    await fetch(`${servidor.base}/_teste/reset`, { method: 'POST' });
+    semearAtividade(banco, {
+      id: 'atv_r22',
+      titulo: 'Atividade R22',
+      tipo: 'palestra',
+      salaId: 'auditorio',
+      vagas: 20,
+      encontros: [
+        { id: 'enc_r22', inicio: '2026-10-20T19:00:00-03:00', fim: '2026-10-20T22:00:00-03:00' },
+      ],
+    });
+
+    const principais = [
+      { id: 'p-ze', nome: 'Ana Beatriz', origemEsperada: 'qr' },
+      { id: 'p-am', nome: 'Beatriz Souza', origemEsperada: 'manual' },
+      { id: 'p-aa', nome: 'Carla Mendes', origemEsperada: 'qr_offline' },
+      { id: 'p-bb', nome: 'Daniela Alves', origemEsperada: 'manual' },
+      { id: 'p-cc', nome: 'Daniela Alves', origemEsperada: 'qr' },
+    ];
+    for (const p of principais) semearUsuario(banco, p.id, p.nome, 'participante');
+
+    const extras = [];
+    for (let i = 1; i <= 6; i += 1) {
+      const id = `p-extra${String(i).padStart(2, '0')}`;
+      extras.push(id);
+      semearUsuario(banco, id, `Fulano Extra ${i}`, 'participante');
+    }
+
+    const inscritos = [...principais.map((p) => p.id), ...extras];
+    for (const [indice, participanteId] of inscritos.entries()) {
+      semearInscricao(banco, {
+        id: `ins_r22_${indice}`,
+        atividadeId: 'atv_r22',
+        participanteId,
+        status: 'confirmada',
+      });
+    }
+
+    await fixarRelogio(servidor.base, '2026-10-20T19:00:00-03:00');
+    const respostaCodigo = await fetch(`${servidor.base}/encontros/enc_r22/codigo`, {
+      headers: { 'X-Usuario': 'org-ana' },
+    });
+    assert.equal(respostaCodigo.status, 200);
+    const { codigo } = await respostaCodigo.json();
+
+    const registrarQr = (participanteId, corpo = {}) =>
+      fetch(`${servidor.base}/encontros/enc_r22/presencas`, {
+        method: 'POST',
+        headers: { 'X-Usuario': participanteId, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ codigo, ...corpo }),
+      });
+    const registrarManual = (participanteId) =>
+      fetch(`${servidor.base}/encontros/enc_r22/presencas/manual`, {
+        method: 'POST',
+        headers: { 'X-Usuario': 'org-ana', 'Content-Type': 'application/json' },
+        body: JSON.stringify({ participanteId, justificativa: '123456789012' }),
+      });
+
+    const manuais = [
+      { participanteId: 'p-bb', esperado: 201 },
+      { participanteId: 'p-am', esperado: 201 },
+    ];
+    for (const { participanteId, esperado } of manuais) {
+      const res = await registrarManual(participanteId);
+      assert.equal(res.status, esperado, `manual ${participanteId}`);
+    }
+    const registrosQr = [
+      { participanteId: 'p-ze', corpo: {} },
+      { participanteId: 'p-aa', corpo: { lidoEm: '2026-10-20T19:00:00-03:00' } },
+      { participanteId: 'p-cc', corpo: {} },
+    ];
+    for (const { participanteId, corpo } of registrosQr) {
+      const res = await registrarQr(participanteId, corpo);
+      assert.equal(res.status, 201, `qr ${participanteId}`);
+    }
+
+    const lista = await fetch(`${servidor.base}/encontros/enc_r22/presencas`, {
+      headers: { 'X-Usuario': 'org-ana' },
+    });
+    assert.equal(lista.status, 200);
+    const presencas = await lista.json();
+    assert.equal(presencas.length, 5);
+
+    assert.deepEqual(
+      presencas.map((p) => p.participanteId),
+      ['p-ze', 'p-am', 'p-aa', 'p-bb', 'p-cc'],
+      'ordena por nome do participante; empate de nome resolvido por participanteId',
+    );
+
+    for (const esperada of principais) {
+      const presenca = presencas.find((p) => p.participanteId === esperada.id);
+      assert.equal(presenca.origem, esperada.origemEsperada, `origem de ${esperada.id}`);
+      assert.deepEqual(
+        Object.keys(presenca).sort(),
+        ['encontroId', 'id', 'justificativa', 'lidoEm', 'origem', 'participanteId', 'registradaEm'],
+        `${esperada.id} devolve Presenca do contrato, sem nome extra`,
+      );
+      assert.equal(presenca.encontroId, 'enc_r22');
+    }
+  } finally {
+    await servidor.fechar();
+  }
+});

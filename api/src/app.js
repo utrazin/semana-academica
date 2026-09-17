@@ -937,8 +937,16 @@ export function criarServidor({ banco = novoBanco(':memory:') } = {}) {
     res.status(201).json(serializarPresenca(presenca));
   });
 
+  const presencasPorEncontro = banco.prepare(`
+    SELECT p.id, p.encontroId, p.participanteId, p.origem, p.lidoEm, p.registradaEm, p.justificativa
+    FROM presencas p
+    JOIN usuarios u ON u.id = p.participanteId
+    WHERE p.encontroId = ?
+    ORDER BY u.nome COLLATE NOCASE, p.participanteId
+  `);
+
   app.get('/encontros/:id/presencas', exigirUsuario, exigirOrganizacao, exigirEncontro, (req, res) => {
-    res.status(501).json({ erro: 'NAO_IMPLEMENTADO' });
+    res.json(presencasPorEncontro.all(req.encontro.id).map(serializarPresenca));
   });
 
   return app;
