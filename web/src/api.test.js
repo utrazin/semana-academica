@@ -61,6 +61,33 @@ describe('api.js', () => {
     );
   });
 
+  it('cria atividade com POST /atividades enviando o corpo como JSON', async () => {
+    globalThis.fetch = vi.fn(async () => ({
+      ok: true,
+      status: 201,
+      json: async () => ({ id: 'atv_a1b2c3d4', titulo: 'Flutter do zero' }),
+    }));
+    api.definirUsuario('org-ana');
+    const corpo = {
+      titulo: 'Flutter do zero',
+      tipo: 'minicurso',
+      salaId: 'lab-3',
+      vagas: 20,
+      encontros: [],
+    };
+
+    await api.criarAtividade(corpo);
+
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      `${API_URL}/atividades`,
+      expect.objectContaining({
+        method: 'POST',
+        headers: { 'X-Usuario': 'org-ana', 'Content-Type': 'application/json' },
+        body: JSON.stringify(corpo),
+      }),
+    );
+  });
+
   it('rejeita com o erro da API quando a resposta não é ok', async () => {
     globalThis.fetch = vi.fn(async () => ({
       ok: false,

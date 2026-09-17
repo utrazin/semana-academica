@@ -29,14 +29,18 @@ export function obterUsuarioAtual() {
   return USUARIOS.some((usuario) => usuario.id === id) ? id : null;
 }
 
-async function chamar(caminho) {
-  const cabecalhos = {};
+async function chamar(caminho, { metodo = 'GET', corpo } = {}) {
+  const cabecalhos = corpo !== undefined ? { 'Content-Type': 'application/json' } : {};
   const usuario = obterUsuarioAtual();
   if (usuario) {
     cabecalhos['X-Usuario'] = usuario;
   }
 
-  const resposta = await fetch(`${API_URL}${caminho}`, { headers: cabecalhos });
+  const resposta = await fetch(`${API_URL}${caminho}`, {
+    method: metodo,
+    headers: cabecalhos,
+    body: corpo !== undefined ? JSON.stringify(corpo) : undefined,
+  });
 
   if (!resposta.ok) {
     let corpo = {};
@@ -70,6 +74,10 @@ export function listarSalas() {
   return chamar('/salas');
 }
 
+export function criarAtividade(corpo) {
+  return chamar('/atividades', { metodo: 'POST', corpo });
+}
+
 export default {
   API_URL,
   USUARIOS,
@@ -78,4 +86,5 @@ export default {
   listarAtividades,
   obterAtividade,
   listarSalas,
+  criarAtividade,
 };
