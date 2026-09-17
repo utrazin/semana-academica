@@ -164,6 +164,16 @@ export function criarServidor({ banco = novoBanco(':memory:') } = {}) {
     res.json(porInicio.map((item) => serializarAtividade(item.linha)));
   });
 
+  app.get('/atividades/:id', exigirUsuario, (req, res) => {
+    const linha = banco
+      .prepare('SELECT id, titulo, tipo, salaId, vagas, cancelada FROM atividades WHERE id = ?')
+      .get(req.params.id);
+    if (!linha) {
+      return res.status(404).json({ erro: 'NAO_ENCONTRADO', mensagem: 'Atividade inexistente.' });
+    }
+    res.json(serializarAtividade(linha));
+  });
+
   function temConflitoDeSala(salaId, encontros) {
     const atividadesNaSala = banco.prepare('SELECT id, cancelada FROM atividades WHERE salaId = ?').all(salaId);
     const folga = 15 * 60000;
@@ -342,6 +352,30 @@ export function criarServidor({ banco = novoBanco(':memory:') } = {}) {
         'vagas' in corpo ? corpo.vagas : atividade.vagas,
         atividade.id,
       );
+    const linha = banco
+      .prepare('SELECT id, titulo, tipo, salaId, vagas, cancelada FROM atividades WHERE id = ?')
+      .get(atividade.id);
+    res.status(200).json(serializarAtividade(linha));
+  });
+
+  app.post('/atividades/:id/cancelamento', exigirUsuario, exigirOrganizacao, (req, res) => {
+    const atividade = banco
+      .prepare('SELECT id, titulo, tipo, salaId, vagas, cancelada FROM atividades WHERE id = ?')
+      .get(req.params.id);
+    if (!atividade) {
+      return res.status(404).json({ erro: 'NAO_ENCONTRADO', mensagem: 'Atividade inexistente.' });
+    }
+    if (atividade.cancelada) {
+      return res.status(422).json({ erro: 'ATIVIDADE_CANCELADA', mensagem: 'Atividade já está cancelada.' });
+    }
+    const encontros = encontrosPorAtividade.all(atividade.id);
+    if (agora().getTime() >= Date.parse(encontros[0].inicio)) {
+      return res.status(422).json({
+        erro: 'ATIVIDADE_JA_INICIADA',
+        mensagem: 'Só é possível cancelar antes do início do 1º encontro.',
+      });
+    }
+    banco.prepare('UPDATE atividades SET cancelada = 1 WHERE id = ?').run(atividade.id);
     const linha = banco
       .prepare('SELECT id, titulo, tipo, salaId, vagas, cancelada FROM atividades WHERE id = ?')
       .get(atividade.id);
