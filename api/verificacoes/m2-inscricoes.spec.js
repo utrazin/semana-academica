@@ -206,4 +206,161 @@ test('GET /inscricoes, privacidade, papeis, JA_INSCRITO e reinscricao pelo fim d
   }
 });
 
+test('R2: inscricoes fecham 30 minutos antes do 1o encontro (31 min = 201, 30 min ou menos = 422 INSCRICOES_ENCERRADAS)', async () => {
+  const banco = novoBanco(':memory:');
+  const servidor = await subirServidor({ banco });
+  try {
+    await fetch(`${servidor.base}/_teste/reset`, { method: 'POST' });
+    semearAtividade(banco, {
+      id: 'atv_prazo',
+      titulo: 'Atividade Prazo',
+      tipo: 'palestra',
+      salaId: 'auditorio',
+      vagas: 10,
+      encontros: [
+        { id: 'enc_p1', inicio: '2026-10-20T19:00:00-03:00', fim: '2026-10-20T20:00:00-03:00' },
+      ],
+    });
+
+    await fetch(`${servidor.base}/_teste/relogio`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ agora: '2026-10-20T18:29:00-03:00' }),
+    });
+
+    const res31 = await fetch(`${servidor.base}/atividades/atv_prazo/inscricoes`, {
+      method: 'POST',
+      headers: { 'X-Usuario': 'p-carla' },
+    });
+    assert.equal(res31.status, 201);
+
+    semearAtividade(banco, {
+      id: 'atv_prazo_30',
+      titulo: 'Atividade Prazo 30',
+      tipo: 'palestra',
+      salaId: 'auditorio',
+      vagas: 10,
+      encontros: [
+        { id: 'enc_p2', inicio: '2026-10-20T19:00:00-03:00', fim: '2026-10-20T20:00:00-03:00' },
+      ],
+    });
+
+    await fetch(`${servidor.base}/_teste/relogio`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ agora: '2026-10-20T18:30:00-03:00' }),
+    });
+
+    const res30 = await fetch(`${servidor.base}/atividades/atv_prazo_30/inscricoes`, {
+      method: 'POST',
+      headers: { 'X-Usuario': 'p-carla' },
+    });
+    assert.equal(res30.status, 422);
+    assert.equal((await res30.json()).erro, 'INSCRICOES_ENCERRADAS');
+  } finally {
+    await servidor.fechar();
+  }
+});
+
+test('R9: cancelar apos o inicio do 1o encontro da 422 ATIVIDADE_JA_INICIADA', async () => {
+  const banco = novoBanco(':memory:');
+  const servidor = await subirServidor({ banco });
+  try {
+    await fetch(`${servidor.base}/_teste/reset`, { method: 'POST' });
+    semearAtividade(banco, {
+      id: 'atv_canc',
+      titulo: 'Atividade Cancelavel',
+      tipo: 'palestra',
+      salaId: 'auditorio',
+      vagas: 10,
+      encontros: [
+        { id: 'enc_c1', inicio: '2026-10-20T19:00:00-03:00', fim: '2026-10-20T20:00:00-03:00' },
+      ],
+    });
+
+    await fetch(`${servidor.base}/_teste/relogio`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ agora: '2026-10-20T18:00:00-03:00' }),
+    });
+
+    const resIns = await fetch(`${servidor.base}/atividades/atv_canc/inscricoes`, {
+      method: 'POST',
+      headers: { 'X-Usuario': 'p-carla' },
+    });
+    assert.equal(resIns.status, 201);
+    const inscricao = await resIns.json();
+
+    await fetch(`${servidor.base}/_teste/relogio`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ agora: '2026-10-20T19:00:00-03:00' }),
+    });
+
+    const resCancel = await fetch(`${servidor.base}/inscricoes/${inscricao.id}/cancelamento`, {
+      method: 'POST',
+      headers: { 'X-Usuario': 'p-carla' },
+    });
+    assert.equal(resCancel.status, 422);
+    assert.equal((await resCancel.json()).erro, 'ATIVIDADE_JA_INICIADA');
+  } finally {
+    await servidor.fechar();
+  }
+});
+
+test('R9 & R10: cancelar inscricao ja cancelada da 422 INSCRICAO_INATIVA, verificada antes de ATIVIDADE_JA_INICIADA', async () => {
+  const banco = novoBanco(':memory:');
+  const servidor = await subirServidor({ banco });
+  try {
+    await fetch(`${servidor.base}/_teste/reset`, { method: 'POST' });
+    semearAtividade(banco, {
+      id: 'atv_inativa',
+      titulo: 'Atividade Inativa Teste',
+      tipo: 'palestra',
+      salaId: 'auditorio',
+      vagas: 10,
+      encontros: [
+        { id: 'enc_i1', inicio: '2026-10-20T19:00:00-03:00', fim: '2026-10-20T20:00:00-03:00' },
+      ],
+    });
+
+    await fetch(`${servidor.base}/_teste/relogio`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ agora: '2026-10-20T18:00:00-03:00' }),
+    });
+
+    const resIns = await fetch(`${servidor.base}/atividades/atv_inativa/inscricoes`, {
+      method: 'POST',
+      headers: { 'X-Usuario': 'p-carla' },
+    });
+    assert.equal(resIns.status, 201);
+    const inscricao = await resIns.json();
+
+    const resCancel1 = await fetch(`${servidor.base}/inscricoes/${inscricao.id}/cancelamento`, {
+      method: 'POST',
+      headers: { 'X-Usuario': 'p-carla' },
+    });
+    assert.equal(resCancel1.status, 200);
+
+    await fetch(`${servidor.base}/_teste/relogio`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ agora: '2026-10-20T19:30:00-03:00' }),
+    });
+
+    const resCancel2 = await fetch(`${servidor.base}/inscricoes/${inscricao.id}/cancelamento`, {
+      method: 'POST',
+      headers: { 'X-Usuario': 'p-carla' },
+    });
+    assert.equal(resCancel2.status, 422);
+    assert.equal((await resCancel2.json()).erro, 'INSCRICAO_INATIVA');
+  } finally {
+    await servidor.fechar();
+  }
+});
+
+
+
+
 

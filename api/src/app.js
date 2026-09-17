@@ -423,6 +423,14 @@ export function criarServidor({ banco = novoBanco(':memory:') } = {}) {
     if (!atividade) {
       return res.status(404).json({ erro: 'NAO_ENCONTRADO', mensagem: 'Atividade inexistente.' });
     }
+    if (atividade.cancelada) {
+      return res.status(422).json({ erro: 'ATIVIDADE_CANCELADA', mensagem: 'Atividade cancelada.' });
+    }
+
+    const encontros = encontrosPorAtividade.all(atividade.id);
+    if (encontros.length > 0 && agora().getTime() >= Date.parse(encontros[0].inicio) - 30 * 60000) {
+      return res.status(422).json({ erro: 'INSCRICOES_ENCERRADAS', mensagem: 'Inscrições encerradas.' });
+    }
 
     const inscricaoAtiva = banco
       .prepare('SELECT id FROM inscricoes WHERE atividadeId = ? AND participanteId = ? AND status IN (\'confirmada\', \'em_espera\', \'convocada\')')
@@ -490,6 +498,14 @@ export function criarServidor({ banco = novoBanco(':memory:') } = {}) {
     if (linha.participanteId !== req.usuario.id) {
       return res.status(404).json({ erro: 'NAO_ENCONTRADO', mensagem: 'Inscrição inexistente.' });
     }
+    if (linha.status === 'cancelada' || linha.status === 'expirada') {
+      return res.status(422).json({ erro: 'INSCRICAO_INATIVA', mensagem: 'Inscrição já está cancelada ou expirada.' });
+    }
+    const encontros = encontrosPorAtividade.all(linha.atividadeId);
+    if (encontros.length > 0 && agora().getTime() >= Date.parse(encontros[0].inicio)) {
+      return res.status(422).json({ erro: 'ATIVIDADE_JA_INICIADA', mensagem: 'Atividade já iniciada.' });
+    }
+
     banco.prepare('UPDATE inscricoes SET status = \'cancelada\', convocadaAte = NULL WHERE id = ?').run(linha.id);
     const atualizada = banco.prepare('SELECT id, atividadeId, participanteId, status, convocadaAte, criadaEm FROM inscricoes WHERE id = ?').get(linha.id);
     res.status(200).json(serializarInscricao(atualizada));
