@@ -976,7 +976,7 @@ export function criarServidor({ banco = novoBanco(':memory:') } = {}) {
   const certificadosDoParticipante = banco.prepare(
     'SELECT codigo, atividadeId, participanteId, cargaHorariaMinutos, presencas, encontros, emitidoEm FROM certificados WHERE participanteId = ? ORDER BY emitidoEm, codigo',
   );
-  const atividadePorId = banco.prepare('SELECT id FROM atividades WHERE id = ?');
+  const atividadePorId = banco.prepare('SELECT id, cancelada FROM atividades WHERE id = ?');
 
   function serializarCertificado(linha) {
     return {
@@ -990,12 +990,79 @@ export function criarServidor({ banco = novoBanco(':memory:') } = {}) {
     };
   }
 
+  const certificadoPorAtividadeEParticipante = banco.prepare(
+    'SELECT codigo, atividadeId, participanteId, cargaHorariaMinutos, presencas, encontros, emitidoEm FROM certificados WHERE atividadeId = ? AND participanteId = ?',
+  );
+  const certificadoExistentePorCodigo = banco.prepare(
+    'SELECT codigo FROM certificados WHERE codigo = ?',
+  );
+  const inserirCertificado = banco.prepare(
+    'INSERT INTO certificados (codigo, atividadeId, participanteId, cargaHorariaMinutos, presencas, encontros, emitidoEm) VALUES (?, ?, ?, ?, ?, ?, ?)',
+  );
+  const contarPresencasCertificado = banco.prepare(
+    'SELECT COUNT(*) AS total FROM presencas p JOIN encontros e ON e.id = p.encontroId WHERE e.atividadeId = ? AND p.participanteId = ?',
+  );
+
+  function gerarCodigoCertificado() {
+    for (let tentativa = 0; tentativa < 100; tentativa += 1) {
+      let variavel = '';
+      for (let i = 0; i < 8; i += 1) {
+        variavel += ALFABETO_CODIGO[crypto.randomInt(ALFABETO_CODIGO.length)];
+      }
+      const codigo = `SA26-${variavel.slice(0, 4)}-${variavel.slice(4)}`;
+      if (!certificadoExistentePorCodigo.get(codigo)) {
+        return codigo;
+      }
+    }
+    throw new Error('Nao foi possivel gerar um codigo de certificado unico.');
+  }
+
   app.post('/atividades/:id/certificado', exigirUsuario, exigirParticipante, (req, res) => {
     const atividade = atividadePorId.get(req.params.id);
     if (!atividade) {
       return res.status(404).json({ erro: 'NAO_ENCONTRADO', mensagem: 'Atividade inexistente.' });
     }
-    return res.status(501).json({ erro: 'NAO_IMPLEMENTADO', mensagem: 'Emissão fora da fatia 1.' });
+    if (atividade.cancelada) {
+      return res.status(422).json({ erro: 'ATIVIDADE_CANCELADA', mensagem: 'Atividade cancelada.' });
+    }
+    const inscricao = banco.prepare(
+      "SELECT id FROM inscricoes WHERE atividadeId = ? AND participanteId = ? AND status = 'confirmada'",
+    ).get(atividade.id, req.usuario.id);
+    if (!inscricao) {
+      return res.status(403).json({ erro: 'NAO_INSCRITO', mensagem: 'Só quem tem inscrição confirmada emite certificado.' });
+    }
+    const encontrosDaAtividade = encontrosPorAtividade.all(atividade.id);
+    const fimUltimoEncontroMs = Date.parse(encontrosDaAtividade[encontrosDaAtividade.length - 1].fim);
+    if (agora().getTime() < fimUltimoEncontroMs) {
+      return res.status(422).json({ erro: 'ATIVIDADE_NAO_ENCERRADA', mensagem: 'Atividade ainda não encerrada.' });
+    }
+    const totalEncontros = encontrosDaAtividade.length;
+    const totalPresencas = contarPresencasCertificado.get(atividade.id, req.usuario.id).total;
+    if (totalPresencas * 4 < totalEncontros * 3) {
+      return res.status(422).json({ erro: 'PRESENCA_INSUFICIENTE', mensagem: 'Frequência abaixo do mínimo de 75%.' });
+    }
+    const existente = certificadoPorAtividadeEParticipante.get(atividade.id, req.usuario.id);
+    if (existente) {
+      return res.status(200).json(serializarCertificado(existente));
+    }
+    const cargaHorariaMinutos = Math.round(
+      encontrosDaAtividade.reduce(
+        (soma, e) => soma + (Date.parse(e.fim) - Date.parse(e.inicio)) / 60000,
+        0,
+      ),
+    );
+    const codigo = gerarCodigoCertificado();
+    const emitidoEm = agora().toISOString();
+    inserirCertificado.run(codigo, atividade.id, req.usuario.id, cargaHorariaMinutos, totalPresencas, totalEncontros, emitidoEm);
+    return res.status(201).json({
+      codigo,
+      atividadeId: atividade.id,
+      participanteId: req.usuario.id,
+      cargaHorariaMinutos,
+      presencas: totalPresencas,
+      encontros: totalEncontros,
+      emitidoEm,
+    });
   });
 
   app.get('/certificados', exigirUsuario, exigirParticipante, (req, res) => {
