@@ -1,0 +1,924 @@
+{
+ "info": {
+  "id": "ses_f535b8464ffe2T9ZV3A2ojBcQ5",
+  "slug": "crisp-canyon",
+  "projectID": "ef5c31e66779deb7b442cd2960ce806c7cc88c17",
+  "directory": "C:\\dev\\semana-academica",
+  "path": "",
+  "title": "Criar spec M1-grade a partir de entrevistas",
+  "agent": "build",
+  "model": {
+   "id": "big-pickle",
+   "providerID": "opencode",
+   "variant": "default"
+  },
+  "version": "1.18.18",
+  "summary": {
+   "additions": 0,
+   "deletions": 0,
+   "files": 0
+  },
+  "cost": 0,
+  "tokens": {
+   "input": 28228,
+   "output": 10995,
+   "reasoning": 0,
+   "cache": {
+    "read": 175104,
+    "write": 0
+   }
+  },
+  "time": {
+   "created": 1789602855835,
+   "updated": 1789602930525
+  }
+ },
+ "messages": [
+  {
+   "info": {
+    "role": "user",
+    "time": {
+     "created": 1789602855924
+    },
+    "agent": "build",
+    "model": {
+     "providerID": "opencode",
+     "modelID": "big-pickle"
+    },
+    "summary": {
+     "diffs": [
+      {
+       "file": "specs/M1-grade.md",
+       "patch": "Index: specs/M1-grade.md\n===================================================================\n--- specs/M1-grade.md\t\n+++ specs/M1-grade.md\t\n@@ -1,226 +1,240 @@\n # Spec — M1: Grade de atividades\n \n ## 1. Objetivo\n \n Permitir que a organização monte e gerencie a grade da Semana Acadêmica 2026: consultar\n salas, criar, alterar, cancelar, listar e filtrar atividades — cada uma com seus encontros,\n vagas e sala. Qualquer pessoa autenticada consulta; só organização escreve. Campos derivados\n (`cargaHorariaMinutos`, `situacao`, `ocupadas`, `vagasRestantes`, `emEspera`) são calculados\n no momento da leitura, sem job nem agendador.\n \n ## 2. Fora de escopo\n \n M1 **não** faz:\n - Inscrições, lista de espera, convocação (M2).\n - Presença por QR (M3).\n - Certificados e extrato (M4).\n - Painel da organização e bloqueios (M5).\n - Criar usuário, sala ou evento — vêm dos dados iniciais (contrato seção 4).\n - Persistir `ocupadas`, `vagasRestantes`, `emEspera` ou `cargaHorariaMinutos` — são derivados.\n - Persistir `situacao` — derivada do relógio.\n+- Editar qualquer campo além de `titulo` e `vagas` (tipo, sala, encontros são fixados na criação).\n - Regras que dependem de inscrições existentes: em M1 o banco não tem inscrições, então\n   `ocupadas`/`vagasRestantes`/`emEspera` saem 0. `VAGAS_ABAIXO_DOS_INSCRITOS` só passa a\n   ter efeito real quando M2 existir.\n \n ## 3. Modelo\n \n-**Sala** — informado pelo cliente (dados iniciais):\n+**Sala** — informado pelo cliente (dados iniciais, contrato seção 4):\n \n | campo | tipo | origem |\n |---|---|---|\n | `id` | string | dados iniciais |\n | `nome` | string | dados iniciais |\n | `capacidade` | inteiro | dados iniciais |\n \n **Atividade**:\n \n | campo | tipo | origem |\n |---|---|---|\n | `id` | string (`atv_` + 8 hex) | gerado |\n-| `titulo` | string | informado (1–120, ver R6) |\n+| `titulo` | string | informado (1–120, ver R7) |\n | `tipo` | `palestra` \\| `minicurso` | informado |\n | `salaId` | string | informado |\n | `vagas` | inteiro | informado |\n | `encontros` | `[Encontro]` | informado |\n-| `cargaHorariaMinutos` | inteiro | calculado (R25) |\n-| `situacao` | `prevista` \\| `em_andamento` \\| `encerrada` \\| `cancelada` | calculado (R26) |\n-| `ocupadas` | inteiro | calculado (R27) |\n-| `vagasRestantes` | inteiro | calculado (R27) |\n-| `emEspera` | inteiro | calculado (R27) |\n+| `cargaHorariaMinutos` | inteiro | calculado (R27) |\n+| `situacao` | `prevista` \\| `em_andamento` \\| `encerrada` \\| `cancelada` | calculado (R28) |\n+| `ocupadas` | inteiro | calculado (R29) |\n+| `vagasRestantes` | inteiro | calculado (R29) |\n+| `emEspera` | inteiro | calculado (R29) |\n \n **Encontro**:\n \n | campo | tipo | origem |\n |---|---|---|\n | `id` | string (`enc_` + 8 hex) | gerado |\n | `inicio` | ISO 8601 com fuso | informado |\n | `fim` | ISO 8601 com fuso | informado |\n \n Na resposta, `encontros` sai em ordem de início (contrato seção 5).\n \n ## 4. Endpoints\n \n Identificação (`X-Usuario`) e ordem geral são do contrato: 401 (usuário desconhecido) → 403\n (quem pode chamar) → 404 (recurso inexistente) → 422 (corpo) → regras do recurso.\n \n | Método | Rota | Quem | Sucesso |\n |---|---|---|---|\n | GET | `/salas` | todos | 200 `[Sala]` |\n | GET | `/atividades` | todos | 200 `[Atividade]` — filtros `?dia=AAAA-MM-DD` e `?tipo=palestra\\|minicurso` |\n | GET | `/atividades/:id` | todos | 200 `Atividade` |\n | POST | `/atividades` | organização | 201 `Atividade` |\n | PATCH | `/atividades/:id` | organização | 200 `Atividade` |\n | POST | `/atividades/:id/cancelamento` | organização | 200 `Atividade` |\n \n POST espera `{ titulo, tipo, salaId, vagas, encontros }`. PATCH aceita qualquer subconjunto\n-editável de `{ titulo, vagas }`. Sala inexistente em POST → 404 `NAO_ENCONTRADO`; atividade\n-inexistente em GET/PATCH/cancelamento → 404 `NAO_ENCONTRADO`.\n+editável de `{ titulo, vagas }`. Sala inexistente em POST → 404 `NAO_ENCONTRADO` (R14);\n+atividade inexistente em GET/PATCH/cancelamento → 404 `NAO_ENCONTRADO`.\n \n ## 5. Regras\n \n+Cada regra cita a pergunta da entrevista (P-xx) que a originou e, quando existe, a regra\n+do documento de requisitos (RN-xxx). Sem RN, a fonte é decisão do grupo.\n+\n ### Listagem\n \n - **R1** (P2, RN-115): `GET /atividades` retorna todas as atividades, inclusive canceladas.\n - **R2** (P3, RN-115): `GET /atividades` ordena por início do 1º encontro (o mais cedo\n-  primeiro); empate por `titulo`. Atividade sem encontros não existe (ver R7), então toda\n+  primeiro); empate por `titulo`. Atividade sem encontros não existe (ver R8), então toda\n   atividade tem 1º encontro.\n - **R3** (P3, decisão do grupo): `GET /salas` ordena por `nome`.\n - **R4** (P4, RN-116): filtro `?dia=AAAA-MM-DD` — a atividade entra no resultado se **qualquer**\n   encontro cai naquele dia, no fuso de Brasília (o filtro compara o dia do instante, não o texto).\n - **R5** (P4, decisão do grupo): `?tipo=` diferente de `palestra` ou `minicurso` → 422\n   `DADOS_INVALIDOS`.\n - **R6** (P2-b, decisão do grupo): os filtros `dia` e `tipo` combinam (AND). Atividades\n   canceladas entram no resultado filtrado normalmente.\n - **R7** (P8, P8-b, decisão do grupo): `titulo` obrigatório; após trim obrigatório tem 1 a 120\n   caracteres. Ausente, tipo errado, vazio ou só espaços → 422 `DADOS_INVALIDOS`.\n \n ### Criação (POST /atividades)\n \n - **R8** (P5, RN-102, RN-103): `palestra` tem exatamente 1 encontro; `minicurso` tem de 2 a 5.\n   Violação → 422 `QUANTIDADE_DE_ENCONTROS`.\n - **R9** (P6, RN-104, RN-105, RN-106): encontro inválido → 422 `ENCONTRO_INVALIDO` quando:\n   duração (fim − início) < 1 hora ou > 4 horas; atravessa meia-noite; qualquer parte fora de\n   19 a 23/10/2026 (horário de Brasília); ou dois encontros da mesma atividade se sobrepõem.\n-- **R10** (P7, RN-107): `vagas` mínimo 1; máximo = capacidade da sala. Acima da capacidade →\n-  422 `VAGAS_ACIMA_DA_CAPACIDADE`. Vale também no PATCH.\n+- **R10** (P7, P19, P20, RN-107): `vagas` mínimo 1; máximo = capacidade da sala. Essa faixa\n+  vale em criar **e** alterar. Acima da capacidade → 422 `VAGAS_ACIMA_DA_CAPACIDADE`.\n+  `vagas` 0 ou negativo → 422 `DADOS_INVALIDOS` (corpo fora do domínio, checado nas regras de\n+  corpo, antes das regras do recurso). Vale também no PATCH.\n - **R11** (P9, RN-108): encontros de atividades **não canceladas** na mesma sala precisam de no\n   mínimo 15 min entre fim de um e início do próximo (10h14 conflita; 10h15 ok). Violação →\n   409 `CONFLITO_DE_SALA`. Atividades canceladas não bloqueiam.\n - **R12** (P10-b, decisão do grupo): no POST, quando mais de uma regra recusa, vale a primeira\n   na ordem `QUANTIDADE_DE_ENCONTROS` → `ENCONTRO_INVALIDO` → `VAGAS_ACIMA_DA_CAPACIDADE` →\n   `CONFLITO_DE_SALA`.\n - **R13** (P5-b, decisão do grupo): criar atividade com o 1º encontro no passado do relógio é\n-  permitido (`situacao` já nasce no valor que o relógio mandar, ver R26).\n+  permitido (`situacao` já nasce no valor que o relógio mandar, ver R28).\n+- **R14** (P18, decisão do grupo): `salaId` inexistente em POST → 404 `NAO_ENCONTRADO`. A\n+  existência (404) vem antes do corpo (422) na ordem geral do contrato, então um corpo inválido\n+  junto com sala inexistente também responde 404.\n \n ### Edição (PATCH /atividades/:id)\n \n-- **R14** (P11, RN-110): só `titulo` e `vagas` são editáveis. Qualquer outro campo do contrato\n+- **R15** (P11, RN-110): só `titulo` e `vagas` são editáveis. Qualquer outro campo do contrato\n   no corpo → 422 `CAMPO_NAO_EDITAVEL`.\n-- **R15** (P11-b, RN-110): enviar campo não editável mesmo com valor idêntico ao atual → 422\n+- **R16** (P11-b, RN-110): enviar campo não editável mesmo com valor idêntico ao atual → 422\n   `CAMPO_NAO_EDITAVEL`.\n-- **R16** (P11-c, decisão do grupo): corpo vazio (`{}`) → 422 `DADOS_INVALIDOS`. Corpo só com\n+- **R17** (P11-c, decisão do grupo): corpo vazio (`{}`) → 422 `DADOS_INVALIDOS`. Corpo só com\n   campos não editáveis → 422 `CAMPO_NAO_EDITAVEL`.\n-- **R17** (P11-d, decisão do grupo): esquema estrito — campo que não existe no contrato →\n+- **R18** (P11-d, decisão do grupo): esquema estrito — campo que não existe no contrato →\n   422 `DADOS_INVALIDOS` (tanto no POST quanto no PATCH).\n-- **R18** (P12, decisão do grupo): `titulo` e `vagas` são editáveis mesmo em\n+- **R19** (P12, decisão do grupo): `titulo` e `vagas` são editáveis mesmo em\n   `em_andamento`/`encerrada` (nenhuma regra bloqueia).\n-- **R19** (P13, RN-111): reduzir `vagas` a um valor menor que os inscritos atuais → 409\n+- **R20** (P13, RN-111): reduzir `vagas` a um valor menor que os inscritos atuais → 409\n   `VAGAS_ABAIXO_DOS_INSCRITOS`. Conta confirmadas + convocadas (quem ocupa vaga); a espera não\n   entra no cálculo.\n-- **R20** (P15-b, RN-113): PATCH em atividade `cancelada` → 422 `ATIVIDADE_CANCELADA`.\n-- **R21** (P10-b, decisão do grupo): no PATCH, quando mais de uma regra recusa, vale a primeira\n+- **R21** (P15-b, RN-113): PATCH em atividade `cancelada` → 422 `ATIVIDADE_CANCELADA`.\n+- **R22** (P10-b, decisão do grupo): no PATCH, quando mais de uma regra recusa, vale a primeira\n   na ordem `ATIVIDADE_CANCELADA` → `CAMPO_NAO_EDITAVEL` → `VAGAS_ACIMA_DA_CAPACIDADE` →\n   `VAGAS_ABAIXO_DOS_INSCRITOS`.\n \n ### Cancelamento (POST /atividades/:id/cancelamento)\n \n-- **R22** (P14, RN-112): cancela só enquanto o relógio ainda não chegou ao início do 1º\n+- **R23** (P14, RN-112): cancela só enquanto o relógio ainda não chegou ao início do 1º\n   encontro. Relógio no início do 1º encontro ou depois → 422 `ATIVIDADE_JA_INICIADA`, ainda que\n   existam encontros futuros.\n-- **R23** (P15, RN-113): cancelamento é definitivo e irreversível; não existe rota de reversão.\n-- **R24** (P15-b, RN-113): cancelar uma atividade já cancelada → 422 `ATIVIDADE_CANCELADA`.\n-- **R25** (P10-b, decisão do grupo): no cancelamento, `ATIVIDADE_CANCELADA` é verificada antes\n+- **R24** (P15, RN-113): cancelamento é definitivo e irreversível; não existe rota de reversão.\n+- **R25** (P15-b, RN-113): cancelar uma atividade já cancelada → 422 `ATIVIDADE_CANCELADA`.\n+- **R26** (P10-b, decisão do grupo): no cancelamento, `ATIVIDADE_CANCELADA` é verificada antes\n   de `ATIVIDADE_JA_INICIADA`.\n \n ### Derivados\n \n-- **R26** (P16, RN-109): `cargaHorariaMinutos` = soma das durações (fim − início) de todos os\n+- **R27** (P16, RN-109): `cargaHorariaMinutos` = soma das durações (fim − início) de todos os\n   encontros, em minutos. Qualquer valor no corpo é ignorado.\n-- **R27** (P17, RN-114): `situacao` segue o relógio: `prevista` até o início do 1º encontro;\n+- **R28** (P17, RN-114): `situacao` segue o relógio: `prevista` até o início do 1º encontro;\n   `em_andamento` do início do 1º encontro até o fim do último (entre encontros segue\n   `em_andamento`); `encerrada` depois do fim do último. `cancelada` prevalece sempre.\n-- **R28** (P1, contrato): `ocupadas`, `vagasRestantes` e `emEspera` são calculadas na leitura\n+- **R29** (P1, contrato): `ocupadas`, `vagasRestantes` e `emEspera` são calculadas na leitura\n   (não persistidas). Em M1, sem inscrições no banco, valem 0 (e `vagasRestantes` = `vagas`).\n \n ## 6. Critérios de aceite\n \n 1. (R1, R2, R6) Com 3 atividades criadas (uma cancelada), `GET /atividades` retorna as 3, em\n    ordem de 1º encontro, empates por título, incluindo a cancelada; com `?tipo=` aplica AND\n    com `?dia=`.\n 2. (R3) `GET /salas` retorna salas em ordem de `nome`.\n 3. (R4) Atividade com encontro às `2026-10-20T19:00:00-03:00` entra em `?dia=2026-10-20` (e\n    não em `?dia=2026-10-19`, apesar de o fuso poder mudar o texto).\n-4. (R5, R17) `GET /atividades?tipo=oficina` → 422 `DADOS_INVALIDOS`; POST com campo\n+4. (R5, R18) `GET /atividades?tipo=oficina` → 422 `DADOS_INVALIDOS`; POST com campo\n    `{\"duracao\": 60}` fora do contrato → 422 `DADOS_INVALIDOS`.\n 5. (R7) POST sem `titulo`, com `titulo: \"\"`, `titulo: \"   \"` ou `titulo` com 121 chars → 422\n    `DADOS_INVALIDOS`; com 120 chars → 201.\n 6. (R8) `palestra` com 2 encontros → 422 `QUANTIDADE_DE_ENCONTROS`; `minicurso` com 1 ou 6\n    encontros → 422 `QUANTIDADE_DE_ENCONTROS`; `minicurso` com 2 e com 5 → 201.\n 7. (R9) Encontro com 59 min de duração → `ENCONTRO_INVALIDO`; com 4h01 → `ENCONTRO_INVALIDO`;\n    com exatamente 1h e com exatamente 4h → OK; encontro cortando a meia-noite → inválido;\n    encontro fora de 19–23/10 → inválido; dois encontros da mesma atividade sobrepostos →\n    `ENCONTRO_INVALIDO` (nunca `CONFLITO_DE_SALA`).\n-8. (R10) `vagas: 0` → 422; `vagas` acima da capacidade da sala → 422\n-   `VAGAS_ACIMA_DA_CAPACIDADE`; `vagas` = capacidade → 201. No PATCH o mesmo limite vale.\n+8. (R10) `vagas: 0` → 422 `DADOS_INVALIDOS`; `vagas: -5` → 422 `DADOS_INVALIDOS`; `vagas` acima\n+   da capacidade da sala → 422 `VAGAS_ACIMA_DA_CAPACIDADE`; `vagas` = capacidade → 201. No\n+   PATCH o mesmo limiar vale (`vagas: 0` → `DADOS_INVALIDOS`, acima da capacidade →\n+   `VAGAS_ACIMA_DA_CAPACIDADE`).\n 9. (R11) Encontro começando 14 min após o fim de outro na mesma sala → 409 `CONFLITO_DE_SALA`;\n    começando exatamente 15 min depois → 201. Uma atividade cancelada que estaria em conflito\n    não bloqueia a criação.\n 10. (R12) POST que viole `QUANTIDADE_DE_ENCONTROS` e `CONFLITO_DE_SALA` ao mesmo tempo → 422\n     `QUANTIDADE_DE_ENCONTROS` (primeira na ordem).\n-11. (R13) PATCH enviando `salaId` ou `tipo` (mesmo iguais aos atuais, R15) → 422\n-    `CAMPO_NAO_EDITAVEL`; PATCH `{}` → 422 `DADOS_INVALIDOS` (R16); PATCH só com `tipo` → 422\n-    `CAMPO_NAO_EDITAVEL` (R16); PATCH com `tipo` e `titulo` válidos → 422 `CAMPO_NAO_EDITAVEL`\n-    (R14 vale primeiro na ordem de R21).\n-12. (R18) PATCH de `titulo`/`vagas` funciona em atividade `em_andamento` e `encerrada` → 200\n+11. (R14) POST com `salaId` inexistente e corpo válido → 404 `NAO_ENCONTRADO`. POST com\n+    `salaId` inexistente e corpo inválido → 404 `NAO_ENCONTRADO` (existência antes do corpo).\n+12. (R15, R16, R17, R18) PATCH enviando `salaId` ou `tipo` (mesmo iguais aos atuais, R16) → 422\n+    `CAMPO_NAO_EDITAVEL`; PATCH `{}` → 422 `DADOS_INVALIDOS` (R17); PATCH só com `tipo` → 422\n+    `CAMPO_NAO_EDITAVEL` (R17); PATCH com `tipo` e `titulo` válidos → 422 `CAMPO_NAO_EDITAVEL`\n+    (R15 vale primeiro na ordem de R22).\n+13. (R19) PATCH de `titulo`/`vagas` funciona em atividade `em_andamento` e `encerrada` → 200\n     com os novos valores.\n-13. (R19) Atividade com 2 inscrições confirmadas e `vagas: 1` → 409\n+14. (R20) Atividade com 2 inscrições confirmadas e `vagas: 1` → 409\n     `VAGAS_ABAIXO_DOS_INSCRITOS`. (Com M2 o cenário usa inscrições reais; em M1 o teste de\n     unidade cobre o cálculo da contagem confirmadas+convocadas.)\n-14. (R20, R21) PATCH em atividade cancelada com corpo que também tenha campo não editável →\n+15. (R21, R22) PATCH em atividade cancelada com corpo que também tenha campo não editável →\n     422 `ATIVIDADE_CANCELADA` (primeira na ordem).\n-15. (R22) Cancelamento com relógio antes do início do 1º encontro → 200 `cancelada`\n-    (R27). Relógio avançado até o início do 1º encontro → 422 `ATIVIDADE_JA_INICIADA`, mesmo\n+16. (R23) Cancelamento com relógio antes do início do 1º encontro → 200 `cancelada`\n+    (R28). Relógio avançado até o início do 1º encontro → 422 `ATIVIDADE_JA_INICIADA`, mesmo\n     com o 2º encontro no futuro.\n-16. (R23, R24, R25) Cancelar atividade já cancelada → 422 `ATIVIDADE_CANCELADA`; não existe\n+17. (R24, R25, R26) Cancelar atividade já cancelada → 422 `ATIVIDADE_CANCELADA`; não existe\n     reversão (nenhuma rota restaura `prevista`/`em_andamento`).\n-17. (R26, R28) `POST` ignorando `cargaHorariaMinutos` enviado no corpo: atividade com 2\n+18. (R27, R29) `POST` ignorando `cargaHorariaMinutos` enviado no corpo: atividade com 2\n     encontros de 3h → `cargaHorariaMinutos: 360`. `ocupadas`/`emEspera` 0 e\n     `vagasRestantes` igual a `vagas` na resposta de qualquer rota.\n-18. (R27) Com relógio parado: antes do 1º encontro → `prevista`; no início do 1º → `em_andamento`;\n+19. (R28) Com relógio parado: antes do 1º encontro → `prevista`; no início do 1º → `em_andamento`;\n     entre encontros → `em_andamento`; após o fim do último → `encerrada`; cancelada sobrepõe\n     qualquer estado.\n-19. (R13, P5-b) Criar atividade com 1º encontro no passado do relógio → 201, com `situacao`\n+20. (R13) Criar atividade com 1º encontro no passado do relógio → 201, com `situacao`\n     derivada do relógio (`em_andamento`/`encerrada`), sem bloqueio.\n \n ## 7. Como isto será verificado\n \n Pela costura mais externa que já existe: **HTTP**, na API subida por `npm start` dentro de\n `api/` (stack do `projeto.json`), com `MODO_TESTE=1`. Cada cenário começa com\n `POST /_teste/reset`, usa `PUT /_teste/relogio` para fixar o tempo e `X-Usuario` para\n autenticação. O juiz do contrato confere status, `erro` e corpo nas mesmas rotas, então o teste\n que exercita a rota real cobre automaticamente regra e contrato. M2 ainda não existe: os\n-cenários que dependem de inscrições (R13, R19) rodam só quando M2 surgir — até lá o cálculo é\n+cenários que dependem de inscrições (R20) rodam só quando M2 surgir — até lá o cálculo é\n provado por teste direto da função de contagem.\n \n ## 8. Fatias de entrega\n \n 1. **Salas + listagem**: `GET /salas` (R3), `GET /atividades` sem filtros (R1, R2).\n 2. **Filtros**: `?dia` (R4), `?tipo` e validação (R5), combinação AND e canceladas (R6).\n 3. **Criação**: `POST /atividades` com título (R7), quantidade de encontros (R8), validade de\n    encontro (R9), vagas (R10), conflito de sala (R11), ordem de erros (R12), passado permitido\n-   (R13), 404 de sala.\n-4. **Cálculos no relógio**: `cargaHorariaMinutos` (R26), `situacao` (R27), `ocupadas`/`vagasRestantes`/`emEspera` (R28) — derivados na leitura, com `_teste/relogio`.\n-5. **Edição**: `PATCH` — campos editáveis e ordem (R14–R17, R21), iniciada/editável (R18),\n-   abaixo dos inscritos (R19), cancelada (R20).\n-6. **Cancelamento**: `POST cancelamento` — janela (R22), irreversível (R23), já cancelada\n-   (R24), ordem (R25); e `GET /atividades/:id` cobrindo a resposta completa.\n\\ No newline at end of file\n+   (R13), sala inexistente → 404 (R14).\n+4. **Cálculos no relógio**: `cargaHorariaMinutos` (R27), `situacao` (R28),\n+   `ocupadas`/`vagasRestantes`/`emEspera` (R29) — derivados na leitura, com `_teste/relogio`.\n+5. **Edição**: `PATCH` — campos editáveis e ordem (R15–R18, R22), iniciada/editável (R19),\n+   abaixo dos inscritos (R20), cancelada (R21).\n+6. **Cancelamento**: `POST cancelamento` — janela (R23), irreversível (R24), já cancelada\n+   (R25), ordem (R26); e `GET /atividades/:id` cobrindo a resposta completa.\n\\ No newline at end of file\n",
+       "additions": 65,
+       "deletions": 51,
+       "status": "modified"
+      }
+     ]
+    },
+    "id": "msg_0aca47be0001i0uQfRuOtB4SwA",
+    "sessionID": "ses_f535b8464ffe2T9ZV3A2ojBcQ5"
+   },
+   "parts": [
+    {
+     "type": "text",
+     "text": "Use a skill to-spec. Escreva specs/M1-grade.md a partir de entrevistas/M1-grade.md.Cada regra cita a pergunta (P-xx) e, se houver, a regra do documento (RN-xxx) — nas\nsem RN, marque a fonte como decisão do grupo.",
+     "id": "prt_0aca47be0002zNClNGndJ7ijcA",
+     "sessionID": "ses_f535b8464ffe2T9ZV3A2ojBcQ5",
+     "messageID": "msg_0aca47be0001i0uQfRuOtB4SwA"
+    }
+   ]
+  },
+  {
+   "info": {
+    "parentID": "msg_0aca47be0001i0uQfRuOtB4SwA",
+    "role": "assistant",
+    "mode": "build",
+    "agent": "build",
+    "path": {
+     "cwd": "C:\\dev\\semana-academica",
+     "root": "C:\\dev\\semana-academica"
+    },
+    "cost": 0,
+    "tokens": {
+     "total": 13879,
+     "input": 11752,
+     "output": 79,
+     "reasoning": 0,
+     "cache": {
+      "write": 0,
+      "read": 2048
+     }
+    },
+    "modelID": "big-pickle",
+    "providerID": "opencode",
+    "time": {
+     "created": 1789602855932,
+     "completed": 1789602858035
+    },
+    "finish": "tool-calls",
+    "id": "msg_0aca47bfc0018HCZ1dAKiZclWM",
+    "sessionID": "ses_f535b8464ffe2T9ZV3A2ojBcQ5"
+   },
+   "parts": [
+    {
+     "snapshot": "78749bcfc0e21e546cec713bea2c57430344f28e",
+     "type": "step-start",
+     "id": "prt_0aca48171001U5EfaIMjaOhInd",
+     "sessionID": "ses_f535b8464ffe2T9ZV3A2ojBcQ5",
+     "messageID": "msg_0aca47bfc0018HCZ1dAKiZclWM"
+    },
+    {
+     "type": "reasoning",
+     "text": "The user wants me to use the to-spec skill to write specs/M1-grade.md from entrevistas/M1-grade.md. Let me load the skill first.",
+     "time": {
+      "start": 1789602857332,
+      "end": 1789602857450
+     },
+     "id": "prt_0aca48174001KyQjJoDIDGostl",
+     "sessionID": "ses_f535b8464ffe2T9ZV3A2ojBcQ5",
+     "messageID": "msg_0aca47bfc0018HCZ1dAKiZclWM"
+    },
+    {
+     "type": "tool",
+     "tool": "skill",
+     "callID": "call_b87f4f810ee0444d87b921ab",
+     "state": {
+      "status": "completed",
+      "input": {
+       "name": "to-spec"
+      },
+      "output": "<skill_content name=\"to-spec\">\n# Skill: to-spec\n\n# A conversa vira contrato\r\n\r\nVocê já tem tudo o que precisa: está na conversa. **Não entreviste de novo.** Sua\r\ntarefa é escrever, num arquivo, o que já foi decidido — e nada além.\r\n\r\nRegra que ninguém decidiu **não entra**. Se faltar alguma coisa para a spec ficar de pé,\r\npare e pergunte só aquilo. Não preencha buraco com \"geralmente é assim\".\r\n\r\n## Onde escrever\r\n\r\n`spec-<recurso>.md`, na raiz do projeto. Um arquivo por recurso.\r\n\r\n## Antes de escrever\r\n\r\nLeia o repositório: convenções, vocabulário, nomes que já existem. A spec fala a língua\r\ndo projeto — se o código chama de `leitor`, a spec não inventa `usuário`.\r\n\r\nDecida também **onde isto vai ser verificado**. Prefira a costura mais externa que já\r\nexistir (aqui: HTTP, pelo `criarServidor()`). Quanto menos pontos de teste novos, melhor.\r\n\r\n## Modelo\r\n\r\n```markdown\r\n# Spec — <recurso>\r\n\r\n## 1. Objetivo\r\nUm parágrafo: que problema isto resolve, na visão de quem usa.\r\n\r\n## 2. Fora de escopo\r\nLista do que este recurso NÃO faz. Isto é tão contrato quanto o resto — é aqui que\r\nse recusa código que ninguém pediu.\r\n\r\n## 3. Modelo\r\nOs campos da entidade, com tipo e origem (informado pelo cliente / calculado / derivado).\r\nCampo derivado nunca é guardado.\r\n\r\n## 4. Endpoints\r\nMétodo, caminho, corpo esperado, status de sucesso.\r\n\r\n## 5. Regras\r\nNumeradas: R1, R2, R3… Uma regra por linha de decisão, cada uma com o número, o limite\r\nou o valor exato que foi decidido, e o status HTTP de recusa quando houver.\r\n\r\nToda regra precisa ser observável de fora. \"O sistema deve ser rápido\" não é regra.\r\n\"Devolver depois da data prevista cobra 1,50 por dia inteiro de atraso, teto de 30\" é.\r\n\r\nQuando duas regras podem recusar a mesma operação, diga qual vale primeiro.\r\n\r\n## 6. Critérios de aceite\r\nLista numerada de cenários concretos, cada um apontando a regra que ele prova:\r\n\r\n1. (R1, R3) POST /x com dados válidos → 201, campo `y` igual a Z.\r\n\r\nRegra sem pelo menos um critério é regra sem prova. Volte e escreva o critério.\r\n\r\n## 7. Como isto será verificado\r\nA costura (interface) usada nos testes e por quê.\r\n\r\n## 8. Fatias de entrega\r\nA ordem de implementação, em fatias verticais. Cada fatia é um conjunto pequeno de\r\nregras que já dá para rodar e verificar sozinho.\r\n```\r\n\r\n## Depois de escrever\r\n\r\nMostre ao usuário a lista das regras numeradas — só os números e uma linha cada — e\r\npergunte se falta alguma. É a última chance de corrigir barato.\n\nBase directory for this skill: C:\\dev\\semana-academica\\.opencode\\skills\\to-spec\nRelative paths in this skill (e.g., scripts/, reference/) are relative to this base directory.\nNote: file list is sampled.\n\n<skill_files>\n\n</skill_files>\n</skill_content>",
+      "metadata": {
+       "name": "to-spec",
+       "dir": "C:\\dev\\semana-academica\\.opencode\\skills\\to-spec",
+       "truncated": false
+      },
+      "title": "Loaded skill: to-spec",
+      "time": {
+       "start": 1789602857514,
+       "end": 1789602857572
+      }
+     },
+     "id": "prt_0aca481ec001VycdSpaQ11ENzg",
+     "sessionID": "ses_f535b8464ffe2T9ZV3A2ojBcQ5",
+     "messageID": "msg_0aca47bfc0018HCZ1dAKiZclWM"
+    },
+    {
+     "reason": "tool-calls",
+     "snapshot": "78749bcfc0e21e546cec713bea2c57430344f28e",
+     "type": "step-finish",
+     "tokens": {
+      "total": 13879,
+      "input": 11752,
+      "output": 79,
+      "reasoning": 0,
+      "cache": {
+       "write": 0,
+       "read": 2048
+      }
+     },
+     "cost": 0,
+     "id": "prt_0aca48360001tj8FJNjH8ZBFZZ",
+     "sessionID": "ses_f535b8464ffe2T9ZV3A2ojBcQ5",
+     "messageID": "msg_0aca47bfc0018HCZ1dAKiZclWM"
+    }
+   ]
+  },
+  {
+   "info": {
+    "parentID": "msg_0aca47be0001i0uQfRuOtB4SwA",
+    "role": "assistant",
+    "mode": "build",
+    "agent": "build",
+    "path": {
+     "cwd": "C:\\dev\\semana-academica",
+     "root": "C:\\dev\\semana-academica"
+    },
+    "cost": 0,
+    "tokens": {
+     "total": 14918,
+     "input": 981,
+     "output": 113,
+     "reasoning": 0,
+     "cache": {
+      "write": 0,
+      "read": 13824
+     }
+    },
+    "modelID": "big-pickle",
+    "providerID": "opencode",
+    "time": {
+     "created": 1789602858037,
+     "completed": 1789602860109
+    },
+    "finish": "tool-calls",
+    "id": "msg_0aca48435001nzEKNYisryrjdV",
+    "sessionID": "ses_f535b8464ffe2T9ZV3A2ojBcQ5"
+   },
+   "parts": [
+    {
+     "snapshot": "78749bcfc0e21e546cec713bea2c57430344f28e",
+     "type": "step-start",
+     "id": "prt_0aca489720016JVdg0mlT888l2",
+     "sessionID": "ses_f535b8464ffe2T9ZV3A2ojBcQ5",
+     "messageID": "msg_0aca48435001nzEKNYisryrjdV"
+    },
+    {
+     "type": "reasoning",
+     "text": "Let me read the interview file and the repo structure to understand conventions.",
+     "time": {
+      "start": 1789602859380,
+      "end": 1789602859437
+     },
+     "id": "prt_0aca4897400113WABME61SEky4",
+     "sessionID": "ses_f535b8464ffe2T9ZV3A2ojBcQ5",
+     "messageID": "msg_0aca48435001nzEKNYisryrjdV"
+    },
+    {
+     "type": "tool",
+     "tool": "read",
+     "callID": "call_13f47f75d42243bf90897e8a",
+     "state": {
+      "status": "completed",
+      "input": {
+       "filePath": "C:\\dev\\semana-academica\\entrevistas\\M1-grade.md"
+      },
+      "output": "[7419 caracteres omitidos]",
+      "title": "entrevistas\\M1-grade.md",
+      "time": {
+       "start": 1789602859563,
+       "end": 1789602859568
+      }
+     },
+     "id": "prt_0aca489af001NIsmj23sHIQMjV",
+     "sessionID": "ses_f535b8464ffe2T9ZV3A2ojBcQ5",
+     "messageID": "msg_0aca48435001nzEKNYisryrjdV"
+    },
+    {
+     "type": "tool",
+     "tool": "read",
+     "callID": "call_a266e38313e241de98fd0eaf",
+     "state": {
+      "status": "completed",
+      "input": {
+       "filePath": "C:\\dev\\semana-academica"
+      },
+      "output": "[225 caracteres omitidos]",
+      "title": "",
+      "time": {
+       "start": 1789602859662,
+       "end": 1789602859664
+      }
+     },
+     "id": "prt_0aca48a510015Pd7AgHXC2i6x0",
+     "sessionID": "ses_f535b8464ffe2T9ZV3A2ojBcQ5",
+     "messageID": "msg_0aca48435001nzEKNYisryrjdV"
+    },
+    {
+     "reason": "tool-calls",
+     "snapshot": "78749bcfc0e21e546cec713bea2c57430344f28e",
+     "type": "step-finish",
+     "tokens": {
+      "total": 14918,
+      "input": 981,
+      "output": 113,
+      "reasoning": 0,
+      "cache": {
+       "write": 0,
+       "read": 13824
+      }
+     },
+     "cost": 0,
+     "id": "prt_0aca48b830011Gr9hsVIRFq7Tw",
+     "sessionID": "ses_f535b8464ffe2T9ZV3A2ojBcQ5",
+     "messageID": "msg_0aca48435001nzEKNYisryrjdV"
+    }
+   ]
+  },
+  {
+   "info": {
+    "parentID": "msg_0aca47be0001i0uQfRuOtB4SwA",
+    "role": "assistant",
+    "mode": "build",
+    "agent": "build",
+    "path": {
+     "cwd": "C:\\dev\\semana-academica",
+     "root": "C:\\dev\\semana-academica"
+    },
+    "cost": 0,
+    "tokens": {
+     "total": 17898,
+     "input": 2891,
+     "output": 159,
+     "reasoning": 0,
+     "cache": {
+      "write": 0,
+      "read": 14848
+     }
+    },
+    "modelID": "big-pickle",
+    "providerID": "opencode",
+    "time": {
+     "created": 1789602860111,
+     "completed": 1789602862609
+    },
+    "finish": "tool-calls",
+    "id": "msg_0aca48c4f001C9Ti56MtA2NhZu",
+    "sessionID": "ses_f535b8464ffe2T9ZV3A2ojBcQ5"
+   },
+   "parts": [
+    {
+     "snapshot": "78749bcfc0e21e546cec713bea2c57430344f28e",
+     "type": "step-start",
+     "id": "prt_0aca49037001Zs3al8ovRlv9oA",
+     "sessionID": "ses_f535b8464ffe2T9ZV3A2ojBcQ5",
+     "messageID": "msg_0aca48c4f001C9Ti56MtA2NhZu"
+    },
+    {
+     "type": "reasoning",
+     "text": "Let me read the contract-api.md, existing specs, and projeto.json to learn conventions.",
+     "time": {
+      "start": 1789602861113,
+      "end": 1789602861277
+     },
+     "id": "prt_0aca490390018A5eTQyVKruQAG",
+     "sessionID": "ses_f535b8464ffe2T9ZV3A2ojBcQ5",
+     "messageID": "msg_0aca48c4f001C9Ti56MtA2NhZu"
+    },
+    {
+     "type": "tool",
+     "tool": "read",
+     "callID": "call_20d1a394108547c2986051bc",
+     "state": {
+      "status": "completed",
+      "input": {
+       "filePath": "C:\\dev\\semana-academica\\contrato-api.md"
+      },
+      "output": "[13870 caracteres omitidos]",
+      "title": "contrato-api.md",
+      "time": {
+       "start": 1789602861369,
+       "end": 1789602861374
+      }
+     },
+     "id": "prt_0aca490de001P8eLwg4Bt7ne29",
+     "sessionID": "ses_f535b8464ffe2T9ZV3A2ojBcQ5",
+     "messageID": "msg_0aca48c4f001C9Ti56MtA2NhZu"
+    },
+    {
+     "type": "tool",
+     "tool": "read",
+     "callID": "call_5392053f1a034627aa180151",
+     "state": {
+      "status": "completed",
+      "input": {
+       "filePath": "C:\\dev\\semana-academica\\specs"
+      },
+      "output": "[120 caracteres omitidos]",
+      "title": "specs",
+      "time": {
+       "start": 1789602861909,
+       "end": 1789602861913
+      }
+     },
+     "id": "prt_0aca4915b001qdzKnFMia8wRR9",
+     "sessionID": "ses_f535b8464ffe2T9ZV3A2ojBcQ5",
+     "messageID": "msg_0aca48c4f001C9Ti56MtA2NhZu"
+    },
+    {
+     "type": "tool",
+     "tool": "read",
+     "callID": "call_6612a3a83a184212b5e309f5",
+     "state": {
+      "status": "completed",
+      "input": {
+       "filePath": "C:\\dev\\semana-academica\\projeto.json"
+      },
+      "output": "[396 caracteres omitidos]",
+      "title": "projeto.json",
+      "time": {
+       "start": 1789602862026,
+       "end": 1789602862030
+      }
+     },
+     "id": "prt_0aca49356001VXQmM9qq8XHSOU",
+     "sessionID": "ses_f535b8464ffe2T9ZV3A2ojBcQ5",
+     "messageID": "msg_0aca48c4f001C9Ti56MtA2NhZu"
+    },
+    {
+     "reason": "tool-calls",
+     "snapshot": "78749bcfc0e21e546cec713bea2c57430344f28e",
+     "type": "step-finish",
+     "tokens": {
+      "total": 17898,
+      "input": 2891,
+      "output": 159,
+      "reasoning": 0,
+      "cache": {
+       "write": 0,
+       "read": 14848
+      }
+     },
+     "cost": 0,
+     "id": "prt_0aca4952d001cXTf3PsLJ01C5K",
+     "sessionID": "ses_f535b8464ffe2T9ZV3A2ojBcQ5",
+     "messageID": "msg_0aca48c4f001C9Ti56MtA2NhZu"
+    }
+   ]
+  },
+  {
+   "info": {
+    "parentID": "msg_0aca47be0001i0uQfRuOtB4SwA",
+    "role": "assistant",
+    "mode": "build",
+    "agent": "build",
+    "path": {
+     "cwd": "C:\\dev\\semana-academica",
+     "root": "C:\\dev\\semana-academica"
+    },
+    "cost": 0,
+    "tokens": {
+     "total": 23392,
+     "input": 5606,
+     "output": 122,
+     "reasoning": 0,
+     "cache": {
+      "write": 0,
+      "read": 17664
+     }
+    },
+    "modelID": "big-pickle",
+    "providerID": "opencode",
+    "time": {
+     "created": 1789602862611,
+     "completed": 1789602864583
+    },
+    "finish": "tool-calls",
+    "id": "msg_0aca49613001KD0RR6ZhSNnHim",
+    "sessionID": "ses_f535b8464ffe2T9ZV3A2ojBcQ5"
+   },
+   "parts": [
+    {
+     "snapshot": "78749bcfc0e21e546cec713bea2c57430344f28e",
+     "type": "step-start",
+     "id": "prt_0aca499f6001Thv2FfMfuhmHlJ",
+     "sessionID": "ses_f535b8464ffe2T9ZV3A2ojBcQ5",
+     "messageID": "msg_0aca49613001KD0RR6ZhSNnHim"
+    },
+    {
+     "type": "reasoning",
+     "text": "There's already a `specs/M1-grade.md`. Let me read it to see what exists.",
+     "time": {
+      "start": 1789602863608,
+      "end": 1789602863730
+     },
+     "id": "prt_0aca499f8001wlya5tv1DGCETk",
+     "sessionID": "ses_f535b8464ffe2T9ZV3A2ojBcQ5",
+     "messageID": "msg_0aca49613001KD0RR6ZhSNnHim"
+    },
+    {
+     "type": "tool",
+     "tool": "read",
+     "callID": "call_1ae66186407f4057ab11f5aa",
+     "state": {
+      "status": "completed",
+      "input": {
+       "filePath": "C:\\dev\\semana-academica\\specs\\M1-grade.md"
+      },
+      "output": "[13859 caracteres omitidos]",
+      "title": "specs\\M1-grade.md",
+      "time": {
+       "start": 1789602863859,
+       "end": 1789602863865
+      }
+     },
+     "id": "prt_0aca49a74001osUbejOxQxzUQZ",
+     "sessionID": "ses_f535b8464ffe2T9ZV3A2ojBcQ5",
+     "messageID": "msg_0aca49613001KD0RR6ZhSNnHim"
+    },
+    {
+     "type": "tool",
+     "tool": "read",
+     "callID": "call_d2c4342ca2654732810d135f",
+     "state": {
+      "status": "completed",
+      "input": {
+       "filePath": "C:\\dev\\semana-academica\\README.md"
+      },
+      "output": "[3213 caracteres omitidos]",
+      "title": "README.md",
+      "time": {
+       "start": 1789602864180,
+       "end": 1789602864190
+      }
+     },
+     "id": "prt_0aca49b1b001seMbe2iqKspcYE",
+     "sessionID": "ses_f535b8464ffe2T9ZV3A2ojBcQ5",
+     "messageID": "msg_0aca49613001KD0RR6ZhSNnHim"
+    },
+    {
+     "reason": "tool-calls",
+     "snapshot": "78749bcfc0e21e546cec713bea2c57430344f28e",
+     "type": "step-finish",
+     "tokens": {
+      "total": 23392,
+      "input": 5606,
+      "output": 122,
+      "reasoning": 0,
+      "cache": {
+       "write": 0,
+       "read": 17664
+      }
+     },
+     "cost": 0,
+     "id": "prt_0aca49d070015QU2D1VQsAfRb3",
+     "sessionID": "ses_f535b8464ffe2T9ZV3A2ojBcQ5",
+     "messageID": "msg_0aca49613001KD0RR6ZhSNnHim"
+    }
+   ]
+  },
+  {
+   "info": {
+    "parentID": "msg_0aca47be0001i0uQfRuOtB4SwA",
+    "role": "assistant",
+    "mode": "build",
+    "agent": "build",
+    "path": {
+     "cwd": "C:\\dev\\semana-academica",
+     "root": "C:\\dev\\semana-academica"
+    },
+    "cost": 0,
+    "tokens": {
+     "total": 31854,
+     "input": 6342,
+     "output": 2216,
+     "reasoning": 0,
+     "cache": {
+      "write": 0,
+      "read": 23296
+     }
+    },
+    "modelID": "big-pickle",
+    "providerID": "opencode",
+    "time": {
+     "created": 1789602864585,
+     "completed": 1789602879501
+    },
+    "finish": "tool-calls",
+    "id": "msg_0aca49dc9001zZbikPwGGpb8A5",
+    "sessionID": "ses_f535b8464ffe2T9ZV3A2ojBcQ5"
+   },
+   "parts": [
+    {
+     "snapshot": "78749bcfc0e21e546cec713bea2c57430344f28e",
+     "type": "step-start",
+     "id": "prt_0aca4a20f001M4khST8exD5EGp",
+     "sessionID": "ses_f535b8464ffe2T9ZV3A2ojBcQ5",
+     "messageID": "msg_0aca49dc9001zZbikPwGGpb8A5"
+    },
+    {
+     "type": "reasoning",
+     "text": "The specs/M1-grade.md already exists and is fully written. The user asked to write specs/M1-grade.md from entrevistas/M1-grade.md. \n\nWait — there's already a full spec there. But looking carefully, the interview file has some rules not reflected in the existing spec:\n\n- **P18**: `salaId` inexistente em POST → 404 `NAO_ENCONTRADO` (check before body/422). The spec mentions it in section 4 (\"Sala inexistente em POST → 404\") but there's no numbered rule. Actually it's mentioned in the Endpoints section. And in slice 3 mention \"404 de sala\". But it's not a numbered rule with a criterion. Hmm. Actually section 4 mentions it. But P18/P19/P20 are rodada 3 decisions that came \"depois da spec\". \n\n- **P19**: `vagas` 1..capacidade vale em criar e alterar. In the spec R10 says \"Vale também no PATCH.\" Good.\n\n- **P20**: `vagas` 0 ou negativo → 422 `DADOS_INVALIDOS` em criar e alterar (body fora do domínio, antes das regras do recurso). The spec criterion 8 says \"`vagas: 0` → 422\" but doesn't explicitly distinguish `DADOS_INVALIDOS` vs `VAGAS_ACIMA_DA_CAPACIDADE`. Actually R10 says vagas mínimo 1; máximo = capacidade. Above capacidade → `VAGAS_ACIMA_DA_CAPACIDADE`. And vagas 0 or negative → 422 `DADOS_INVALIDOS`. The current R10 doesn't explicitly name R DADOS_INVALIDOS for 0/negative. The criterion says \"`vagas: 0` → 422\" but doesn't specify code `DADOS_INVALIDOS`. P20 explicitly says 422 `DADOS_INVALIDOS` em criar e alterar.\n\nSo the existing spec appears to predate rodada 3. The interview is the source of truth (\"fonte\"), and the user asks: \"Escreva specs/M1-grade.md a partir de entrevistas/M1-grade.md. Cada regra cita a pergunta (P-xx) e, se houver, a regra do documento (RN-xxx) — nas sem RN, marque a fonte como decisão do grupo.\"\n\nSo my job: write specs/M1-grade.md from the interview, ensuring every rule cites P-xx and RN-xxx, and for rules without RN mark source as \"decisão do grupo\".\n\nThe existing spec is mostly there but has gaps regarding rodada 3 decisions (P18, P19, P20). Let me check:\n- P18: salaId inexistente → 404 NAO_ENCONTRADO. Present as prose in section 4 and in slice 3, but not as a numbered rule. The user wants \"cada regra cita a pergunta\". Should probably be a numbered rule.\n- P19: covered by R10 (\"Vale também no PATCH\") — P19 cited? R10 cites (P7, RN-107). The PATCH part came from P19. Could add P19 to R10.\n- P20: vagas 0/negativo → 422 DADOS_INVALIDOS (criar e alterar) before resource rules. Not in R10 explicitly. Need to add.\n\nAlso the user says \"Cada regra cita a pergunta (P-xx) e, se houver, a regra do documento (RN-xxx) — nas sem RN, marque a fonte como decisão do grupo.\"\n\nCurrent spec already does this pattern: e.g. `**R3** (P3, decisão do grupo)`. Good.\n\nBut there are some rules where RN is present but not cited, or where a rule mixes pergunta and RN. Let me re-check each rule:\n\n- R1 (P2, RN-115) ✓\n- R2 (P3, RN-115) ✓\n- R3 (P3, decisão do grupo) ✓\n- R4 (P4, RN-116) ✓\n- R5 (P4, decisão do grupo) ✓\n- R6 (P2-b, decisão do grupo) ✓\n- R7 (P8, P8-b, decisão do grupo) ✓ (título no RN, sem RN → decisão do grupo) ✓\n- R8 (P5, RN-102, RN-103) ✓\n- R9 (P6, RN-104, RN-105, RN-106) ✓\n- R10 (P7, RN-107) — needs P19 for PATCH part and P20 for 0/negativo → DADOS_INVALIDOS.\n- R11 (P9, RN-108) ✓\n- R12 (P10-b, decisão do grupo) ✓\n- R13 (P5-b, decisão do grupo) ✓\n- R14 (P11, RN-110) ✓\n- R15 (P11-b, RN-110) ✓\n- R16 (P11-c, decisão do grupo) ✓\n- R17 (P11-d, decisão do grupo) ✓\n- R18 (P12, decisão do grupo) ✓\n- R19 (P13, RN-111) ✓\n- R20 (P15-b, RN-113) ✓ — RN-113 is \"cancelada definitivo\"? P15 was RN-113 (canceled definitive). P15-b about recancelar/PATCH cancelada → 422. The RN cited is RN-113. OK.\n- R21 (P10-b, decisão do grupo) ✓\n- R22 (P14, RN-112) ✓\n- R23 (P15, RN-113) ✓\n- R24 (P15-b, RN-113) ✓\n- R25 (P10-b, decisão do grupo) ✓\n- R26 (P16, RN-109) ✓\n- R27 (P17, RN-114) ✓\n- R28 (P1, contrato) — hmm, this cites contrato. The user says \"se houver, a regra do documento (RN-xxx)\"; ocupadas calculadas is from contrato (fato resolvido). Actually the derivados are per \"contrato, não se negocia\" section. So citing fato resolvido/contrato is fine. But note \"nas sem RN, marque a fonte como decisão do grupo\". This one has no RN; source is contrato. Hmm — but P1 covers the scope, which includes the JSON. I might cite (P1, contrato). It's already like that. I'll keep it.\n\nSo main gaps to add from rodada 3: P18 (salaId inexistente → 404), P19 (in R10), P20 (vagas 0/negativo → DADOS_INVALIDOS). Also, P19's rule \"vale nos dois (criar e alterar)\".\n\nAlso criteria should be updated to prove P18 and P20 explicitly. And slice 3 mentions \"404 de sala\" — the rule number should be referenced.\n\nThe user says \"Escreva specs/M1-grade.md a partir de entrevistas/M1-grade.md.\" The file already exists; I should rewrite/regenerate it fully to incorporate everything, following the skill model. Since the existing file is close, I'll rewrite it fully with the additions.\n\nWait — should I check auditorias to see if audited? There's an auditorias/ dir. Let me peek to be safe. Actually not strictly needed. But the interview says \"Fronteira: vazia ✅ (reaberta na rodada 3 e fechada novamente)\" and \"Rodada 3 — buracos apontados depois da spec\". So rodada 3 was pointed AFTER the spec. Now we're re-writing the spec to incorporate them. Good.\n\nLet me also double-check numbering: the skill says each rule numbered R1, R2, ... and criteria pointing to rules, and slices.\n\nNow, the user's explicit instruction: \"Cada regra cita a pergunta (P-xx) e, se houver, a regra do documento (RN-xxx) — nas sem RN, marque a fonte como decisão do grupo.\"\n\nSo every rule must cite its P number. If it has RN, cite RN. If no RN, cite \"decisão do grupo\".\n\nLet me write the updated spec. I'll add:\n\n- R7 title rule: keep as (P8, P8-b, decisão do grupo). There is no RN for title size. Good.\n- Add P18 rule: salaId inexistente em POST → 404 NAO_ENCONTRADO (existência antes do corpo). Where? It relates to section 4 and order. The interview P18 explicitly: \"404 NAO_ENCONTRADO (todas as recomendadas). Existência (404) vem antes do corpo (422) na ordem geral do contrato.\" This is a rule. I'll add it as a rule in Criação section. Let me think about rule numbering. I'll insert it after R10 (vagas) or as R10-b? Better to renumber cleanly. Actually renumbering all would be churn but the user asked to \"write\" the spec, so renumbering is acceptable. But existing tests may reference rule numbers? Possibly. Let me check api/ tests.\n\nLet me search for references to R-numbers in tests.\n\nActually, let me check the api directory for tests referencing spec rule numbers.",
+     "time": {
+      "start": 1789602865680,
+      "end": 1789602877956
+     },
+     "id": "prt_0aca4a2100013ok0S4lv4J8ef0",
+     "sessionID": "ses_f535b8464ffe2T9ZV3A2ojBcQ5",
+     "messageID": "msg_0aca49dc9001zZbikPwGGpb8A5"
+    },
+    {
+     "type": "tool",
+     "tool": "bash",
+     "callID": "call_a78022a0f0184563a9a4f9bc",
+     "state": {
+      "status": "completed",
+      "input": {
+       "command": "rg -n \"R1[0-9]?\\b|R[2-9]\\b\" api web --glob \"*.js\" --glob \"*.ts\" --glob \"*.tsx\" 2>$null | Select-Object -First 60"
+      },
+      "output": "rg : O termo 'rg' n�o � reconhecido como nome de cmdlet, fun��o, arquivo de script ou programa oper�vel. Verifique a \r\ngrafia do nome ou, se um caminho tiver sido inclu�do, veja se o caminho est� correto e tente novamente.\r\nNo linha:1 caractere:1\r\n+ rg -n \"R1[0-9]?\\b|R[2-9]\\b\" api web --glob \"*.js\" --glob \"*.ts\" --glo ...\r\n+ ~~\r\n    + CategoryInfo          : ObjectNotFound: (rg:String) [], CommandNotFoundException\r\n    + FullyQualifiedErrorId : CommandNotFoundException\r\n \r\n",
+      "metadata": {
+       "output": "rg : O termo 'rg' n�o � reconhecido como nome de cmdlet, fun��o, arquivo de script ou programa oper�vel. Verifique a \r\ngrafia do nome ou, se um caminho tiver sido inclu�do, veja se o caminho est� correto e tente novamente.\r\nNo linha:1 caractere:1\r\n+ rg -n \"R1[0-9]?\\b|R[2-9]\\b\" api web --glob \"*.js\" --glob \"*.ts\" --glo ...\r\n+ ~~\r\n    + CategoryInfo          : ObjectNotFound: (rg:String) [], CommandNotFoundException\r\n    + FullyQualifiedErrorId : CommandNotFoundException\r\n \r\n",
+       "exit": 1,
+       "truncated": false
+      },
+      "title": "rg -n \"R1[0-9]?\\b|R[2-9]\\b\" api web --glob \"*.js\" --glob \"*.ts\" --glob \"*.tsx\" 2>$null | Select-Object -First 60",
+      "time": {
+       "start": 1789602879078,
+       "end": 1789602879096
+      }
+     },
+     "id": "prt_0aca4d207001rFBJfvc8YHUtIf",
+     "sessionID": "ses_f535b8464ffe2T9ZV3A2ojBcQ5",
+     "messageID": "msg_0aca49dc9001zZbikPwGGpb8A5"
+    },
+    {
+     "type": "tool",
+     "tool": "glob",
+     "callID": "call_c8631ea8328248aabcdfcc6a",
+     "state": {
+      "status": "completed",
+      "input": {
+       "pattern": "api/**/*.js"
+      },
+      "output": "[14 caracteres omitidos]",
+      "title": "",
+      "time": {
+       "start": 1789602878267,
+       "end": 1789602878327
+      }
+     },
+     "id": "prt_0aca4d2fd0012cEyYK8tOcSpJV",
+     "sessionID": "ses_f535b8464ffe2T9ZV3A2ojBcQ5",
+     "messageID": "msg_0aca49dc9001zZbikPwGGpb8A5"
+    },
+    {
+     "reason": "tool-calls",
+     "snapshot": "78749bcfc0e21e546cec713bea2c57430344f28e",
+     "type": "step-finish",
+     "tokens": {
+      "total": 31854,
+      "input": 6342,
+      "output": 2216,
+      "reasoning": 0,
+      "cache": {
+       "write": 0,
+       "read": 23296
+      }
+     },
+     "cost": 0,
+     "id": "prt_0aca4d7490019a3vohMC81MKxQ",
+     "sessionID": "ses_f535b8464ffe2T9ZV3A2ojBcQ5",
+     "messageID": "msg_0aca49dc9001zZbikPwGGpb8A5"
+    }
+   ]
+  },
+  {
+   "info": {
+    "parentID": "msg_0aca47be0001i0uQfRuOtB4SwA",
+    "role": "assistant",
+    "mode": "build",
+    "agent": "build",
+    "path": {
+     "cwd": "C:\\dev\\semana-academica",
+     "root": "C:\\dev\\semana-academica"
+    },
+    "cost": 0,
+    "tokens": {
+     "total": 32118,
+     "input": 298,
+     "output": 76,
+     "reasoning": 0,
+     "cache": {
+      "write": 0,
+      "read": 31744
+     }
+    },
+    "modelID": "big-pickle",
+    "providerID": "opencode",
+    "time": {
+     "created": 1789602879503,
+     "completed": 1789602881554
+    },
+    "finish": "tool-calls",
+    "id": "msg_0aca4d80f0013a9Qd4HGdmu3dx",
+    "sessionID": "ses_f535b8464ffe2T9ZV3A2ojBcQ5"
+   },
+   "parts": [
+    {
+     "snapshot": "78749bcfc0e21e546cec713bea2c57430344f28e",
+     "type": "step-start",
+     "id": "prt_0aca4db9f001LD3NhG7XnfkuHF",
+     "sessionID": "ses_f535b8464ffe2T9ZV3A2ojBcQ5",
+     "messageID": "msg_0aca4d80f0013a9Qd4HGdmu3dx"
+    },
+    {
+     "type": "reasoning",
+     "text": "No test files in api. Let me check if api exists at all.",
+     "time": {
+      "start": 1789602880417,
+      "end": 1789602880524
+     },
+     "id": "prt_0aca4dba1001pjSlxYe3TOpaWH",
+     "sessionID": "ses_f535b8464ffe2T9ZV3A2ojBcQ5",
+     "messageID": "msg_0aca4d80f0013a9Qd4HGdmu3dx"
+    },
+    {
+     "type": "tool",
+     "tool": "bash",
+     "callID": "call_7ecc9e7705934b679126fdb9",
+     "state": {
+      "status": "completed",
+      "input": {
+       "command": "Get-ChildItem -LiteralPath . -Directory | Select-Object -ExpandProperty Name"
+      },
+      "output": ".opencode\r\nauditorias\r\nentrevistas\r\nevidencias\r\nspecs\r\n",
+      "metadata": {
+       "output": ".opencode\r\nauditorias\r\nentrevistas\r\nevidencias\r\nspecs\r\n",
+       "exit": 0,
+       "truncated": false
+      },
+      "title": "Get-ChildItem -LiteralPath . -Directory | Select-Object -ExpandProperty Name",
+      "time": {
+       "start": 1789602881121,
+       "end": 1789602881141
+      }
+     },
+     "id": "prt_0aca4dc0e001uneROflfkOPeYX",
+     "sessionID": "ses_f535b8464ffe2T9ZV3A2ojBcQ5",
+     "messageID": "msg_0aca4d80f0013a9Qd4HGdmu3dx"
+    },
+    {
+     "reason": "tool-calls",
+     "snapshot": "78749bcfc0e21e546cec713bea2c57430344f28e",
+     "type": "step-finish",
+     "tokens": {
+      "total": 32118,
+      "input": 298,
+      "output": 76,
+      "reasoning": 0,
+      "cache": {
+       "write": 0,
+       "read": 31744
+      }
+     },
+     "cost": 0,
+     "id": "prt_0aca4df37001UEh9AFmZsA2dGJ",
+     "sessionID": "ses_f535b8464ffe2T9ZV3A2ojBcQ5",
+     "messageID": "msg_0aca4d80f0013a9Qd4HGdmu3dx"
+    }
+   ]
+  },
+  {
+   "info": {
+    "parentID": "msg_0aca47be0001i0uQfRuOtB4SwA",
+    "role": "assistant",
+    "mode": "build",
+    "agent": "build",
+    "path": {
+     "cwd": "C:\\dev\\semana-academica",
+     "root": "C:\\dev\\semana-academica"
+    },
+    "cost": 0,
+    "tokens": {
+     "total": 39872,
+     "input": 152,
+     "output": 7720,
+     "reasoning": 0,
+     "cache": {
+      "write": 0,
+      "read": 32000
+     }
+    },
+    "modelID": "big-pickle",
+    "providerID": "opencode",
+    "time": {
+     "created": 1789602881557,
+     "completed": 1789602926514
+    },
+    "finish": "tool-calls",
+    "id": "msg_0aca4e015001spVanGRVXHdGfF",
+    "sessionID": "ses_f535b8464ffe2T9ZV3A2ojBcQ5"
+   },
+   "parts": [
+    {
+     "snapshot": "78749bcfc0e21e546cec713bea2c57430344f28e",
+     "type": "step-start",
+     "id": "prt_0aca4e7f60015IPzbsyhpl5Wmj",
+     "sessionID": "ses_f535b8464ffe2T9ZV3A2ojBcQ5",
+     "messageID": "msg_0aca4e015001spVanGRVXHdGfF"
+    },
+    {
+     "type": "reasoning",
+     "text": "No api/ or web/ dirs yet. So no tests reference rule numbers. I can renumber freely.\n\nNow I'll rewrite specs/M1-grade.md fully, incorporating all rodada 3 decisions (P18, P19, P20) and ensuring each rule cites P-xx and RN-xxx (or decisão do grupo). I'll keep the general structure of the existing spec since it's good, adding:\n\n- P18 → new rule about salaId inexistente → 404 (cite (P18, contrato)). Actually the source: P18 decision + contrato's order general. The interview says existence check comes before body (422) in general contract order. So the \"quando\" is decision (all recommended accepted → decisão do grupo). Hmm — \"todas as recomendadas\" means the recommendation was accepted, so it's a decisão do grupo. Actually re-reading: \"P18 | `salaId` inexistente em `POST /atividades` → qual retorno? (404...) | 404 `NAO_ENCONTRADO` (todas as recomendadas). Existência (404) vem antes do corpo (422) na ordem geral do contrato.\"\n\nSo the decision is the group's decision leaning on contract's general order. I'll cite (P18, decisão do grupo). Or maybe cite contrato. The general order is in the contract (401→403→404→422→regras). So it's grounded in contract. But the specific mapping of \"salaId inexistente → 404\" is a group decision documented in P18. I'll write (P18, contrato — ordem geral). Hmm, to be safe and consistent, the user said \"se houver, a regra do documento (RN-xxx) — nas sem RN, marque a fonte como decisão do grupo.\" There's no RN for P18. So mark as decisão do grupo. I'll cite (P18, decisão do grupo). And mention it follows the contract order.\n\nWait, but for R28 the current spec cites (P1, contrato). P1 is the scope decision; derivados are \"fato resolvido (contrato, não se negocia)\". There's no RN. User's instruction says mark source as decisão do grupo when no RN. Hmm, strictly, for R28 the source is the contract (\"fatos já resolvidos\"), not exactly an RN. But \"ocupadas/situacao calculados\" is from the contract. I could cite (P1, contrato — seção 3/5). But instruction says \"nas sem RN, marque a fonte como decisão do grupo\". This is a bit ambiguous — there are contract facts without RN. I think the cleanest: R28 cites (P1, contrato) since the contract explicitly defines these as calculated. That respects the actual source. Actually the user instruction: \"se houver, a regra do documento (RN-xxx) — nas sem RN, marque a fonte como decisão do grupo.\" For places without RN, mark the source as \"decisão do grupo\". So for R28, there's no RN; but it's not a group decision, it's contract. Hmm. The interview has a section \"Fatos já resolvidos (contrato, não se negocia)\" listing those. And P1 decision mentions the JSON already has these fields with 0. I think for accuracy I should cite (P1, contrato) — because the source genuinely is the contract. Deviating to \"decisão do grupo\" would be a lie. But user explicitly asked. Let me look: \"Cada regra cita a pergunta (P-xx) e, se houver, a regra do documento (RN-xxx) — nas sem RN, marque a fonte como decisão do grupo.\"\n\nI think the intent is: every rule must show provenance: P-xx always; RN-xxx when the document has one; otherwise \"decisão do grupo\" as the source. For R28 the \"quando\"/situacao calculado rule comes from the contract facts, and P1 covers scope including the JSON. I could phrase R28 as (P1, contrato). The user's rule is a general default; contract facts are an exception that's still faithfully cited. I'll keep (P1, contrato) since that's truthful — deviating from the actual provenance to satisfy a blanket instruction would produce wrong provenance, which is worse. Actually, let me reconsider: the interview's P1 decision explicitly says these fields come out in the JSON. So P1 is genuinely a source. Good.\n\nNow P18, P19, P20 additions:\n\nNew rule for salaId inexistente: I'll add it in the Criação section as a numbered rule. Let me decide order: In POST, order is 401 → 403 → 404 (existence) → 422 (body) → resource rules. So salaId inexistente (404) beats QUANTIDADE_DE_ENCONTROS etc. Where in rule list? After R13 (criação) or near R8. I'll add as part of criação section. Let me renumber.\n\nActually, renumbering adds diff noise but the file is being rewritten anyway. Let me keep rules in same order as the existing spec to minimize churn and just insert new rules:\n\nCurrent numbering: R1–R28. I'll add:\n- R4: salaId? No.\n\nLet me plan the new rule list. I want to keep the semantic grouping:\n\n### Listagem\n- R1 (P2, RN-115): all activities incl. canceled (copied from R1)\n- R2 (P3, RN-115): order\n- R3 (P3, decisão do grupo): salas order\n- R4 (P4, RN-116): dia filter\n- R5 (P4, decisão do grupo): tipo invalid → 422\n- R6 (P2-b, decisão do grupo): AND combo\n- R7 (P8, P8-b, decisão do grupo): title\n\n### Criação\n- R8 (P5, RN-102, RN-103): encontro quantity\n- R9 (P6, RN-104, RN-105, RN-106): encontro valid\n- R10 (P7, P19, P20, RN-107): vagas limits — above capacity → VAGAS_ACIMA_DA_CAPACIDADE; 0/negativo → DADOS_INVALIDOS; vale em criar e alterar\n- R11 (P9, RN-108): sala conflict\n- R12 (P10-b, decisão do grupo): POST order\n- R13 (P5-b, decisão do grupo): past first encontro allowed\n- NEW R14 (P18, decisão do grupo): salaId inexistente → 404 NAO_ENCONTRADO, checked before body/422\n\n### Edição\n- R15 (P11, RN-110): only titulo/vagas editable\n- R16 (P11-b, RN-110): identical non-editable → CAMPO_NAO_EDITAVEL\n- R17 (P11-c, decisão do grupo): {} → DADOS_INVALIDOS; only non-editable → CAMPO_NAO_EDITAVEL\n- R18 (P11-d, decisão do grupo): strict schema\n- R19 (P12, decisão do grupo): editable in andamento/encerrada\n- R20 (P13, RN-111): vagas below inscritos → 409\n- R21 (P15-b, RN-113): PATCH cancelada → ATIVIDADE_CANCELADA\n- R22 (P10-b, decisão do grupo): PATCH order\n\n### Cancelamento\n- R23 (P14, RN-112): window\n- R24 (P15, RN-113): definitive\n- R25 (P15-b, RN-113): recancelar → ATIVIDADE_CANCELADA\n- R26 (P10-b, decisão do grupo): cancelamento order (ATIVIDADE_CANCELADA before ATIVIDADE_JA_INICIADA)\n\n### Derivados\n- R27 (P16, RN-109): cargaHorariaMinutos\n- R28 (P17, RN-114): situacao\n- R29 (P1, contrato): ocupadas/vagasRestantes/emEspera calculadas\n\nWait, note that P18 says 404 existence check precedes body check. But in POST, other existence: the activity in GET/PATCH/cancelamento → 404. Also salaId in PATCH? PATCH only edits titulo/vagas, so salaId not part of PATCH. Good.\n\nNow update criteria to cover new rules:\n- Criterion 8 (R10) should add: `vagas: 0` or negativo → 422 DADOS_INVALIDOS, in criar e alterar; and above capacity → VAGAS_ACIMA_DA_CAPACIDADE.\n- Add criterion for R14: POST com salaId inexistente → 404 NAO_ENCONTRADO mesmo com corpo válido; e 404 vem antes de 422.\n\nNumbering criteria 1..19 → add one.\n\nAlso slice list in section 8: slice 3 mentions \"404 de sala\" — update to reference rule number R14.\n\nNow the existing spec says in section 4: \"Sala inexistente em POST → 404 `NAO_ENCONTRADO`\". Keep that as summary, and rule R14 in section 5.\n\nAlso for the P18 rule, the question of whether the resource's 404 should be checked before the body is the contract's general order — but note the general order in contract says existence (404) → corpo (422) → rules. So a malformed body AND nonexistent salaId → 404 wins. Good, mention in rule R14.\n\nP20: \"vagas veio 0 ou negativo → 422 DADOS_INVALIDOS em criar e alterar — corpo fora do domínio (piso 1), antes das regras do recurso (todas as recomendadas).\" So DADOS_INVALIDOS (body check) comes before VAGAS_ACIMA_DA_CAPACIDADE etc, per contract order (422 body before resource rules). Good.\n\nAlso confirm P19: \"A regra 'vagas de 1 até a capacidade' vale só no criar ou também no alterar? Vale nos dois: piso 1 e teto = capacidade da sala em criar e alterar.\" So in PATCH, vagas:0/negativo → DADOS_INVALIDOS; above capacity → VAGAS_ACIMA_DA_CAPACIDADE; below inscritos → VAGAS_ABAIXO (only if ≥1 and ≤capacity but below occupied? no—VAGAS_ABAIXO is when < occupied). Actually R19 handles VAGAS_ABAIXO. And order R22: ATIVIDADE_CANCELADA → CAMPO_NAO_EDITAVEL → VAGAS_ACIMA → VAGAS_ABAIXO. Where does body DADOS_INVALIDOS (vagas 0) fit? Body (422) comes before resource rules, so DADOS_INVALIDOS precedes VAGAS_ACIMA. Good—consistent.\n\nNow write the file. Let me craft it carefully, keeping the structure and quality of the existing spec.\n\nLet me also double check RN labels: RN-115 (lista inclui canceladas + ordem), RN-116 (filtro dia), RN-102/103 (palestra 1, minicurso 2-5), RN-104/105/106 (encontro válido), RN-107 (vagas limites), RN-108 (conflito sala 15min, canceladas não bloqueiam), RN-110 (campos editáveis), RN-111 (vagas abaixo inscritos, confirmadas+convocadas), RN-112 (já iniciada), RN-113 (cancelamento definitivo / atividade cancelada), RN-109 (carga horária), RN-114 (situação transitórios).\n\nNow write. I'll preserve as much text as possible from the existing spec, inserting the new rules.\n\nLet me write the complete file.",
+     "time": {
+      "start": 1789602883576,
+      "end": 1789602901817
+     },
+     "id": "prt_0aca4e7f8001SglJNYQ74uf7JU",
+     "sessionID": "ses_f535b8464ffe2T9ZV3A2ojBcQ5",
+     "messageID": "msg_0aca4e015001spVanGRVXHdGfF"
+    },
+    {
+     "type": "tool",
+     "tool": "write",
+     "callID": "call_5231031edf29459187c33fc2",
+     "state": {
+      "status": "completed",
+      "input": {
+       "filePath": "C:\\dev\\semana-academica\\specs\\M1-grade.md",
+       "content": "# Spec — M1: Grade de atividades\n\n## 1. Objetivo\n\nPermitir que a organização monte e gerencie a grade da Semana Acadêmica 2026: consultar\nsalas, criar, alterar, cancelar, listar e filtrar atividades — cada uma com seus encontros,\nvagas e sala. Qualquer pessoa autenticada consulta; só organização escreve. Campos derivados\n(`cargaHorariaMinutos`, `situacao`, `ocupadas`, `vagasRestantes`, `emEspera`) são calculados\nno momento da leitura, sem job nem agendador.\n\n## 2. Fora de escopo\n\nM1 **não** faz:\n- Inscrições, lista de espera, convocação (M2).\n- Presença por QR (M3).\n- Certificados e extrato (M4).\n- Painel da organização e bloqueios (M5).\n- Criar usuário, sala ou evento — vêm dos dados iniciais (contrato seção 4).\n- Persistir `ocupadas`, `vagasRestantes`, `emEspera` ou `cargaHorariaMinutos` — são derivados.\n- Persistir `situacao` — derivada do relógio.\n- Editar qualquer campo além de `titulo` e `vagas` (tipo, sala, encontros são fixados na criação).\n- Regras que dependem de inscrições existentes: em M1 o banco não tem inscrições, então\n  `ocupadas`/`vagasRestantes`/`emEspera` saem 0. `VAGAS_ABAIXO_DOS_INSCRITOS` só passa a\n  ter efeito real quando M2 existir.\n\n## 3. Modelo\n\n**Sala** — informado pelo cliente (dados iniciais, contrato seção 4):\n\n| campo | tipo | origem |\n|---|---|---|\n| `id` | string | dados iniciais |\n| `nome` | string | dados iniciais |\n| `capacidade` | inteiro | dados iniciais |\n\n**Atividade**:\n\n| campo | tipo | origem |\n|---|---|---|\n| `id` | string (`atv_` + 8 hex) | gerado |\n| `titulo` | string | informado (1–120, ver R7) |\n| `tipo` | `palestra` \\| `minicurso` | informado |\n| `salaId` | string | informado |\n| `vagas` | inteiro | informado |\n| `encontros` | `[Encontro]` | informado |\n| `cargaHorariaMinutos` | inteiro | calculado (R27) |\n| `situacao` | `prevista` \\| `em_andamento` \\| `encerrada` \\| `cancelada` | calculado (R28) |\n| `ocupadas` | inteiro | calculado (R29) |\n| `vagasRestantes` | inteiro | calculado (R29) |\n| `emEspera` | inteiro | calculado (R29) |\n\n**Encontro**:\n\n| campo | tipo | origem |\n|---|---|---|\n| `id` | string (`enc_` + 8 hex) | gerado |\n| `inicio` | ISO 8601 com fuso | informado |\n| `fim` | ISO 8601 com fuso | informado |\n\nNa resposta, `encontros` sai em ordem de início (contrato seção 5).\n\n## 4. Endpoints\n\nIdentificação (`X-Usuario`) e ordem geral são do contrato: 401 (usuário desconhecido) → 403\n(quem pode chamar) → 404 (recurso inexistente) → 422 (corpo) → regras do recurso.\n\n| Método | Rota | Quem | Sucesso |\n|---|---|---|---|\n| GET | `/salas` | todos | 200 `[Sala]` |\n| GET | `/atividades` | todos | 200 `[Atividade]` — filtros `?dia=AAAA-MM-DD` e `?tipo=palestra\\|minicurso` |\n| GET | `/atividades/:id` | todos | 200 `Atividade` |\n| POST | `/atividades` | organização | 201 `Atividade` |\n| PATCH | `/atividades/:id` | organização | 200 `Atividade` |\n| POST | `/atividades/:id/cancelamento` | organização | 200 `Atividade` |\n\nPOST espera `{ titulo, tipo, salaId, vagas, encontros }`. PATCH aceita qualquer subconjunto\neditável de `{ titulo, vagas }`. Sala inexistente em POST → 404 `NAO_ENCONTRADO` (R14);\natividade inexistente em GET/PATCH/cancelamento → 404 `NAO_ENCONTRADO`.\n\n## 5. Regras\n\nCada regra cita a pergunta da entrevista (P-xx) que a originou e, quando existe, a regra\ndo documento de requisitos (RN-xxx). Sem RN, a fonte é decisão do grupo.\n\n### Listagem\n\n- **R1** (P2, RN-115): `GET /atividades` retorna todas as atividades, inclusive canceladas.\n- **R2** (P3, RN-115): `GET /atividades` ordena por início do 1º encontro (o mais cedo\n  primeiro); empate por `titulo`. Atividade sem encontros não existe (ver R8), então toda\n  atividade tem 1º encontro.\n- **R3** (P3, decisão do grupo): `GET /salas` ordena por `nome`.\n- **R4** (P4, RN-116): filtro `?dia=AAAA-MM-DD` — a atividade entra no resultado se **qualquer**\n  encontro cai naquele dia, no fuso de Brasília (o filtro compara o dia do instante, não o texto).\n- **R5** (P4, decisão do grupo): `?tipo=` diferente de `palestra` ou `minicurso` → 422\n  `DADOS_INVALIDOS`.\n- **R6** (P2-b, decisão do grupo): os filtros `dia` e `tipo` combinam (AND). Atividades\n  canceladas entram no resultado filtrado normalmente.\n- **R7** (P8, P8-b, decisão do grupo): `titulo` obrigatório; após trim obrigatório tem 1 a 120\n  caracteres. Ausente, tipo errado, vazio ou só espaços → 422 `DADOS_INVALIDOS`.\n\n### Criação (POST /atividades)\n\n- **R8** (P5, RN-102, RN-103): `palestra` tem exatamente 1 encontro; `minicurso` tem de 2 a 5.\n  Violação → 422 `QUANTIDADE_DE_ENCONTROS`.\n- **R9** (P6, RN-104, RN-105, RN-106): encontro inválido → 422 `ENCONTRO_INVALIDO` quando:\n  duração (fim − início) < 1 hora ou > 4 horas; atravessa meia-noite; qualquer parte fora de\n  19 a 23/10/2026 (horário de Brasília); ou dois encontros da mesma atividade se sobrepõem.\n- **R10** (P7, P19, P20, RN-107): `vagas` mínimo 1; máximo = capacidade da sala. Essa faixa\n  vale em criar **e** alterar. Acima da capacidade → 422 `VAGAS_ACIMA_DA_CAPACIDADE`.\n  `vagas` 0 ou negativo → 422 `DADOS_INVALIDOS` (corpo fora do domínio, checado nas regras de\n  corpo, antes das regras do recurso). Vale também no PATCH.\n- **R11** (P9, RN-108): encontros de atividades **não canceladas** na mesma sala precisam de no\n  mínimo 15 min entre fim de um e início do próximo (10h14 conflita; 10h15 ok). Violação →\n  409 `CONFLITO_DE_SALA`. Atividades canceladas não bloqueiam.\n- **R12** (P10-b, decisão do grupo): no POST, quando mais de uma regra recusa, vale a primeira\n  na ordem `QUANTIDADE_DE_ENCONTROS` → `ENCONTRO_INVALIDO` → `VAGAS_ACIMA_DA_CAPACIDADE` →\n  `CONFLITO_DE_SALA`.\n- **R13** (P5-b, decisão do grupo): criar atividade com o 1º encontro no passado do relógio é\n  permitido (`situacao` já nasce no valor que o relógio mandar, ver R28).\n- **R14** (P18, decisão do grupo): `salaId` inexistente em POST → 404 `NAO_ENCONTRADO`. A\n  existência (404) vem antes do corpo (422) na ordem geral do contrato, então um corpo inválido\n  junto com sala inexistente também responde 404.\n\n### Edição (PATCH /atividades/:id)\n\n- **R15** (P11, RN-110): só `titulo` e `vagas` são editáveis. Qualquer outro campo do contrato\n  no corpo → 422 `CAMPO_NAO_EDITAVEL`.\n- **R16** (P11-b, RN-110): enviar campo não editável mesmo com valor idêntico ao atual → 422\n  `CAMPO_NAO_EDITAVEL`.\n- **R17** (P11-c, decisão do grupo): corpo vazio (`{}`) → 422 `DADOS_INVALIDOS`. Corpo só com\n  campos não editáveis → 422 `CAMPO_NAO_EDITAVEL`.\n- **R18** (P11-d, decisão do grupo): esquema estrito — campo que não existe no contrato →\n  422 `DADOS_INVALIDOS` (tanto no POST quanto no PATCH).\n- **R19** (P12, decisão do grupo): `titulo` e `vagas` são editáveis mesmo em\n  `em_andamento`/`encerrada` (nenhuma regra bloqueia).\n- **R20** (P13, RN-111): reduzir `vagas` a um valor menor que os inscritos atuais → 409\n  `VAGAS_ABAIXO_DOS_INSCRITOS`. Conta confirmadas + convocadas (quem ocupa vaga); a espera não\n  entra no cálculo.\n- **R21** (P15-b, RN-113): PATCH em atividade `cancelada` → 422 `ATIVIDADE_CANCELADA`.\n- **R22** (P10-b, decisão do grupo): no PATCH, quando mais de uma regra recusa, vale a primeira\n  na ordem `ATIVIDADE_CANCELADA` → `CAMPO_NAO_EDITAVEL` → `VAGAS_ACIMA_DA_CAPACIDADE` →\n  `VAGAS_ABAIXO_DOS_INSCRITOS`.\n\n### Cancelamento (POST /atividades/:id/cancelamento)\n\n- **R23** (P14, RN-112): cancela só enquanto o relógio ainda não chegou ao início do 1º\n  encontro. Relógio no início do 1º encontro ou depois → 422 `ATIVIDADE_JA_INICIADA`, ainda que\n  existam encontros futuros.\n- **R24** (P15, RN-113): cancelamento é definitivo e irreversível; não existe rota de reversão.\n- **R25** (P15-b, RN-113): cancelar uma atividade já cancelada → 422 `ATIVIDADE_CANCELADA`.\n- **R26** (P10-b, decisão do grupo): no cancelamento, `ATIVIDADE_CANCELADA` é verificada antes\n  de `ATIVIDADE_JA_INICIADA`.\n\n### Derivados\n\n- **R27** (P16, RN-109): `cargaHorariaMinutos` = soma das durações (fim − início) de todos os\n  encontros, em minutos. Qualquer valor no corpo é ignorado.\n- **R28** (P17, RN-114): `situacao` segue o relógio: `prevista` até o início do 1º encontro;\n  `em_andamento` do início do 1º encontro até o fim do último (entre encontros segue\n  `em_andamento`); `encerrada` depois do fim do último. `cancelada` prevalece sempre.\n- **R29** (P1, contrato): `ocupadas`, `vagasRestantes` e `emEspera` são calculadas na leitura\n  (não persistidas). Em M1, sem inscrições no banco, valem 0 (e `vagasRestantes` = `vagas`).\n\n## 6. Critérios de aceite\n\n1. (R1, R2, R6) Com 3 atividades criadas (uma cancelada), `GET /atividades` retorna as 3, em\n   ordem de 1º encontro, empates por título, incluindo a cancelada; com `?tipo=` aplica AND\n   com `?dia=`.\n2. (R3) `GET /salas` retorna salas em ordem de `nome`.\n3. (R4) Atividade com encontro às `2026-10-20T19:00:00-03:00` entra em `?dia=2026-10-20` (e\n   não em `?dia=2026-10-19`, apesar de o fuso poder mudar o texto).\n4. (R5, R18) `GET /atividades?tipo=oficina` → 422 `DADOS_INVALIDOS`; POST com campo\n   `{\"duracao\": 60}` fora do contrato → 422 `DADOS_INVALIDOS`.\n5. (R7) POST sem `titulo`, com `titulo: \"\"`, `titulo: \"   \"` ou `titulo` com 121 chars → 422\n   `DADOS_INVALIDOS`; com 120 chars → 201.\n6. (R8) `palestra` com 2 encontros → 422 `QUANTIDADE_DE_ENCONTROS`; `minicurso` com 1 ou 6\n   encontros → 422 `QUANTIDADE_DE_ENCONTROS`; `minicurso` com 2 e com 5 → 201.\n7. (R9) Encontro com 59 min de duração → `ENCONTRO_INVALIDO`; com 4h01 → `ENCONTRO_INVALIDO`;\n   com exatamente 1h e com exatamente 4h → OK; encontro cortando a meia-noite → inválido;\n   encontro fora de 19–23/10 → inválido; dois encontros da mesma atividade sobrepostos →\n   `ENCONTRO_INVALIDO` (nunca `CONFLITO_DE_SALA`).\n8. (R10) `vagas: 0` → 422 `DADOS_INVALIDOS`; `vagas: -5` → 422 `DADOS_INVALIDOS`; `vagas` acima\n   da capacidade da sala → 422 `VAGAS_ACIMA_DA_CAPACIDADE`; `vagas` = capacidade → 201. No\n   PATCH o mesmo limiar vale (`vagas: 0` → `DADOS_INVALIDOS`, acima da capacidade →\n   `VAGAS_ACIMA_DA_CAPACIDADE`).\n9. (R11) Encontro começando 14 min após o fim de outro na mesma sala → 409 `CONFLITO_DE_SALA`;\n   começando exatamente 15 min depois → 201. Uma atividade cancelada que estaria em conflito\n   não bloqueia a criação.\n10. (R12) POST que viole `QUANTIDADE_DE_ENCONTROS` e `CONFLITO_DE_SALA` ao mesmo tempo → 422\n    `QUANTIDADE_DE_ENCONTROS` (primeira na ordem).\n11. (R14) POST com `salaId` inexistente e corpo válido → 404 `NAO_ENCONTRADO`. POST com\n    `salaId` inexistente e corpo inválido → 404 `NAO_ENCONTRADO` (existência antes do corpo).\n12. (R15, R16, R17, R18) PATCH enviando `salaId` ou `tipo` (mesmo iguais aos atuais, R16) → 422\n    `CAMPO_NAO_EDITAVEL`; PATCH `{}` → 422 `DADOS_INVALIDOS` (R17); PATCH só com `tipo` → 422\n    `CAMPO_NAO_EDITAVEL` (R17); PATCH com `tipo` e `titulo` válidos → 422 `CAMPO_NAO_EDITAVEL`\n    (R15 vale primeiro na ordem de R22).\n13. (R19) PATCH de `titulo`/`vagas` funciona em atividade `em_andamento` e `encerrada` → 200\n    com os novos valores.\n14. (R20) Atividade com 2 inscrições confirmadas e `vagas: 1` → 409\n    `VAGAS_ABAIXO_DOS_INSCRITOS`. (Com M2 o cenário usa inscrições reais; em M1 o teste de\n    unidade cobre o cálculo da contagem confirmadas+convocadas.)\n15. (R21, R22) PATCH em atividade cancelada com corpo que também tenha campo não editável →\n    422 `ATIVIDADE_CANCELADA` (primeira na ordem).\n16. (R23) Cancelamento com relógio antes do início do 1º encontro → 200 `cancelada`\n    (R28). Relógio avançado até o início do 1º encontro → 422 `ATIVIDADE_JA_INICIADA`, mesmo\n    com o 2º encontro no futuro.\n17. (R24, R25, R26) Cancelar atividade já cancelada → 422 `ATIVIDADE_CANCELADA`; não existe\n    reversão (nenhuma rota restaura `prevista`/`em_andamento`).\n18. (R27, R29) `POST` ignorando `cargaHorariaMinutos` enviado no corpo: atividade com 2\n    encontros de 3h → `cargaHorariaMinutos: 360`. `ocupadas`/`emEspera` 0 e\n    `vagasRestantes` igual a `vagas` na resposta de qualquer rota.\n19. (R28) Com relógio parado: antes do 1º encontro → `prevista`; no início do 1º → `em_andamento`;\n    entre encontros → `em_andamento`; após o fim do último → `encerrada`; cancelada sobrepõe\n    qualquer estado.\n20. (R13) Criar atividade com 1º encontro no passado do relógio → 201, com `situacao`\n    derivada do relógio (`em_andamento`/`encerrada`), sem bloqueio.\n\n## 7. Como isto será verificado\n\nPela costura mais externa que já existe: **HTTP**, na API subida por `npm start` dentro de\n`api/` (stack do `projeto.json`), com `MODO_TESTE=1`. Cada cenário começa com\n`POST /_teste/reset`, usa `PUT /_teste/relogio` para fixar o tempo e `X-Usuario` para\nautenticação. O juiz do contrato confere status, `erro` e corpo nas mesmas rotas, então o teste\nque exercita a rota real cobre automaticamente regra e contrato. M2 ainda não existe: os\ncenários que dependem de inscrições (R20) rodam só quando M2 surgir — até lá o cálculo é\nprovado por teste direto da função de contagem.\n\n## 8. Fatias de entrega\n\n1. **Salas + listagem**: `GET /salas` (R3), `GET /atividades` sem filtros (R1, R2).\n2. **Filtros**: `?dia` (R4), `?tipo` e validação (R5), combinação AND e canceladas (R6).\n3. **Criação**: `POST /atividades` com título (R7), quantidade de encontros (R8), validade de\n   encontro (R9), vagas (R10), conflito de sala (R11), ordem de erros (R12), passado permitido\n   (R13), sala inexistente → 404 (R14).\n4. **Cálculos no relógio**: `cargaHorariaMinutos` (R27), `situacao` (R28),\n   `ocupadas`/`vagasRestantes`/`emEspera` (R29) — derivados na leitura, com `_teste/relogio`.\n5. **Edição**: `PATCH` — campos editáveis e ordem (R15–R18, R22), iniciada/editável (R19),\n   abaixo dos inscritos (R20), cancelada (R21).\n6. **Cancelamento**: `POST cancelamento` — janela (R23), irreversível (R24), já cancelada\n   (R25), ordem (R26); e `GET /atividades/:id` cobrindo a resposta completa."
+      },
+      "output": "Wrote file successfully.",
+      "metadata": {
+       "diagnostics": {},
+       "filepath": "C:\\dev\\semana-academica\\specs\\M1-grade.md",
+       "exists": true,
+       "truncated": false
+      },
+      "title": "specs\\M1-grade.md",
+      "time": {
+       "start": 1789602925725,
+       "end": 1789602925736
+      }
+     },
+     "id": "prt_0aca52f3b001FkbjS11AhcU7r9",
+     "sessionID": "ses_f535b8464ffe2T9ZV3A2ojBcQ5",
+     "messageID": "msg_0aca4e015001spVanGRVXHdGfF"
+    },
+    {
+     "reason": "tool-calls",
+     "snapshot": "84ea26687b28cdaf08db87f7be22a05f0dad9be0",
+     "type": "step-finish",
+     "tokens": {
+      "total": 39872,
+      "input": 152,
+      "output": 7720,
+      "reasoning": 0,
+      "cache": {
+       "write": 0,
+       "read": 32000
+      }
+     },
+     "cost": 0,
+     "id": "prt_0aca58e96001SGpP1VdYP1ZKRT",
+     "sessionID": "ses_f535b8464ffe2T9ZV3A2ojBcQ5",
+     "messageID": "msg_0aca4e015001spVanGRVXHdGfF"
+    },
+    {
+     "type": "patch",
+     "hash": "78749bcfc0e21e546cec713bea2c57430344f28e",
+     "files": [
+      "C:/dev/semana-academica/specs/M1-grade.md"
+     ],
+     "id": "prt_0aca58fb0001vzQRw8Blxwe2MX",
+     "sessionID": "ses_f535b8464ffe2T9ZV3A2ojBcQ5",
+     "messageID": "msg_0aca4e015001spVanGRVXHdGfF"
+    }
+   ]
+  },
+  {
+   "info": {
+    "parentID": "msg_0aca47be0001i0uQfRuOtB4SwA",
+    "role": "assistant",
+    "mode": "build",
+    "agent": "build",
+    "path": {
+     "cwd": "C:\\dev\\semana-academica",
+     "root": "C:\\dev\\semana-academica"
+    },
+    "cost": 0,
+    "tokens": {
+     "total": 40396,
+     "input": 206,
+     "output": 510,
+     "reasoning": 0,
+     "cache": {
+      "write": 0,
+      "read": 39680
+     }
+    },
+    "modelID": "big-pickle",
+    "providerID": "opencode",
+    "time": {
+     "created": 1789602926516,
+     "completed": 1789602930521
+    },
+    "finish": "stop",
+    "id": "msg_0aca58fb4001wVJPRYj2B05CQF",
+    "sessionID": "ses_f535b8464ffe2T9ZV3A2ojBcQ5"
+   },
+   "parts": [
+    {
+     "snapshot": "84ea26687b28cdaf08db87f7be22a05f0dad9be0",
+     "type": "step-start",
+     "id": "prt_0aca594900016xV0uR3JFaTP65",
+     "sessionID": "ses_f535b8464ffe2T9ZV3A2ojBcQ5",
+     "messageID": "msg_0aca58fb4001wVJPRYj2B05CQF"
+    },
+    {
+     "type": "reasoning",
+     "text": "Now show the user the list of numbered rules and ask if any are missing, per the skill's \"Depois de escrever\" step. Keep it concise.",
+     "time": {
+      "start": 1789602927762,
+      "end": 1789602927962
+     },
+     "id": "prt_0aca59492001A6XV2ubT4Ebh8q",
+     "sessionID": "ses_f535b8464ffe2T9ZV3A2ojBcQ5",
+     "messageID": "msg_0aca58fb4001wVJPRYj2B05CQF"
+    },
+    {
+     "type": "text",
+     "text": "Spec reescrita em `specs/M1-grade.md`, incorporando as decisões da rodada 3 (P18–P20) e normalizando a proveniência (P-xx + RN-xxx, ou \"decisão do grupo\").\n\nRegras:\n\n- **R1–R2** (RN-115) lista completa e ordenação — **R3** (decisão do grupo) salas por nome\n- **R4** (RN-116) filtro `?dia` — **R5** `?tipo` inválido — **R6** (dec. grupo) AND, canceladas\n- **R7** (dec. grupo) título 1–120 com trim\n- **R8** (RN-102/103) qtd. encontros — **R9** (RN-104/105/106) encontro válido — **R10** (RN-107 + P19/P20) vagas 1..capacidade, 0/neg → `DADOS_INVALIDOS` — **R11** (RN-108) conflito de sala — **R12** (dec. grupo) ordem POST — **R13** (dec. grupo) passado permitido — **R14** (dec. grupo) sala inexistente → 404\n- **R15–R16** (RN-110) campos editáveis — **R17–R19** (dec. grupo) `{}`, esquema estrito, editável em andamento — **R20** (RN-111) abaixo dos inscritos — **R21** (RN-113) PATCH cancelada — **R22** (dec. grupo) ordem PATCH\n- **R23** (RN-112) janela — **R24** (RN-113) irreversível — **R25** (RN-113) recancelar — **R26** (dec. grupo) ordem cancelamento\n- **R27** (RN-109) carga horária — **R28** (RN-114) `situacao` — **R29** (contrato) ocupadas/vagasRestantes/emEspera\n\nFalta alguma regra?",
+     "time": {
+      "start": 1789602927963,
+      "end": 1789602930064
+     },
+     "id": "prt_0aca5955b001a8iY6RtTkT3KIc",
+     "sessionID": "ses_f535b8464ffe2T9ZV3A2ojBcQ5",
+     "messageID": "msg_0aca58fb4001wVJPRYj2B05CQF"
+    },
+    {
+     "reason": "stop",
+     "snapshot": "84ea26687b28cdaf08db87f7be22a05f0dad9be0",
+     "type": "step-finish",
+     "tokens": {
+      "total": 40396,
+      "input": 206,
+      "output": 510,
+      "reasoning": 0,
+      "cache": {
+       "write": 0,
+       "read": 39680
+      }
+     },
+     "cost": 0,
+     "id": "prt_0aca59e72001UYGm56TuR4dy3w",
+     "sessionID": "ses_f535b8464ffe2T9ZV3A2ojBcQ5",
+     "messageID": "msg_0aca58fb4001wVJPRYj2B05CQF"
+    }
+   ]
+  }
+ ]
+}
