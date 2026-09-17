@@ -71,7 +71,84 @@ export function criarServidor({ banco = novoBanco(':memory:') } = {}) {
     'SELECT id, inicio, fim FROM encontros WHERE atividadeId = ? ORDER BY inicio',
   );
 
+  function formatarIsoBrasilia(date) {
+    const partes = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/Sao_Paulo',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+    }).formatToParts(date);
+    const pegar = (tipo) => partes.find((p) => p.type === tipo).value;
+    return `${pegar('year')}-${pegar('month')}-${pegar('day')}T${pegar('hour')}:${pegar('minute')}:${pegar('second')}-03:00`;
+  }
+
+  function getFechoMs(atividadeId) {
+    const encontros = encontrosPorAtividade.all(atividadeId);
+    return encontros.length > 0 ? Date.parse(encontros[0].inicio) - 30 * 60000 : Infinity;
+  }
+
+  function processarFilaEExpiracoes(atividadeId) {
+    const atividade = banco.prepare('SELECT id, vagas FROM atividades WHERE id = ?').get(atividadeId);
+    if (!atividade) return;
+
+    const fechoMs = getFechoMs(atividadeId);
+    const agoraMs = agora().getTime();
+
+    let mudou = true;
+    while (mudou) {
+      mudou = false;
+
+      const convocadas = banco.prepare(
+        'SELECT id, convocadaAte FROM inscricoes WHERE atividadeId = ? AND status = ?'
+      ).all(atividadeId, 'convocada');
+
+      for (const c of convocadas) {
+        if (c.convocadaAte && agoraMs > Date.parse(c.convocadaAte)) {
+          banco.prepare('UPDATE inscricoes SET status = ?, convocadaAte = ? WHERE id = ?').run('expirada', null, c.id);
+          mudou = true;
+          atribuirVagasDisponiveis(atividadeId, Date.parse(c.convocadaAte));
+        }
+      }
+    }
+  }
+
+  function atribuirVagasDisponiveis(atividadeId, tempoLiberacao) {
+    const fechoMs = getFechoMs(atividadeId);
+    if (tempoLiberacao >= fechoMs) return;
+
+    const atividade = banco.prepare('SELECT vagas FROM atividades WHERE id = ?').get(atividadeId);
+    if (!atividade) return;
+
+    while (true) {
+      const inscricoes = banco.prepare('SELECT status FROM inscricoes WHERE atividadeId = ?').all(atividadeId);
+      const ocupadas = inscricoes.filter(i => i.status === 'confirmada' || i.status === 'convocada').length;
+
+      if (ocupadas >= atividade.vagas) break;
+
+      const proximo = banco.prepare(
+        'SELECT id FROM inscricoes WHERE atividadeId = ? AND status = ? ORDER BY rowid ASC LIMIT 1'
+      ).get(atividadeId, 'em_espera');
+
+      if (!proximo) break;
+      if (tempoLiberacao >= fechoMs) break;
+
+      let convocadaAteMs = tempoLiberacao + 2 * 3600 * 1000;
+      if (convocadaAteMs > fechoMs) {
+        convocadaAteMs = fechoMs;
+      }
+      const convocadaAteIso = formatarIsoBrasilia(new Date(convocadaAteMs));
+
+      banco.prepare('UPDATE inscricoes SET status = ?, convocadaAte = ?, posicaoNaEspera = NULL WHERE id = ?')
+        .run('convocada', convocadaAteIso, proximo.id);
+    }
+  }
+
   function serializarAtividade(linha) {
+    processarFilaEExpiracoes(linha.id);
     const encontros = encontrosPorAtividade.all(linha.id);
     const cargaHorariaMinutos = Math.round(
       encontros.reduce(
@@ -356,6 +433,10 @@ export function criarServidor({ banco = novoBanco(':memory:') } = {}) {
         'vagas' in corpo ? corpo.vagas : atividade.vagas,
         atividade.id,
       );
+    if ('vagas' in corpo && corpo.vagas > atividade.vagas) {
+      atribuirVagasDisponiveis(atividade.id, agora().getTime());
+      processarFilaEExpiracoes(atividade.id);
+    }
     const linha = banco
       .prepare('SELECT id, titulo, tipo, salaId, vagas, cancelada FROM atividades WHERE id = ?')
       .get(atividade.id);
@@ -495,6 +576,11 @@ export function criarServidor({ banco = novoBanco(':memory:') } = {}) {
 
   app.get('/inscricoes', exigirUsuario, (req, res) => {
     const atividadeId = req.query.atividadeId;
+    const atividadesIds = banco.prepare('SELECT DISTINCT atividadeId FROM inscricoes').all();
+    for (const a of atividadesIds) {
+      processarFilaEExpiracoes(a.atividadeId);
+    }
+
     let query = 'SELECT id, atividadeId, participanteId, status, convocadaAte, criadaEm FROM inscricoes';
     const params = [];
     const conditions = [];
@@ -517,12 +603,17 @@ export function criarServidor({ banco = novoBanco(':memory:') } = {}) {
   });
 
   app.get('/inscricoes/:id', exigirUsuario, (req, res) => {
-    const linha = banco
+    let linha = banco
       .prepare('SELECT id, atividadeId, participanteId, status, convocadaAte, criadaEm FROM inscricoes WHERE id = ?')
       .get(req.params.id);
     if (!linha) {
       return res.status(404).json({ erro: 'NAO_ENCONTRADO', mensagem: 'Inscrição inexistente.' });
     }
+    processarFilaEExpiracoes(linha.atividadeId);
+    linha = banco
+      .prepare('SELECT id, atividadeId, participanteId, status, convocadaAte, criadaEm FROM inscricoes WHERE id = ?')
+      .get(req.params.id);
+
     if (req.usuario.papel === 'participante' && linha.participanteId !== req.usuario.id) {
       return res.status(404).json({ erro: 'NAO_ENCONTRADO', mensagem: 'Inscrição inexistente.' });
     }
@@ -547,7 +638,12 @@ export function criarServidor({ banco = novoBanco(':memory:') } = {}) {
       return res.status(422).json({ erro: 'ATIVIDADE_JA_INICIADA', mensagem: 'Atividade já iniciada.' });
     }
 
+    const statusAnterior = linha.status;
     banco.prepare('UPDATE inscricoes SET status = \'cancelada\', convocadaAte = NULL WHERE id = ?').run(linha.id);
+    if (statusAnterior === 'confirmada' || statusAnterior === 'convocada') {
+      atribuirVagasDisponiveis(linha.atividadeId, agora().getTime());
+      processarFilaEExpiracoes(linha.atividadeId);
+    }
     const atualizada = banco.prepare('SELECT id, atividadeId, participanteId, status, convocadaAte, criadaEm FROM inscricoes WHERE id = ?').get(linha.id);
     res.status(200).json(serializarInscricao(atualizada));
   });

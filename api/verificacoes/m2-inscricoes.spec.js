@@ -200,7 +200,7 @@ test('GET /inscricoes, privacidade, papeis, JA_INSCRITO e reinscricao pelo fim d
     });
     assert.equal(carlaReinscricaoRes.status, 201);
     const carlaReinsc = await carlaReinscricaoRes.json();
-    assert.equal(carlaReinsc.status, 'confirmada');
+    assert.equal(carlaReinsc.status, 'em_espera');
   } finally {
     await servidor.fechar();
   }
@@ -612,6 +612,270 @@ test('R8: ordem de precedencia - JA_INSCRITO vence CONFLITO_DE_HORARIO quando am
     });
     assert.equal(res2.status, 409);
     assert.equal((await res2.json()).erro, 'JA_INSCRITO');
+  } finally {
+    await servidor.fechar();
+  }
+});
+
+test('Cancelar confirmada convoca o 1o da espera com convocadaAte = liberacao + 2h', async () => {
+  const banco = novoBanco(':memory:');
+  const servidor = await subirServidor({ banco });
+  try {
+    await fetch(`${servidor.base}/_teste/reset`, { method: 'POST' });
+    semearAtividade(banco, {
+      id: 'atv_conv',
+      titulo: 'Atividade Convocacao',
+      tipo: 'palestra',
+      salaId: 'auditorio',
+      vagas: 1,
+      encontros: [
+        { id: 'enc_c1', inicio: '2026-10-20T19:00:00-03:00', fim: '2026-10-20T20:00:00-03:00' },
+      ],
+    });
+
+    await fetch(`${servidor.base}/_teste/relogio`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ agora: '2026-10-20T10:00:00-03:00' }),
+    });
+
+    // Carla gets confirmed
+    const resCarla = await fetch(`${servidor.base}/atividades/atv_conv/inscricoes`, {
+      method: 'POST',
+      headers: { 'X-Usuario': 'p-carla' },
+    });
+    assert.equal(resCarla.status, 201);
+    const carlaIns = await resCarla.json();
+
+    // Diego gets em_espera
+    const resDiego = await fetch(`${servidor.base}/atividades/atv_conv/inscricoes`, {
+      method: 'POST',
+      headers: { 'X-Usuario': 'p-diego' },
+    });
+    assert.equal(resDiego.status, 201);
+    const diegoIns = await resDiego.json();
+    assert.equal(diegoIns.status, 'em_espera');
+
+    // Carla cancels at 10:30
+    await fetch(`${servidor.base}/_teste/relogio`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ agora: '2026-10-20T10:30:00-03:00' }),
+    });
+
+    const resCancel = await fetch(`${servidor.base}/inscricoes/${carlaIns.id}/cancelamento`, {
+      method: 'POST',
+      headers: { 'X-Usuario': 'p-carla' },
+    });
+    assert.equal(resCancel.status, 200);
+
+    // Check Diego's subscription
+    const resDiegoCheck = await fetch(`${servidor.base}/inscricoes/${diegoIns.id}`, {
+      headers: { 'X-Usuario': 'p-diego' },
+    });
+    assert.equal(resDiegoCheck.status, 200);
+    const diegoAtualizado = await resDiegoCheck.json();
+    assert.equal(diegoAtualizado.status, 'convocada');
+    assert.equal(diegoAtualizado.convocadaAte, '2026-10-20T12:30:00-03:00');
+  } finally {
+    await servidor.fechar();
+  }
+});
+
+test('Prazo limitado ao fecho: liberacao perto do fecho -> convocadaAte = fecho, nao +2h', async () => {
+  const banco = novoBanco(':memory:');
+  const servidor = await subirServidor({ banco });
+  try {
+    await fetch(`${servidor.base}/_teste/reset`, { method: 'POST' });
+    semearAtividade(banco, {
+      id: 'atv_fecho',
+      titulo: 'Atividade Fecho',
+      tipo: 'palestra',
+      salaId: 'auditorio',
+      vagas: 1,
+      encontros: [
+        { id: 'enc_f1', inicio: '2026-10-20T19:00:00-03:00', fim: '2026-10-20T20:00:00-03:00' },
+      ],
+    }); // fecho = 18:30:00-03:00
+
+    await fetch(`${servidor.base}/_teste/relogio`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ agora: '2026-10-20T10:00:00-03:00' }),
+    });
+
+    const resCarla = await fetch(`${servidor.base}/atividades/atv_fecho/inscricoes`, {
+      method: 'POST',
+      headers: { 'X-Usuario': 'p-carla' },
+    });
+    const carlaIns = await resCarla.json();
+
+    const resDiego = await fetch(`${servidor.base}/atividades/atv_fecho/inscricoes`, {
+      method: 'POST',
+      headers: { 'X-Usuario': 'p-diego' },
+    });
+    const diegoIns = await resDiego.json();
+
+    // Cancel at 18:00 (liberacao 18:00 + 2h = 20:00, but fecho is 18:30)
+    await fetch(`${servidor.base}/_teste/relogio`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ agora: '2026-10-20T18:00:00-03:00' }),
+    });
+
+    await fetch(`${servidor.base}/inscricoes/${carlaIns.id}/cancelamento`, {
+      method: 'POST',
+      headers: { 'X-Usuario': 'p-carla' },
+    });
+
+    const resDiegoCheck = await fetch(`${servidor.base}/inscricoes/${diegoIns.id}`, {
+      headers: { 'X-Usuario': 'p-diego' },
+    });
+    const diegoAtualizado = await resDiegoCheck.json();
+    assert.equal(diegoAtualizado.status, 'convocada');
+    assert.equal(diegoAtualizado.convocadaAte, '2026-10-20T18:30:00-03:00');
+  } finally {
+    await servidor.fechar();
+  }
+});
+
+test('Vaga liberada apos o fecho -> ninguem convocado', async () => {
+  const banco = novoBanco(':memory:');
+  const servidor = await subirServidor({ banco });
+  try {
+    await fetch(`${servidor.base}/_teste/reset`, { method: 'POST' });
+    semearAtividade(banco, {
+      id: 'atv_posfecho',
+      titulo: 'Atividade Pos Fecho',
+      tipo: 'palestra',
+      salaId: 'auditorio',
+      vagas: 1,
+      encontros: [
+        { id: 'enc_pf1', inicio: '2026-10-20T19:00:00-03:00', fim: '2026-10-20T20:00:00-03:00' },
+      ],
+    }); // fecho = 18:30:00-03:00
+
+    await fetch(`${servidor.base}/_teste/relogio`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ agora: '2026-10-20T10:00:00-03:00' }),
+    });
+
+    const resCarla = await fetch(`${servidor.base}/atividades/atv_posfecho/inscricoes`, {
+      method: 'POST',
+      headers: { 'X-Usuario': 'p-carla' },
+    });
+    const carlaIns = await resCarla.json();
+
+    const resDiego = await fetch(`${servidor.base}/atividades/atv_posfecho/inscricoes`, {
+      method: 'POST',
+      headers: { 'X-Usuario': 'p-diego' },
+    });
+    const diegoIns = await resDiego.json();
+
+    // Cancel at 18:35 (after fecho 18:30)
+    await fetch(`${servidor.base}/_teste/relogio`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ agora: '2026-10-20T18:35:00-03:00' }),
+    });
+
+    await fetch(`${servidor.base}/inscricoes/${carlaIns.id}/cancelamento`, {
+      method: 'POST',
+      headers: { 'X-Usuario': 'p-carla' },
+    });
+
+    const resDiegoCheck = await fetch(`${servidor.base}/inscricoes/${diegoIns.id}`, {
+      headers: { 'X-Usuario': 'p-diego' },
+    });
+    const diegoAtualizado = await resDiegoCheck.json();
+    assert.equal(diegoAtualizado.status, 'em_espera');
+    assert.equal(diegoAtualizado.convocadaAte, null);
+  } finally {
+    await servidor.fechar();
+  }
+});
+
+test('Cascata com relogio pulando: atividade com 1 vaga, Carla confirmada, fila Diego, Elisa, Fabio; fecho distante. Carla cancela as 10:00 -> Diego convocado ate 12:00. O relogio pula direto para 15:00 sem nenhum acesso. Numa leitura em 15:00: Diego expirada (venceu 12:00), Elisa convocada 12:00 e expirada 14:00, Fabio convocado ate 16:00. Verifique os status e o convocadaAte de Fabio', async () => {
+  const banco = novoBanco(':memory:');
+  const servidor = await subirServidor({ banco });
+  try {
+    await fetch(`${servidor.base}/_teste/reset`, { method: 'POST' });
+    semearAtividade(banco, {
+      id: 'atv_cascata',
+      titulo: 'Atividade Cascata',
+      tipo: 'palestra',
+      salaId: 'auditorio',
+      vagas: 1,
+      encontros: [
+        { id: 'enc_casc1', inicio: '2026-10-25T19:00:00-03:00', fim: '2026-10-25T20:00:00-03:00' },
+      ],
+    }); // fecho distant
+
+    await fetch(`${servidor.base}/_teste/relogio`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ agora: '2026-10-20T09:00:00-03:00' }),
+    });
+
+    const carlaRes = await fetch(`${servidor.base}/atividades/atv_cascata/inscricoes`, {
+      method: 'POST',
+      headers: { 'X-Usuario': 'p-carla' },
+    });
+    const carlaIns = await carlaRes.json();
+
+    const diegoRes = await fetch(`${servidor.base}/atividades/atv_cascata/inscricoes`, {
+      method: 'POST',
+      headers: { 'X-Usuario': 'p-diego' },
+    });
+    const diegoIns = await diegoRes.json();
+
+    const elisaRes = await fetch(`${servidor.base}/atividades/atv_cascata/inscricoes`, {
+      method: 'POST',
+      headers: { 'X-Usuario': 'p-elisa' },
+    });
+    const elisaIns = await elisaRes.json();
+
+    const fabioRes = await fetch(`${servidor.base}/atividades/atv_cascata/inscricoes`, {
+      method: 'POST',
+      headers: { 'X-Usuario': 'p-fabio' },
+    });
+    const fabioIns = await fabioRes.json();
+
+    // Carla cancels at 10:00
+    await fetch(`${servidor.base}/_teste/relogio`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ agora: '2026-10-20T10:00:00-03:00' }),
+    });
+
+    await fetch(`${servidor.base}/inscricoes/${carlaIns.id}/cancelamento`, {
+      method: 'POST',
+      headers: { 'X-Usuario': 'p-carla' },
+    });
+
+    // Clock jumps straight to 15:00 without access
+    await fetch(`${servidor.base}/_teste/relogio`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ agora: '2026-10-20T15:00:00-03:00' }),
+    });
+
+    // Read at 15:00 (via GET /inscricoes as organization 'org-ana')
+    const listRes = await fetch(`${servidor.base}/inscricoes?atividadeId=atv_cascata`, {
+      headers: { 'X-Usuario': 'org-ana' },
+    });
+    assert.equal(listRes.status, 200);
+    const list = await listRes.json();
+
+    const diego = list.find(i => i.id === diegoIns.id);
+    const elisa = list.find(i => i.id === elisaIns.id);
+    const fabio = list.find(i => i.id === fabioIns.id);
+
+    assert.equal(diego.status, 'expirada');
+    assert.equal(elisa.status, 'expirada');
+    assert.equal(fabio.status, 'convocada');
+    assert.equal(fabio.convocadaAte, '2026-10-20T16:00:00-03:00');
   } finally {
     await servidor.fechar();
   }
