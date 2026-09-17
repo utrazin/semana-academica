@@ -31,7 +31,7 @@ function encontroDoDia(atividade, dia) {
   return atividade.encontros.find((encontro) => diaEmBrasilia(encontro.inicio) === dia);
 }
 
-export default function Programacao({ api }) {
+export default function Programacao({ api, aoSelecionarAtividade }) {
   const [dia, setDia] = useState(DIAS[0].valor);
   const [tipo, setTipo] = useState('');
   const [atividades, setAtividades] = useState(null);
@@ -116,7 +116,12 @@ export default function Programacao({ api }) {
           {atividades.map((atividade) => {
             const encontro = encontroDoDia(atividade, dia);
             return (
-              <li key={atividade.id} aria-label={atividade.titulo}>
+              <li
+                key={atividade.id}
+                aria-label={atividade.titulo}
+                onClick={() => aoSelecionarAtividade?.(atividade.id)}
+                style={{ cursor: 'pointer' }}
+              >
                 <h3>{atividade.titulo}</h3>
                 <p>
                   {rotuloTipo(atividade.tipo)}

@@ -78,6 +78,29 @@ export function criarAtividade(corpo) {
   return chamar('/atividades', { metodo: 'POST', corpo });
 }
 
+export function inscrever(atividadeId) {
+  return chamar(`/atividades/${encodeURIComponent(atividadeId)}/inscricoes`, { metodo: 'POST' });
+}
+
+export function listarInscricoes({ atividadeId } = {}) {
+  const parametros = new URLSearchParams();
+  if (atividadeId !== undefined) parametros.set('atividadeId', atividadeId);
+  const sufixo = parametros.toString();
+  return chamar(`/inscricoes${sufixo ? `?${sufixo}` : ''}`);
+}
+
+export function obterInscricao(id) {
+  return chamar(`/inscricoes/${encodeURIComponent(id)}`);
+}
+
+export function cancelarInscricao(id) {
+  return chamar(`/inscricoes/${encodeURIComponent(id)}/cancelamento`, { metodo: 'POST' });
+}
+
+export function confirmarConvocacao(id) {
+  return chamar(`/inscricoes/${encodeURIComponent(id)}/confirmacao`, { metodo: 'POST' });
+}
+
 export default {
   API_URL,
   USUARIOS,
@@ -87,4 +110,9 @@ export default {
   obterAtividade,
   listarSalas,
   criarAtividade,
+  inscrever,
+  listarInscricoes,
+  obterInscricao,
+  cancelarInscricao,
+  confirmarConvocacao,
 };

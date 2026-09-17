@@ -100,4 +100,89 @@ describe('api.js', () => {
       status: 422,
     });
   });
+
+  it('inscreve em uma atividade com POST /atividades/:id/inscricoes', async () => {
+    globalThis.fetch = vi.fn(async () => ({
+      ok: true,
+      status: 201,
+      json: async () => ({ id: 'ins_1', status: 'confirmada' }),
+    }));
+    api.definirUsuario('p-carla');
+    await api.inscrever('atv_123');
+
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      `${API_URL}/atividades/atv_123/inscricoes`,
+      expect.objectContaining({
+        method: 'POST',
+        headers: { 'X-Usuario': 'p-carla' },
+      }),
+    );
+  });
+
+  it('lista inscrições com GET /inscricoes, opcionalmente filtrando por atividadeId', async () => {
+    api.definirUsuario('p-carla');
+    await api.listarInscricoes({ atividadeId: 'atv_123' });
+
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      `${API_URL}/inscricoes?atividadeId=atv_123`,
+      expect.objectContaining({ headers: { 'X-Usuario': 'p-carla' } }),
+    );
+  });
+
+  it('obtém inscrição por id com GET /inscricoes/:id', async () => {
+    api.definirUsuario('p-carla');
+    await api.obterInscricao('ins_1');
+
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      `${API_URL}/inscricoes/ins_1`,
+      expect.objectContaining({ headers: { 'X-Usuario': 'p-carla' } }),
+    );
+  });
+
+  it('cancela inscrição com POST /inscricoes/:id/cancelamento', async () => {
+    globalThis.fetch = vi.fn(async () => ({
+      ok: true,
+      json: async () => ({ id: 'ins_1', status: 'cancelada' }),
+    }));
+    api.definirUsuario('p-carla');
+    await api.cancelarInscricao('ins_1');
+
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      `${API_URL}/inscricoes/ins_1/cancelamento`,
+      expect.objectContaining({
+        method: 'POST',
+        headers: { 'X-Usuario': 'p-carla' },
+      }),
+    );
+  });
+
+  it('confirma convocação com POST /inscricoes/:id/confirmacao', async () => {
+    globalThis.fetch = vi.fn(async () => ({
+      ok: true,
+      json: async () => ({ id: 'ins_1', status: 'confirmada' }),
+    }));
+    api.definirUsuario('p-carla');
+    await api.confirmarConvocacao('ins_1');
+
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      `${API_URL}/inscricoes/ins_1/confirmacao`,
+      expect.objectContaining({
+        method: 'POST',
+        headers: { 'X-Usuario': 'p-carla' },
+      }),
+    );
+  });
+
+  it('rejeita com JA_INSCRITO quando inscrição falha', async () => {
+    globalThis.fetch = vi.fn(async () => ({
+      ok: false,
+      status: 409,
+      json: async () => ({ erro: 'JA_INSCRITO', mensagem: 'Participante já inscrito.' }),
+    }));
+
+    await expect(api.inscrever('atv_123')).rejects.toMatchObject({
+      erro: 'JA_INSCRITO',
+      status: 409,
+    });
+  });
 });

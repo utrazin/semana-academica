@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import Atividade from './Atividade.jsx';
 
@@ -24,12 +24,17 @@ const minicurso = {
   emEspera: 0,
 };
 
-function criarApiFalsa({ atividade = minicurso, erro } = {}) {
+function criarApiFalsa({ atividade = minicurso, erro, erroInscricao } = {}) {
   return {
     listarSalas: vi.fn(async () => SALAS),
     obterAtividade: vi.fn(() =>
       erro ? Promise.reject(erro) : Promise.resolve(atividade),
     ),
+    listarInscricoes: vi.fn(async () => []),
+    inscrever: vi.fn(() =>
+      erroInscricao ? Promise.reject(erroInscricao) : Promise.resolve({ id: 'ins_1', status: 'confirmada', posicaoNaEspera: null }),
+    ),
+    cancelarInscricao: vi.fn(() => Promise.resolve({ id: 'ins_1', status: 'cancelada' })),
   };
 }
 
@@ -62,5 +67,28 @@ describe('Atividade', () => {
       'NAO_ENCONTRADO: Atividade não existe.',
     );
     expect(screen.queryByText('Minicurso')).not.toBeInTheDocument();
+  });
+
+  it('permite inscrever-se e mostra sucesso', async () => {
+    const api = criarApiFalsa();
+    render(<Atividade api={api} id="atv_minicurso02" />);
+
+    const botaoInscrever = await screen.findByRole('button', { name: 'Inscrever' });
+    fireEvent.click(botaoInscrever);
+
+    expect(await screen.findByRole('status')).toHaveTextContent('Inscrição realizada com sucesso!');
+    expect(api.inscrever).toHaveBeenCalledWith('atv_minicurso02');
+  });
+
+  it('mostra erro da API (ex.: JA_INSCRITO) ao tentar inscrever', async () => {
+    const api = criarApiFalsa({
+      erroInscricao: { erro: 'JA_INSCRITO', mensagem: 'Participante já inscrito.' },
+    });
+    render(<Atividade api={api} id="atv_minicurso02" />);
+
+    const botaoInscrever = await screen.findByRole('button', { name: 'Inscrever' });
+    fireEvent.click(botaoInscrever);
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('JA_INSCRITO: Participante já inscrito.');
   });
 });

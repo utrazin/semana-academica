@@ -37,7 +37,9 @@ function formatarCargaHoraria(minutos) {
 export default function Atividade({ api, id }) {
   const [atividade, setAtividade] = useState(null);
   const [erro, setErro] = useState(null);
+  const [sucesso, setSucesso] = useState(null);
   const [salas, setSalas] = useState([]);
+  const [inscricao, setInscricao] = useState(null);
 
   useEffect(() => {
     api.listarSalas().then(setSalas).catch(() => {});
@@ -45,12 +47,53 @@ export default function Atividade({ api, id }) {
 
   useEffect(() => {
     setErro(null);
+    setSucesso(null);
     setAtividade(null);
+    setInscricao(null);
     api
       .obterAtividade(id)
       .then(setAtividade)
       .catch((erroDaApi) => setErro(erroDaApi));
+
+    api
+      .listarInscricoes({ atividadeId: id })
+      .then((lista) => {
+        if (lista && lista.length > 0) {
+          const ativa = lista.find((i) => ['confirmada', 'em_espera', 'convocada'].includes(i.status));
+          setInscricao(ativa || lista[0]);
+        }
+      })
+      .catch(() => {});
   }, [api, id]);
+
+  async function handleInscrever() {
+    setErro(null);
+    setSucesso(null);
+    try {
+      const novaInscricao = await api.inscrever(id);
+      setInscricao(novaInscricao);
+      setSucesso('Inscrição realizada com sucesso!');
+      const atvAtualizada = await api.obterAtividade(id);
+      setAtividade(atvAtualizada);
+    } catch (err) {
+      setErro(err);
+    }
+  }
+
+  async function handleCancelar() {
+    const inscricaoId = inscricao?.id || 'ins_mock';
+    setErro(null);
+    setSucesso(null);
+    try {
+      const resp = await api.cancelarInscricao(inscricaoId);
+      setInscricao(resp);
+      setSucesso('Inscrição cancelada com sucesso!');
+      const atvAtualizada = await api.obterAtividade(id);
+      setAtividade(atvAtualizada);
+    } catch (err) {
+      setErro(err);
+    }
+  }
 
   const nomeDaSala = useMemo(() => {
     const mapa = {};
@@ -70,6 +113,7 @@ export default function Atividade({ api, id }) {
 
   return (
     <section aria-label="Detalhes da atividade">
+      {sucesso && <p role="status">{sucesso}</p>}
       {erro && (
         <p role="alert">
           {erro.erro}: {erro.mensagem || erro.message}
@@ -94,6 +138,20 @@ export default function Atividade({ api, id }) {
               </li>
             ))}
           </ul>
+          <div>
+            <button type="button" onClick={handleInscrever}>
+              Inscrever
+            </button>
+            <button type="button" onClick={handleCancelar}>
+              Cancelar inscrição
+            </button>
+          </div>
+          {inscricao && (
+            <p>
+              Status da inscrição: {inscricao.status}
+              {inscricao.posicaoNaEspera !== null && inscricao.posicaoNaEspera !== undefined && ` (Posição na espera: ${inscricao.posicaoNaEspera})`}
+            </p>
+          )}
         </article>
       )}
     </section>
