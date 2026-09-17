@@ -1099,7 +1099,29 @@ export function criarServidor({ banco = novoBanco(':memory:') } = {}) {
   });
 
   app.get('/extrato', exigirUsuario, exigirParticipante, (req, res) => {
-    return res.status(501).json({ erro: 'NAO_IMPLEMENTADO', mensagem: 'Extrato fora da fatia 1.' });
+    const participanteId = req.usuario.id;
+    const agoraMs = agora().getTime();
+    const atividades = banco.prepare('SELECT id, titulo, tipo, cancelada FROM atividades WHERE cancelada = 0').all();
+    const itens = [];
+    let palestrasMinutos = 0;
+    let minicursosMinutos = 0;
+    for (const atividade of atividades) {
+      const inscricao = banco.prepare("SELECT id FROM inscricoes WHERE atividadeId = ? AND participanteId = ? AND status = 'confirmada'").get(atividade.id, participanteId);
+      if (!inscricao) continue;
+      const encontros = encontrosPorAtividade.all(atividade.id);
+      if (encontros.length === 0) continue;
+      if (agoraMs < Date.parse(encontros[encontros.length - 1].fim)) continue;
+      const totalPresencas = contarPresencasCertificado.get(atividade.id, participanteId).total;
+      if (totalPresencas * 4 < encontros.length * 3) continue;
+      const cargaHorariaMinutos = Math.round(encontros.reduce((soma, e) => soma + (Date.parse(e.fim) - Date.parse(e.inicio)) / 60000, 0));
+      if (atividade.tipo === 'palestra') palestrasMinutos += cargaHorariaMinutos;
+      else minicursosMinutos += cargaHorariaMinutos;
+      const certificado = certificadoPorAtividadeEParticipante.get(atividade.id, participanteId);
+      itens.push({ atividadeId: atividade.id, titulo: atividade.titulo, tipo: atividade.tipo, cargaHorariaMinutos, codigo: certificado ? certificado.codigo : null });
+    }
+    const totalMinutos = palestrasMinutos + minicursosMinutos;
+    const aproveitadoMinutos = Math.min(Math.min(palestrasMinutos, 240) + minicursosMinutos, 1200);
+    return res.json({ itens, palestrasMinutos, minicursosMinutos, totalMinutos, aproveitadoMinutos });
   });
 
   return app;
