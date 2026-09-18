@@ -8,4 +8,4 @@ Cada integrante é dono de um módulo inteiro: entrevista, spec, testes, API, te
 | M2 — Inscrições e lista de espera | Ithallo Emanuel | ithalloe |
 | M3 — Presença por QR | Matheus Chiaratti Schneider | Matzikaaa |
 | M4 — Certificados (grupos de 4 e 5) | Tarik Almeida Kassem | k100-dev |
-| M5 — Painel da organização (grupos de 5) | | |
+| M5 — Painel da organização (grupos de 5) | Vitor Cruz | VCruuz |
