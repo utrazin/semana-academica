@@ -24,7 +24,16 @@ const minicurso = {
   emEspera: 0,
 };
 
-function criarApiFalsa({ atividade = minicurso, erro, erroInscricao } = {}) {
+function criarApiFalsa({ atividade = minicurso, erro, erroInscricao, erroCertificado } = {}) {
+  const certificado = {
+    codigo: 'SA26-ABCD-EFGH',
+    atividadeId: 'atv_minicurso02',
+    participanteId: 'p-carla',
+    cargaHorariaMinutos: 300,
+    presencas: 2,
+    encontros: 2,
+    emitidoEm: '2026-10-20T12:00:00-03:00',
+  };
   return {
     listarSalas: vi.fn(async () => SALAS),
     obterAtividade: vi.fn(() =>
@@ -35,6 +44,9 @@ function criarApiFalsa({ atividade = minicurso, erro, erroInscricao } = {}) {
       erroInscricao ? Promise.reject(erroInscricao) : Promise.resolve({ id: 'ins_1', status: 'confirmada', posicaoNaEspera: null }),
     ),
     cancelarInscricao: vi.fn(() => Promise.resolve({ id: 'ins_1', status: 'cancelada' })),
+    emitirCertificado: vi.fn(() =>
+      erroCertificado ? Promise.reject(erroCertificado) : Promise.resolve(certificado),
+    ),
   };
 }
 
@@ -104,5 +116,35 @@ describe('Atividade', () => {
     fireEvent.click(botoes[0]);
 
     expect(aoSelecionarEncontro).toHaveBeenCalledWith('enc_1');
+  });
+
+  it('solicita emissão do certificado e mostra o código', async () => {
+    const api = criarApiFalsa();
+    render(<Atividade api={api} id="atv_minicurso02" />);
+
+    const botao = await screen.findByRole('button', { name: 'Solicitar certificado' });
+    fireEvent.click(botao);
+
+    expect(await screen.findAllByText(/SA26-ABCD-EFGH/)).not.toHaveLength(0);
+    expect(api.emitirCertificado).toHaveBeenCalledWith('atv_minicurso02');
+  });
+
+  it('mostra o erro cru da API quando a emissão é recusada', async () => {
+    const api = criarApiFalsa({
+      erroCertificado: {
+        erro: 'PRESENCA_INSUFICIENTE',
+        mensagem: 'Frequência abaixo do mínimo.',
+        status: 422,
+      },
+    });
+    render(<Atividade api={api} id="atv_minicurso02" />);
+
+    const botao = await screen.findByRole('button', { name: 'Solicitar certificado' });
+    fireEvent.click(botao);
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'PRESENCA_INSUFICIENTE: Frequência abaixo do mínimo.',
+    );
+    expect(api.emitirCertificado).toHaveBeenCalledWith('atv_minicurso02');
   });
 });

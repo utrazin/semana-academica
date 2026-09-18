@@ -29,11 +29,13 @@ export function obterUsuarioAtual() {
   return USUARIOS.some((usuario) => usuario.id === id) ? id : null;
 }
 
-async function chamar(caminho, { metodo = 'GET', corpo } = {}) {
+async function chamar(caminho, { metodo = 'GET', corpo, publica = false } = {}) {
   const cabecalhos = corpo !== undefined ? { 'Content-Type': 'application/json' } : {};
-  const usuario = obterUsuarioAtual();
-  if (usuario) {
-    cabecalhos['X-Usuario'] = usuario;
+  if (!publica) {
+    const usuario = obterUsuarioAtual();
+    if (usuario) {
+      cabecalhos['X-Usuario'] = usuario;
+    }
   }
 
   const resposta = await fetch(`${API_URL}${caminho}`, {
@@ -123,6 +125,22 @@ export function listarPresencas(encontroId) {
   return chamar(`/encontros/${encodeURIComponent(encontroId)}/presencas`);
 }
 
+export function emitirCertificado(atividadeId) {
+  return chamar(`/atividades/${encodeURIComponent(atividadeId)}/certificado`, { metodo: 'POST' });
+}
+
+export function listarCertificados() {
+  return chamar('/certificados');
+}
+
+export function verificarCertificado(codigo) {
+  return chamar(`/certificados/${encodeURIComponent(codigo)}`, { publica: true });
+}
+
+export function obterExtrato() {
+  return chamar('/extrato');
+}
+
 export default {
   API_URL,
   USUARIOS,
@@ -141,4 +159,8 @@ export default {
   registrarPresenca,
   registrarPresencaManual,
   listarPresencas,
+  emitirCertificado,
+  listarCertificados,
+  verificarCertificado,
+  obterExtrato,
 };

@@ -5,6 +5,9 @@ import CriarAtividade from './paginas/criar-atividade/CriarAtividade.jsx';
 import Programacao from './paginas/programacao/Programacao.jsx';
 import Atividade from './paginas/atividade/Atividade.jsx';
 import MinhasInscricoes from './paginas/minhas-inscricoes/MinhasInscricoes.jsx';
+import MeusCertificados from './paginas/meus-certificados/MeusCertificados.jsx';
+import Extrato from './paginas/extrato/Extrato.jsx';
+import VerificarCertificado from './paginas/verificar-certificado/VerificarCertificado.jsx';
 import PresencaOrganizacao from './paginas/presenca-organizacao/PresencaOrganizacao.jsx';
 import PresencaParticipante from './paginas/presenca-participante/PresencaParticipante.jsx';
 
@@ -46,6 +49,19 @@ export default function App() {
             Minhas Inscrições
           </button>
         )}
+        {usuario.papel === 'participante' && (
+          <button type="button" onClick={() => setVista('meus-certificados')} aria-pressed={vista === 'meus-certificados'}>
+            Meus Certificados
+          </button>
+        )}
+        {usuario.papel === 'participante' && (
+          <button type="button" onClick={() => setVista('extrato')} aria-pressed={vista === 'extrato'}>
+            Extrato de Horas
+          </button>
+        )}
+        <button type="button" onClick={() => setVista('verificar-certificado')} aria-pressed={vista === 'verificar-certificado'}>
+          Verificar Certificado
+        </button>
       </nav>
 
       {usuario.papel === 'organizacao' && <CriarAtividade api={api} />}
@@ -55,6 +71,15 @@ export default function App() {
       )}
       {vista === 'minhas-inscricoes' && (
         <MinhasInscricoes api={api} />
+      )}
+      {usuario.papel === 'participante' && vista === 'meus-certificados' && (
+        <MeusCertificados api={api} />
+      )}
+      {usuario.papel === 'participante' && vista === 'extrato' && (
+        <Extrato api={api} />
+      )}
+      {vista === 'verificar-certificado' && (
+        <VerificarCertificado api={api} />
       )}
       {vista === 'atividade' && (
         <div>

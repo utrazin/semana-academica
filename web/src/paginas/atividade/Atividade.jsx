@@ -40,6 +40,7 @@ export default function Atividade({ api, id, aoSelecionarEncontro }) {
   const [sucesso, setSucesso] = useState(null);
   const [salas, setSalas] = useState([]);
   const [inscricao, setInscricao] = useState(null);
+  const [certificado, setCertificado] = useState(null);
 
   useEffect(() => {
     api.listarSalas().then(setSalas).catch(() => {});
@@ -50,6 +51,7 @@ export default function Atividade({ api, id, aoSelecionarEncontro }) {
     setSucesso(null);
     setAtividade(null);
     setInscricao(null);
+    setCertificado(null);
     api
       .obterAtividade(id)
       .then(setAtividade)
@@ -90,6 +92,18 @@ export default function Atividade({ api, id, aoSelecionarEncontro }) {
       setSucesso('Inscrição cancelada com sucesso!');
       const atvAtualizada = await api.obterAtividade(id);
       setAtividade(atvAtualizada);
+    } catch (err) {
+      setErro(err);
+    }
+  }
+
+  async function handleSolicitarCertificado() {
+    setErro(null);
+    setSucesso(null);
+    try {
+      const resp = await api.emitirCertificado(id);
+      setCertificado(resp);
+      setSucesso(`Certificado ${resp.codigo} emitido!`);
     } catch (err) {
       setErro(err);
     }
@@ -150,7 +164,11 @@ export default function Atividade({ api, id, aoSelecionarEncontro }) {
             <button type="button" onClick={handleCancelar}>
               Cancelar inscrição
             </button>
+            <button type="button" onClick={handleSolicitarCertificado}>
+              Solicitar certificado
+            </button>
           </div>
+          {certificado && <p>Código do certificado: {certificado.codigo}</p>}
           {inscricao && (
             <p>
               Status da inscrição: {inscricao.status}

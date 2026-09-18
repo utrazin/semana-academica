@@ -251,4 +251,59 @@ describe('api.js', () => {
       expect.objectContaining({ headers: { 'X-Usuario': 'org-ana' } }),
     );
   });
+
+  it('emite certificado com POST /atividades/:id/certificado enviando X-Usuario', async () => {
+    globalThis.fetch = vi.fn(async () => ({
+      ok: true,
+      status: 201,
+      json: async () => ({ codigo: 'SA26-ABCD-EFGH', atividadeId: 'atv_1' }),
+    }));
+    api.definirUsuario('p-carla');
+    await api.emitirCertificado('atv_1');
+
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      `${API_URL}/atividades/atv_1/certificado`,
+      expect.objectContaining({
+        method: 'POST',
+        headers: { 'X-Usuario': 'p-carla' },
+      }),
+    );
+  });
+
+  it('lista certificados do participante com GET /certificados enviando X-Usuario', async () => {
+    api.definirUsuario('p-carla');
+    await api.listarCertificados();
+
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      `${API_URL}/certificados`,
+      expect.objectContaining({ headers: { 'X-Usuario': 'p-carla' } }),
+    );
+  });
+
+  it('consulta extrato com GET /extrato enviando X-Usuario', async () => {
+    api.definirUsuario('p-carla');
+    await api.obterExtrato();
+
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      `${API_URL}/extrato`,
+      expect.objectContaining({ headers: { 'X-Usuario': 'p-carla' } }),
+    );
+  });
+
+  it('verifica certificado pela rota pública sem enviar X-Usuario', async () => {
+    globalThis.fetch = vi.fn(async () => ({
+      ok: true,
+      json: async () => ({ codigo: 'SA26-ABCD-EFGH', participante: 'Carla M. S.' }),
+    }));
+    api.definirUsuario('p-carla');
+    const resultado = await api.verificarCertificado('SA26-ABCD-EFGH');
+
+    const [, opcoes] = globalThis.fetch.mock.calls[0];
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      `${API_URL}/certificados/SA26-ABCD-EFGH`,
+      expect.anything(),
+    );
+    expect(opcoes.headers).not.toHaveProperty('X-Usuario');
+    expect(resultado.participante).toBe('Carla M. S.');
+  });
 });
