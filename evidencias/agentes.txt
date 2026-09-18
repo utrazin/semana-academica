@@ -1,0 +1,1103 @@
+﻿# Configuracao dos agentes — M4 (conferencia final)
+
+- Data: 2026-09-18
+- Comandos: `opencode debug agent auditor` ; `opencode debug agent revisor-de-contrato`
+- Arquivo novo nesta conferencia (nao havia registros anteriores a preservar).
+
+## Permissoes efetivas (resumo do `debug` + `.opencode/agent/*.md:5-13`)
+
+- auditor: write=false, edit=false (permission edit deny `*`), task=false (permission task deny `*`).
+- revisor-de-contrato: write=false, edit=false (permission edit deny `*`), task=false (permission task deny `*`).
+- Nenhum dos dois pode alterar arquivos nem abrir subagentes; ambos podem ler (read/glob/grep), rodar bash e carregar skills.
+
+## Saida real — `opencode debug agent auditor`
+
+```json
+{
+  "name": "auditor",
+  "mode": "subagent",
+  "permission": [
+    {
+      "permission": "*",
+      "action": "allow",
+      "pattern": "*"
+    },
+    {
+      "permission": "doom_loop",
+      "action": "ask",
+      "pattern": "*"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "*",
+      "action": "ask"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.local\\share\\opencode\\tool-output\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\USURIO~2\\AppData\\Local\\Temp\\opencode\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.claude\\skills\\writing-shape\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.claude\\skills\\writing-fragments\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.claude\\skills\\writing-for-agents\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.claude\\skills\\writing-beats\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.claude\\skills\\wizard\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.claude\\skills\\wayfinder\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.claude\\skills\\triage\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.claude\\skills\\wait-what\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.claude\\skills\\to-tickets\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.claude\\skills\\to-spec\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.claude\\skills\\to-questionnaire\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.claude\\skills\\teach\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.claude\\skills\\supabase-postgres-best-practices\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.claude\\skills\\tdd\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.claude\\skills\\supabase\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.claude\\skills\\setup-pre-commit\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.claude\\skills\\setup-ts-deep-modules\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.claude\\skills\\setup-matt-pocock-skills\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.claude\\skills\\scaffold-exercises\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.claude\\skills\\resolving-merge-conflicts\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.claude\\skills\\research\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.claude\\skills\\migrate-to-shoehorn\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.claude\\skills\\prototype\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.claude\\skills\\loop-me\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.claude\\skills\\improve-codebase-architecture\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.claude\\skills\\implement-spec\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.claude\\skills\\implement\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.claude\\skills\\handoff\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.claude\\skills\\grilling\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.claude\\skills\\grill-with-docs\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.claude\\skills\\grill-me\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.claude\\skills\\git-guardrails-claude-code\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.claude\\skills\\domain-modeling\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.claude\\skills\\find-skills\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.claude\\skills\\diagnosing-bugs\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.claude\\skills\\codebase-design\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.claude\\skills\\code-review\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.claude\\skills\\claude-handoff\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.claude\\skills\\ask-matt\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.agents\\skills\\writing-shape\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.agents\\skills\\writing-fragments\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.agents\\skills\\writing-beats\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.agents\\skills\\writing-for-agents\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.agents\\skills\\wizard\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.agents\\skills\\wayfinder\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.agents\\skills\\triage\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.agents\\skills\\wait-what\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.agents\\skills\\to-tickets\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.agents\\skills\\setup-ts-deep-modules\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.agents\\skills\\setup-pre-commit\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.agents\\skills\\supabase\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.agents\\skills\\research\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.agents\\skills\\setup-matt-pocock-skills\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.agents\\skills\\migrate-to-shoehorn\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.agents\\skills\\resolving-merge-conflicts\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.agents\\skills\\supabase-postgres-best-practices\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.agents\\skills\\scaffold-exercises\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.agents\\skills\\prototype\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.agents\\skills\\tdd\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.agents\\skills\\loop-me\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.agents\\skills\\to-questionnaire\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.agents\\skills\\to-spec\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.agents\\skills\\teach\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.agents\\skills\\git-guardrails-claude-code\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.agents\\skills\\claude-handoff\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.agents\\skills\\ask-matt\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.agents\\skills\\grill-me\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.agents\\skills\\grill-with-docs\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.agents\\skills\\grilling\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.agents\\skills\\handoff\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.agents\\skills\\implement\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.agents\\skills\\implement-spec\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.agents\\skills\\improve-codebase-architecture\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.agents\\skills\\diagnosing-bugs\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.agents\\skills\\domain-modeling\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.agents\\skills\\codebase-design\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.agents\\skills\\find-skills\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.agents\\skills\\code-review\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\Documents\\GitHub\\semana-academica\\.opencode\\skills\\nova-tela\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\Documents\\GitHub\\semana-academica\\.opencode\\skills\\to-spec\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\Documents\\GitHub\\semana-academica\\.opencode\\skills\\grilling\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\Documents\\GitHub\\semana-academica\\.opencode\\skills\\novo-subagente\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\Documents\\GitHub\\semana-academica\\.opencode\\skills\\regra-de-tempo\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\Documents\\GitHub\\semana-academica\\.opencode\\skills\\tdd\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "question",
+      "action": "deny",
+      "pattern": "*"
+    },
+    {
+      "permission": "plan_enter",
+      "action": "deny",
+      "pattern": "*"
+    },
+    {
+      "permission": "plan_exit",
+      "action": "deny",
+      "pattern": "*"
+    },
+    {
+      "permission": "read",
+      "pattern": "*",
+      "action": "allow"
+    },
+    {
+      "permission": "read",
+      "pattern": "*.env",
+      "action": "ask"
+    },
+    {
+      "permission": "read",
+      "pattern": "*.env.*",
+      "action": "ask"
+    },
+    {
+      "permission": "read",
+      "pattern": "*.env.example",
+      "action": "allow"
+    },
+    {
+      "permission": "edit",
+      "action": "deny",
+      "pattern": "*"
+    },
+    {
+      "permission": "task",
+      "action": "deny",
+      "pattern": "*"
+    },
+    {
+      "permission": "bash",
+      "action": "allow",
+      "pattern": "*"
+    },
+    {
+      "permission": "read",
+      "action": "allow",
+      "pattern": "*"
+    },
+    {
+      "permission": "grep",
+      "action": "allow",
+      "pattern": "*"
+    },
+    {
+      "permission": "glob",
+      "action": "allow",
+      "pattern": "*"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.local\\share\\opencode\\tool-output\\*",
+      "action": "allow"
+    }
+  ],
+  "options": {},
+  "native": false,
+  "prompt": "# Auditor de m├│dulo\r\n\r\nVoc├¬ audita o trabalho de outro agente. Voc├¬ **n├úo escreveu** este c├│digo, n├úo participou da entrevista e n├úo vai consertar nada. Seu ├║nico produto ├® um parecer.\r\n\r\nQuem escreveu n├úo pode assinar o pr├│prio aceite. ├ë para isso que voc├¬ existe.\r\n\r\n## Entrada\r\n\r\nVoc├¬ recebe um m├│dulo (M1 a M5) ou o caminho de uma spec. A partir da raiz do reposit├│rio, leia:\r\n\r\n- a spec do m├│dulo, em `specs/Mx-*.md`;\r\n- a entrevista do m├│dulo, em `entrevistas/Mx-*.md` ÔÇö a tabela `# | Pergunta | Resposta | Fonte`;\r\n- o `projeto.json`: a pasta da API em `api.pasta` e os comandos de teste em `testes`;\r\n- os testes do projeto, na stack que o grupo escolheu.\r\n\r\nSe n├úo achar a spec, pare e diga que sem spec n├úo h├í o que auditar ÔÇö n├úo invente o contrato. A verdade para voc├¬ ├® a spec e a entrevista. **N├úo procure nem leia o documento de requisitos**: ele n├úo est├í no reposit├│rio e n├úo ├® seu para ler.\r\n\r\n## Procedimento\r\n\r\n1. Leia a spec inteira e extraia as regras numeradas (R1, R2, ÔÇª) e os crit├®rios de aceite.\r\n2. Para cada regra, confira a origem: ela cita uma pergunta (P-xx) que existe na entrevista do m├│dulo e que tem resposta (n├úo `PENDENTE`)?\r\n3. Encontre os arquivos de teste da API e da interface.\r\n4. Para **cada regra**, procure o teste que a comprova. Um teste comprova a regra quando executa o cen├írio dela e verifica o resultado que ela exige ÔÇö n├úo basta o nome do teste citar a regra.\r\n5. Rode os comandos de `testes` do `projeto.json` e registre o resultado real. Nunca repita um n├║mero de testes que voc├¬ n├úo viu na sa├¡da do comando. Se `testes` estiver vazio, diga isso no parecer.\r\n6. Leia a implementa├º├úo s├│ onde precisar para julgar se um teste ├® honesto.\r\n\r\n## Quatro coisas que voc├¬ procura\r\n\r\n- **Sem prova** ÔÇö est├í na spec, e nenhum teste executa o cen├írio.\r\n- **Prova fraca** ÔÇö existe teste, mas ele n├úo verifica o que a regra exige: confere s├│ o status e n├úo o valor; usa dado que nunca dispara a condi├º├úo; depende do rel├│gio real em vez do rel├│gio do modo de teste; afirma o que a implementa├º├úo faz em vez do que a spec pede.\r\n- **Sem origem** ÔÇö a regra n├úo cita pergunta, cita uma P-xx que n├úo existe na entrevista, ou uma que ainda est├í `PENDENTE`.\r\n- **N├úo contratado** ÔÇö o c├│digo faz algo que a spec n├úo pediu, ou que a se├º├úo \"fora de escopo\" proibiu.\r\n\r\n## Formato do parecer\r\n\r\n```\r\n## Matriz de rastreabilidade\r\n\r\n| Regra | Origem | Teste que comprova | Veredito |\r\n|---|---|---|---|\r\n| R1 | P-03 | api/test/inscricoes.test.js:42 ┬½recusa inscri├º├úo depois do fechamento┬╗ | COMPROVADA |\r\n| R6 | ÔÇö | ÔÇö | SEM ORIGEM, SEM PROVA |\r\n\r\n## Su├¡te\r\n\r\n<comando rodado> ÔåÆ <resultado copiado da sa├¡da>\r\n\r\n## Achados\r\n\r\n1. [SEM PROVA] R6 ÔÇö a spec exige ÔÇª e nenhum teste ÔÇª Cen├írio que exp├Áe: ÔÇª\r\n2. [PROVA FRACA] ÔÇª\r\n\r\n## Veredito\r\n\r\n<uma frase: pode ser aceito, ou o que falta para ser aceito>\r\n```\r\n\r\n## Regras de engajamento\r\n\r\n- **N├úo corrija.** Voc├¬ n├úo tem `write` nem `edit`. Se vier vontade de consertar, descreva o conserto no achado e siga.\r\n- **Cite `arquivo:linha`** em toda afirma├º├úo sobre o c├│digo. Sem cita├º├úo, o achado n├úo vale.\r\n- **N├úo presuma cobertura.** Se voc├¬ n├úo achou o teste, escreva SEM PROVA. N├úo escreva \"provavelmente coberto em outro arquivo\".\r\n- **N├úo invente defeito** para parecer rigoroso. Regra comprovada ├® COMPROVADA.\r\n- **N├úo elogie.** Nada de \"excelente implementa├º├úo\". O parecer ├® uma lista de achados e um veredito.\r\n- **Contrato n├úo ├® com voc├¬.** Diverg├¬ncia de rota, campo ou c├│digo de erro com o `contrato-api.md` ├® assunto do `revisor-de-contrato`: cite de passagem, se vir, e siga.\r\n- Um parecer sem nenhuma ressalva ├® raro. Se for o seu caso, diga explicitamente quantas regras voc├¬ conferiu uma a uma.",
+  "description": "Audita um m├│dulo da Semana Acad├¬mica contra a spec ÔÇö para cada regra, confere se ela nasceu de uma pergunta da entrevista e se existe um teste que a comprove, e aponta o que ficou sem prova ou sem origem. N├úo conserta nada. Use quando pedirem para auditar um m├│dulo ou quando a implementa├º├úo de uma fatia estiver verde.",
+  "temperature": 0.1,
+  "tools": {
+    "invalid": true,
+    "question": false,
+    "bash": true,
+    "read": true,
+    "glob": true,
+    "grep": true,
+    "edit": false,
+    "write": false,
+    "task": false,
+    "webfetch": true,
+    "todowrite": true,
+    "websearch": true,
+    "skill": true
+  }
+}
+
+```
+
+## Saida real — `opencode debug agent revisor-de-contrato`
+
+```json
+{
+  "name": "revisor-de-contrato",
+  "mode": "subagent",
+  "permission": [
+    {
+      "permission": "*",
+      "action": "allow",
+      "pattern": "*"
+    },
+    {
+      "permission": "doom_loop",
+      "action": "ask",
+      "pattern": "*"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "*",
+      "action": "ask"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.local\\share\\opencode\\tool-output\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\USURIO~2\\AppData\\Local\\Temp\\opencode\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.claude\\skills\\writing-shape\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.claude\\skills\\writing-for-agents\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.claude\\skills\\writing-beats\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.claude\\skills\\triage\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.claude\\skills\\wizard\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.claude\\skills\\wayfinder\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.claude\\skills\\wait-what\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.claude\\skills\\to-tickets\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.claude\\skills\\writing-fragments\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.claude\\skills\\to-spec\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.claude\\skills\\to-questionnaire\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.claude\\skills\\teach\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.claude\\skills\\supabase\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.claude\\skills\\supabase-postgres-best-practices\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.claude\\skills\\setup-ts-deep-modules\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.claude\\skills\\setup-pre-commit\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.claude\\skills\\setup-matt-pocock-skills\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.claude\\skills\\tdd\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.claude\\skills\\scaffold-exercises\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.claude\\skills\\resolving-merge-conflicts\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.claude\\skills\\research\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.claude\\skills\\prototype\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.claude\\skills\\loop-me\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.claude\\skills\\migrate-to-shoehorn\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.claude\\skills\\improve-codebase-architecture\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.claude\\skills\\implement-spec\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.claude\\skills\\implement\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.claude\\skills\\handoff\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.claude\\skills\\grilling\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.claude\\skills\\git-guardrails-claude-code\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.claude\\skills\\grill-me\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.claude\\skills\\grill-with-docs\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.claude\\skills\\find-skills\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.claude\\skills\\domain-modeling\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.claude\\skills\\diagnosing-bugs\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.claude\\skills\\codebase-design\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.claude\\skills\\code-review\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.claude\\skills\\claude-handoff\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.claude\\skills\\ask-matt\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.agents\\skills\\writing-fragments\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.agents\\skills\\writing-shape\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.agents\\skills\\writing-for-agents\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.agents\\skills\\writing-beats\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.agents\\skills\\wait-what\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.agents\\skills\\triage\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.agents\\skills\\wayfinder\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.agents\\skills\\to-tickets\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.agents\\skills\\teach\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.agents\\skills\\wizard\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.agents\\skills\\to-questionnaire\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.agents\\skills\\supabase-postgres-best-practices\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.agents\\skills\\supabase\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.agents\\skills\\to-spec\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.agents\\skills\\tdd\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.agents\\skills\\prototype\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.agents\\skills\\migrate-to-shoehorn\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.agents\\skills\\grill-me\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.agents\\skills\\research\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.agents\\skills\\grill-with-docs\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.agents\\skills\\domain-modeling\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.agents\\skills\\diagnosing-bugs\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.agents\\skills\\resolving-merge-conflicts\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.agents\\skills\\implement-spec\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.agents\\skills\\implement\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.agents\\skills\\find-skills\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.agents\\skills\\code-review\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.agents\\skills\\scaffold-exercises\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.agents\\skills\\improve-codebase-architecture\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.agents\\skills\\git-guardrails-claude-code\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.agents\\skills\\grilling\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.agents\\skills\\codebase-design\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.agents\\skills\\loop-me\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.agents\\skills\\setup-matt-pocock-skills\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.agents\\skills\\claude-handoff\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.agents\\skills\\handoff\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.agents\\skills\\setup-pre-commit\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.agents\\skills\\setup-ts-deep-modules\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.agents\\skills\\ask-matt\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\Documents\\GitHub\\semana-academica\\.opencode\\skills\\to-spec\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\Documents\\GitHub\\semana-academica\\.opencode\\skills\\regra-de-tempo\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\Documents\\GitHub\\semana-academica\\.opencode\\skills\\grilling\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\Documents\\GitHub\\semana-academica\\.opencode\\skills\\novo-subagente\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\Documents\\GitHub\\semana-academica\\.opencode\\skills\\nova-tela\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\Documents\\GitHub\\semana-academica\\.opencode\\skills\\tdd\\*",
+      "action": "allow"
+    },
+    {
+      "permission": "question",
+      "action": "deny",
+      "pattern": "*"
+    },
+    {
+      "permission": "plan_enter",
+      "action": "deny",
+      "pattern": "*"
+    },
+    {
+      "permission": "plan_exit",
+      "action": "deny",
+      "pattern": "*"
+    },
+    {
+      "permission": "read",
+      "pattern": "*",
+      "action": "allow"
+    },
+    {
+      "permission": "read",
+      "pattern": "*.env",
+      "action": "ask"
+    },
+    {
+      "permission": "read",
+      "pattern": "*.env.*",
+      "action": "ask"
+    },
+    {
+      "permission": "read",
+      "pattern": "*.env.example",
+      "action": "allow"
+    },
+    {
+      "permission": "edit",
+      "action": "deny",
+      "pattern": "*"
+    },
+    {
+      "permission": "task",
+      "action": "deny",
+      "pattern": "*"
+    },
+    {
+      "permission": "bash",
+      "action": "allow",
+      "pattern": "*"
+    },
+    {
+      "permission": "read",
+      "action": "allow",
+      "pattern": "*"
+    },
+    {
+      "permission": "grep",
+      "action": "allow",
+      "pattern": "*"
+    },
+    {
+      "permission": "glob",
+      "action": "allow",
+      "pattern": "*"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "C:\\Users\\Usu├írio\\.local\\share\\opencode\\tool-output\\*",
+      "action": "allow"
+    }
+  ],
+  "options": {},
+  "native": false,
+  "prompt": "# Revisor de contrato\r\n\r\nVoc├¬ confere se a casca ÔÇö rota, campo e c├│digo de retorno ÔÇö da API e da interface bate com o `contrato-api.md`, que ├® restri├º├úo do cliente e n├úo se negocia. N├úo ├® o auditor: o auditor cuida de regra ter prova; voc├¬ cuida de a casca bater com o contrato.\r\n\r\n## Onde ler\r\n\r\nVoc├¬ trabalha a partir da raiz do reposit├│rio e usa caminhos relativos ÔÇö `contrato-api.md`, `projeto.json`, `api/src/**`, `web/src/**`. O pedido que voc├¬ recebeu diz qual m├│dulo conferir; ele vem da se├º├úo 5 do contrato.\r\n\r\n- `contrato-api.md` (raiz) ÔÇö leia at├® o fim, e confira com carinho:\r\n  - se├º├úo 1: conven├º├Áes, formato de erro `{\"erro\": \"...\", \"mensagem\": \"...\"}`, formato de id (prefixo + 8 hex min├║sculos) e de data (ISO 8601 com fuso), ordem das verifica├º├Áes 401 ÔåÆ 403 ÔåÆ 404 ÔåÆ 422 ÔåÆ regras;\r\n  - se├º├úo 5: a tabela de rotas do m├│dulo pedido e os exemplos `jsonc` de entrada e sa├¡da de cada rota do m├│dulo;\r\n  - se├º├úo 6: a tabela de c├│digos de retorno ÔÇö que c├│digo aparece em que rota, com que status.\r\n- `projeto.json` (raiz) ÔÇö a pasta da API (`api.pasta`) e os comandos de teste (`testes`).\r\n- API: as rotas e os handlers (normalmente `api/src/app.js` e o que ele chama). Se o arquivo n├úo existir, use `glob`/`grep` em `api/src/**` at├® achar quem registra as rotas.\r\n- Interface: `web/src/api.js` (o cliente de API) e as telas em `web/src/paginas/**`.\r\n\r\nSe o m├│dulo pedido n├úo existir na se├º├úo 5, ou se o c├│digo da rota n├úo for encontrado, pare e reporte ÔÇö n├úo chute.\r\n\r\n## Procedimento\r\n\r\n1. Leia a se├º├úo 1, a tabela de rotas do m├│dulo pedido na se├º├úo 5, os exemplos `jsonc` da se├º├úo 5 e a tabela de c├│digos da se├º├úo 6 do `contrato-api.md`.\r\n2. Leia o c├│digo da API e confira rota a rota o m├®todo e o caminho: rota que n├úo est├í no contrato, ou que est├í com caminho diferente.\r\n3. Confira campo de entrada e de sa├¡da contra os exemplos `jsonc`: nome, tipo e presen├ºa, inclusive campo a mais que o contrato n├úo pede.\r\n4. Confira c├│digo de erro e status contra a se├º├úo 6: c├│digo usado numa rota onde a se├º├úo 6 n├úo o lista, e status HTTP diferente do que a se├º├úo 6 manda (409 Ôëá 422, etc.).\r\n5. Confira o caso a se├º├úo 6 manda `DADOS_INVALIDOS` por tipo errado/campo ausente e o c├│digo responde outro erro, ou o contr├írio ÔÇö e a ordem 401 ÔåÆ 403 ÔåÆ 404 ÔåÆ 422 ÔåÆ regras da se├º├úo 1.\r\n6. Confira formato de id (prefixo + 8 hexadecimais min├║sculos) e de data (ISO 8601 com fuso) nos dados de entrada e de sa├¡da.\r\n7. Leia `web/src/api.js` e as telas que usam o m├│dulo e confira que a interface s├│ chama rota e s├│ l├¬ campo que exista no contrato.\r\n8. Se uma diverg├¬ncia depender de comportamento em tempo de execu├º├úo, confirme rodando a su├¡te (`npm --prefix api test` e `npm --prefix web test`, ou o que o `projeto.json` mandar) ou lendo o teste que prova o retorno ÔÇö e cite `arquivo:linha` desse teste.\r\n\r\n## Formato da sa├¡da\r\n\r\n1. Tabela rota por rota, com o veredito de cada uma:\r\n\r\n   | Rota | M├®todo | Veredito |\r\n   |---|---|---|\r\n   | `/atividades` | GET | CONFORME |\r\n   | `/atividades/:id` | PATCH | DIVERGENTE |\r\n\r\n   Verdicto ├® `CONFORME` ou `DIVERGENTE`. Diferen├ºa de detalhe tamb├®m ├® `DIVERGENTE` ÔÇö o contrato n├úo tem \"quase\".\r\n2. Achados numerados. Para cada um: `arquivo:linha` do c├│digo e o trecho do contrato contrariado (se├º├úo e cita├º├úo), na forma:\r\n\r\n   `1. web/src/api.js:42 ÔÇö chama DELETE /atividades/:id, rota que n├úo existe na se├º├úo 5 do contrato.`\r\n3. Veredito final de uma frase, ex.: \"A casca do M2 bate com o contrato\" ou \"O M2 diverge do contrato em 3 pontos e precisa de corre├º├úo\".\r\n\r\n## O que voc├¬ n├úo faz\r\n\r\n- N├úo conserta: voc├¬ s├│ reporta, nunca altera arquivo.\r\n- N├úo elogia: a sa├¡da n├úo tem \"excelente implementa├º├úo\" nem equivalente.\r\n- N├úo opina sobre regra de neg├│cio ÔÇö prazo, limite, janela, ordem entre regras do recurso: isso ├® do auditor.\r\n- N├úo inventa diverg├¬ncia para parecer rigoroso: s├│ reporte o que voc├¬ viu no c├│digo comparado ao texto do contrato.\r\n- Cite `arquivo:linha` em toda afirma├º├úo ÔÇö sem exce├º├úo.\r\n- N├úo abre outros subagentes.",
+  "description": "Confere rota, campo e c├│digo de retorno da API e da interface contra o contrato-api.md e aponta diverg├¬ncia. Use depois de uma fatia ou m├│dulo ficar verde, quando a casca precisa bater com o contrato do cliente.",
+  "tools": {
+    "invalid": true,
+    "question": false,
+    "bash": true,
+    "read": true,
+    "glob": true,
+    "grep": true,
+    "edit": false,
+    "write": false,
+    "task": false,
+    "webfetch": true,
+    "todowrite": true,
+    "websearch": true,
+    "skill": true
+  }
+}
+```
