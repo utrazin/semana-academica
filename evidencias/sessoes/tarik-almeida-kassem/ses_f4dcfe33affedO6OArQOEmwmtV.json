@@ -1,0 +1,26 @@
+{
+ "info": {
+  "id": "ses_f4dcfe33affedO6OArQOEmwmtV",
+  "slug": "shiny-knight",
+  "projectID": "ef5c31e66779deb7b442cd2960ce806c7cc88c17",
+  "directory": "C:\\Users\\Usuário\\Documents\\GitHub\\semana-academica",
+  "path": "",
+  "title": "Auditar módulo M4 (@auditor subagent) (fork #1)",
+  "version": "1.18.31",
+  "cost": 0,
+  "tokens": {
+   "input": 0,
+   "output": 0,
+   "reasoning": 0,
+   "cache": {
+    "read": 0,
+    "write": 0
+   }
+  },
+  "time": {
+   "created": 1789695892677,
+   "updated": 1789695892677
+  }
+ },
+ "messages": []
+}

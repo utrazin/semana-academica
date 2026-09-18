@@ -1,0 +1,1399 @@
+{
+ "info": {
+  "id": "ses_f4e25204bffepll6ChIEBWo3v3",
+  "slug": "witty-garden",
+  "projectID": "ef5c31e66779deb7b442cd2960ce806c7cc88c17",
+  "directory": "C:\\Users\\Usuário\\Documents\\GitHub\\semana-academica",
+  "path": "",
+  "title": "New session - 2026-09-18T00:11:46.484Z",
+  "agent": "build",
+  "model": {
+   "id": "muse-spark-1.3-contributor-free",
+   "providerID": "opencode"
+  },
+  "version": "1.18.31",
+  "summary": {
+   "additions": 0,
+   "deletions": 0,
+   "files": 0
+  },
+  "cost": 0,
+  "tokens": {
+   "input": 31237,
+   "output": 5552,
+   "reasoning": 4337,
+   "cache": {
+    "read": 215259,
+    "write": 0
+   }
+  },
+  "time": {
+   "created": 1789690306484,
+   "updated": 1789696128184
+  }
+ },
+ "messages": [
+  {
+   "info": {
+    "role": "user",
+    "time": {
+     "created": 1789690306511
+    },
+    "agent": "build",
+    "model": {
+     "providerID": "opencode",
+     "modelID": "muse-spark-1.3-contributor-free"
+    },
+    "summary": {
+     "diffs": []
+    },
+    "id": "msg_0b1dadfcf001hd3sCaoxJ3xge4",
+    "sessionID": "ses_f4e25204bffepll6ChIEBWo3v3"
+   },
+   "parts": [
+    {
+     "type": "text",
+     "text": "@auditor audite o módulo M4 contra specs/M4-certificados.md.\n\nConfira a entrevista, a origem de cada regra e os testes da API e da interface. Rode os comandos de teste do projeto.json e registre os resultados reais.\n\nDistinga requisitos confirmados de D1/D2, que continuam em aberto. Aponte provas ausentes ou fracas, sem corrigir arquivos. ",
+     "id": "prt_0b1dadfd1001vQ5kMelHLv2LRD",
+     "sessionID": "ses_f4e25204bffepll6ChIEBWo3v3",
+     "messageID": "msg_0b1dadfcf001hd3sCaoxJ3xge4"
+    }
+   ]
+  },
+  {
+   "info": {
+    "parentID": "msg_0b1dadfcf001hd3sCaoxJ3xge4",
+    "role": "assistant",
+    "mode": "build",
+    "agent": "build",
+    "path": {
+     "cwd": "C:\\Users\\Usuário\\Documents\\GitHub\\semana-academica",
+     "root": "C:\\Users\\Usuário\\Documents\\GitHub\\semana-academica"
+    },
+    "cost": 0,
+    "tokens": {
+     "total": 13385,
+     "input": 12219,
+     "output": 504,
+     "reasoning": 421,
+     "cache": {
+      "write": 0,
+      "read": 241
+     }
+    },
+    "modelID": "muse-spark-1.3-contributor-free",
+    "providerID": "opencode",
+    "time": {
+     "created": 1789690306531,
+     "completed": 1789690402968
+    },
+    "finish": "tool-calls",
+    "id": "msg_0b1dadfe3001rUGzqm2m2qp6vb",
+    "sessionID": "ses_f4e25204bffepll6ChIEBWo3v3"
+   },
+   "parts": [
+    {
+     "snapshot": "d5fbe04dcff5b5ceef93f4028efce2f880d76597",
+     "type": "step-start",
+     "id": "prt_0b1daee48001BFSCo7SesbuP6c",
+     "sessionID": "ses_f4e25204bffepll6ChIEBWo3v3",
+     "messageID": "msg_0b1dadfe3001rUGzqm2m2qp6vb"
+    },
+    {
+     "type": "reasoning",
+     "text": "",
+     "time": {
+      "start": 1789690310219,
+      "end": 1789690311790
+     },
+     "metadata": {
+      "openai": {
+       "itemId": "rs_6aac81cd47c9cfa9ae934a88:rs_01a0b1db09e07379a324046913b0cc19",
+       "reasoningEncryptedContent": "Q-PaDgF2OaOyVY2jXXTEgjjDsDWFZtt6ChBSSqPEBuRZIk5cKqSI1fEkIgCQA2jIbc0Hxrg9MOdvTZAY3uXhi7SIxZa5tBgPVFK8Xy4zkl84W2rEKVYl2e1u5Y_MYz1_8xkvk7I1vtuyr15tm7Pa0vjqEOXtiKGRxckM6TxNo8Nr6MPrOVojfYL72ZWbZ0UKGcABl_q0eeqsT8X7DnWg8hKdCj4LDoLaS19e24s9mXmBH89toPcKVY-8PFMHq_2yCgghbDGB2dX5b6_YOq69ecAmqnhW8Qjh1icoutG41aiulXqXffvND5qBivPidb3SACg2BbPNgMkb_miYYo-Ebt2cAdyUIvTT40YpTZyYsfgz6mzDrYMYoor7Vf06HZjvKY5mtLsIHAkKFqtDhxnXgb54xyn1N3VrWBe7vOFxd7XLZGYoK5KncJBxvB5dtV9N4O7LpmuZYnzA0cPRSfd7VTQVPFxKXouUXYtZz5_jTEdci0InSo_bKeMtNSD1PWbRiIw15AWqqNEKPAGAyMG4l0ihMsx6KzObRaskZNerId2I2TtJUCzXMPK-Q4rfNoorDneODmmrcIJN3wcnGtosdU_bCU3PksfMyZERUF-USeKITTzoY_h_g7It_wn7VXKiFeaNgXQcv85im1LWFmWT9fckewZEywmdMVEYjSb2DXIhHtfMM2wbaBjD6F42ip3iKZc54dApaBgSJ6Wg_UStb7KpHoEn_EyKOSfaLFxTpxScgyec0YoPAS6IN9PIoyOpKLgk82fCCHJusmNQ2otMWmRoINtu8wgtAP5YD7_H1fPUyFt-CKSHWVzH6pDDLwuRZ7uJsZDvcbZrZLn6EO3-B-t0AIfGF9Hgoh0iPUhoh9ReX5DTrOtww9I7atiUiuFFjc1HDmUaYm5Md_Tp-S9K9STI1XW3gV94SEfTYqnjszxDazUUc3sA4eujX3a8uh1-_CSb5DAwILI3JtIZG4AA7-x3pA0L0scLjUb7R7xV5NZOFJNdAlTjzhfepxCG5OChYcfE29eADzClccwh3lXJ1dD4hcbb8ifBeH_muZea5wLpJHM2Y5fY30t38Tsmg7p1asru_KSKNFfKYRRPkP3IsDfZ4RjVmwdDIcuLRibcgXcbkq1dhuHo67dk8322yIHAwGHZhsuBMMvGuRTBx8Kp3FvwFDifZuwJzk0OjXoL7cc53Ma066YQhK0eFMtNuTNg9tr8bUn_XjO4JRAbHcNweTOjnhySIa41cRFb3-d9LwJghVaAHsPe_-83WbSMopTnRtJmkL1NQgxEqbXOUYV3eP49oK7xOnMXl2GiU8rIeoK1mMNtGrYFiqH8g2BMHDxMt6a29nYvD_KRXKYZ7vSV2O5AA6G6dNF3n68mb4blC5bHZuU011i9lF_L-kdrp_kgaTvmUrFWomFcZMvxw2fMkAplQZ4QMumGtatNOjuwdejX_ZhLe717ffjwuygEE9N60XbflaGHtkDR52YDaWxWkqN6i0URqPCfn4uZiKe1qa-5e5edLPqawhZ779ObO6Kcq9yGss6IoNQmblCk_WafyfbbLJ370APZlaYH8Ce0tH9YtjlnQpkiZEvFKzSlf2bIWPlk068SThLdeMP7goupmPMWk0HEsjAHDXAmFnwB5HJRUmatxQfRo4j9fQ7wYpjyjmqCdctG2L5gyNfAHlhjOJusYZ2UafKFp6eGPRGlMJSiTCgeVbrPVYl79AcJIY8ZPtHUYdm_ReWp8ODvTdxCtQNF_H8DGX7vaO2T_Cfm4bAddGQc1Am-GQLqM6YF-0-PpQzNCrYKogxnnBnsHPstW5oVexIwIKsjleiVeI66Eizfx1P0Vm4q7yjMsxGjztB6XSk41ztq1TPVuwX0jfpSVt-Fb8wOaxMW-GoAAVRaHNYjzEkpFtEYe4_JCgMhkYtMTm-FgrQEeTRgea3eUY2PlKLTdAm3r15IdhtWd7IU7aorikfAEVh_6n9euuQ-kfFYZENeldFgV8AXz4Em4MOaPEzb793NKKKoQmzPO66sFv0fHCdYDTj2-F0RlUZMWY9eAHgFYYu9ce_X-lNJe4D9VModkmxkEmn2QQaL685tvcdKpyRWSBzUsr5ExAntm4e6YIpeDJ7wUs1U_tzxIMbw_cTfGt5hV906vXFSUP6KSOKGYNmhme-Aibg-s3cv184yhvhXk5XkA8x_G0Cx0lA9KcljhvT1yyYjK2jFSd94hX8N6WHS2uo2j2IJfV0BQA9lWxE0gZjrk759bjiAoXVD6iCb2Y88toAiqq9Dd9dC0xlTLmLFqHZpKFTw0Kphz_7DjJlTCOv88stP6Xaox5eboSofQ4VOazvEgqPJ0hvSTf9aFlGAjiWlbNqoszlF_hzKHxbVlbDbunasL7Z2xnC8cwWrqEZtzPTKEZ0IR647vp_NZTOw9ZjuXnZt1R5_njDF0UJClN_YyRu5WKAPIqrwmY06v8tD0WN05lsc-jX9dJukBxjmF4qRCIpKLBuKyEe8i54Re9YqbgSoTmggU_RkdNK5ZvSNvDer8_G8ZC5Qb-6vwmuHu3mw-PlaB3cSZ68naEfY2pXTt3WXRjSBuS9LuxXUz3R7fTNTmxAnK6YB2cm1Fo7XjG_zfjeuJYIpgPMBx-9sbxa1WSPNY13GfQDKiRqrex2Z2s1hq25QP9Kf-mr7fep12a9Cl6EUcQjMV6bJm2v6aAs3SNWaNeh9eFDhmRS-eZHQBlK9N4k1FY8O5P2BtYTLQisUjnAWUgghXWkaGLfSpTXmZO3rixkfa1S7c2KboaqP5wl867XIrd-bFlK-RZNjiEhh4t95rBT8I-W-0yO8sCiNadFAc_-YXiIFeUwuHMGY4-mGSwMq_OKq2gUzFgoA-QoOqM-mcROrfDg-tuhS9tU4ZgPK1JHnvO6FaSCxYPkkutyX6W-5c2BWtOpIPDYyv_8vjcuxtL1SU5KewqF6As5bTFgHtmFFdH6XtVjop0n8HiiEbRPFgt8Bi9AiBGrHrmaCrsPwMT5fBgx8ljq9mu-oYWFQJjxlN-nWwCeSUHbAuEQAislEgdVJFUJasVACEsFO0DlnQkp7dbjy_N1BSnAFI5E3M7OxbFXtKKMl_-eTp1KIBMWXZFAfRFKInFLrFlGQgY35hiAO8j_ckZu1UuUL4xQfLLNgPcevvKQhg20QAuNMXChriTALOX6y91W1AuTxzJxZQOVbNfX-0FQ5h-nKL1NeLPPE_qeZ0-eG2rrj8XMARvb7-27LHAj7TKs4LKo820W3o8e4_iww8brlDXChaTqP6IVW1Oav5WwaPk1hUxiP08X8R5s5hlZ9C1VDWK2g7sF3GKWj1H1zUY6M_pa0lIC1OeNKIw8ivG43_nzV6wi89xUKa2rWECujseqiZuS-1n3Lbm7cdzUtxlU-WS9kU9GXrGruJDSC35RoJDzoGYDcpybEryN5PBZfs3a_adK9YbD431NnOige7cjcqMfwodZV_CyjoEN--Xz3-0iGaimpe3bkXGJr7kV7vULvjQCxjXXdgnFtTO46F6QWIz23fRUSNFqcJAz1GgkVzT4tX5t_wOejPb5feA6MRqnRFHGc81t6p5Lk9cyhdXvzNkN1tN-PvavDBYQ4HC7V4CjbiuQ8ZPS-7Dy-gMZBHEqfaVr4UzNLC73uaudlJMB_vcyjUmTsW_EXNjScuEZHtWQOKy61TSJ0RY0mrwmFXgJaLtapMA9BQi4eV9ZNblStokdictL_p1HK0iOsT-J463KX1SJzn0gtaxxonlIXTJGmir6_5D6nYaPImXExO9d0GrMyw2rmEiPpv2teh6tLHQWyfO8h2KZ8qPCvQAXE8eLLgyhUmtjfyWRZ65gOWa6SFsmQG4E4m5wQDI6-RbD-gLdSB2Mfma9xhf1UJTSC4GHOGEK3zoMjL_hO-Wk0xi8drNfKD_zK4Ni2afeayCO2wjv-hP7gyzxWwhKG-aNL-S7ila5zIFCF4pHXEi9922vBwobgBWcu05nQcgLn8nctM6-gJHU9UqQ8s_b4FkwPYMbCGIe0dyrYHOIr3AVPcxXzoIgKWlAFyj1P3WBErUYtv0yoBpUspys_37BkI6AKKkC4Lqku9z3c1O8gwpenYcEUtkyKvBkEeRL3AbE_LC_ccIlOh9HXZ9Ko2NJ4PSJXpfKuge5rIIGux93a6bwhddn_lRtV0jJK1r4CO74-4MHrSPkckOYzWVlWJ6xXy5vVjcrBmRloPw2DMxP9BVSaw3Gnae2gUD18pZE_rqGDUKRX8es3YLxGXriz7E2aMoGUG8CcGuCdi-UpXCIpwt88XkZkczQSLG7PxY9HgeyqHFxcymbQUZxkZVp_mbvU35pnnbvur7gRSQN_OweYwE3aPaFOlTK79lZuylSx88qPKTDMRK_T09K6n6yWtdrLefkJEw2lzeZjJx4ZWmcP2CQhiInzLZG7LQZVSK4Zi8LuvjBcGwcvEK8-FEjNGJhP1Sy2mIzpqM6UlzGwEC5wT0OE4f2hCmqRc_ZFuO3FX3quoT4tBby8DIRzS_u0VHeLnuhHShnAABKCyM4PKENhi_YhOBOLbq6iL2evaaPyLlq1bUAFc28x27YZJhlLPcL0Hn24to7n02KdA1mXgLjvmJDaqjXHj8wIqQwFUk_Q7gQk6PGDhQTOauyBq_yZbcbfUXvv6oYz9aIwZA8k9by8jsZdXMTK-QiCw60aLqi0MtJ-f1iN5s8LWEvemNFu0T3EM4nGCRLVHc2du03CERZ9t_gBLKxKB_W7DSmjlPPdBuF0s5x43S1LtJMusut4AUUXrd51AHhTkZof2ezU1G819NGh-K0c7GfP7k3eKGRP9sOU1BI6VvwhGQpPluwMjfLQjLZS1EmGrsPjHHha1inYW7gEYwzcDHl2j0nrnn3HI5A2MPIvmwFvCG8tySl3QPhCb-17fh6D75EBVxqBoiuXG3g_c87EGM6vHVtiQS4MgV30nzXrSUHpBbmY7QQMDTEBKES5xeQ5oFhkmgIhvU8PkU1KoMKglmmByM9Hb5AS-ryz1_AolBk2nguSnKWMCw5itNqxPzxvhDrQlLzUuLTEIkPw9yzfXQ0HJZdjssCeexnvV8_XOChpAHXOWS8-jtUQA_54EiSbKE5Ze7JPoFAuRwpQLaDtdAktE8UdvECw7ie5ziIPSqGx9cI5jCOWgVCckaSPa3L3RaNeJMfbg9RmlUNwmWMMBsUsJXOo-F22Dp0tGzRbC3AloRUVAAkLA3E7vJrGETaB31YxSQccFSIjvKdC3YijlOXP4RuN78PemWW9M-X3rxEBgRtlIBJEqinMdYfyDBdXZxKIYHRQj7HMf1kUmMMIXIxboAWfzG9deDMhmwme0D7BiaXNSrv4p_xOfd2i_PgDgZcX1vCL3hf23RJUkfodFdPgBtKZP_xAkwNb7bQcKtXRShqKeThiLcgfdpOC5dN-jl22cRktHQcOv5niRnW7rqiI4sPuhc-t40PhLFcPBNyjdlXkK5wo0fhPIPseqpaExAyI9v1wm7RI2kHRta7IzIfKz1-yONm7nw"
+      }
+     },
+     "id": "prt_0b1daee4b001jo91hgn06mKVPN",
+     "sessionID": "ses_f4e25204bffepll6ChIEBWo3v3",
+     "messageID": "msg_0b1dadfe3001rUGzqm2m2qp6vb"
+    },
+    {
+     "type": "text",
+     "text": "Vou auditar o módulo M4 contra a spec, rastreando entrevista, regras e testes.",
+     "time": {
+      "start": 1789690311870,
+      "end": 1789690311902
+     },
+     "metadata": {
+      "openai": {
+       "itemId": "rs_01a0b1db1090704daa62db6da3f4c345",
+       "phase": "commentary"
+      }
+     },
+     "id": "prt_0b1daf4be001ZLkqOa4tkW8pS4",
+     "sessionID": "ses_f4e25204bffepll6ChIEBWo3v3",
+     "messageID": "msg_0b1dadfe3001rUGzqm2m2qp6vb"
+    },
+    {
+     "type": "tool",
+     "tool": "task",
+     "callID": "call_01a0b1db10e375d9a8a789dcb0e4b7e6",
+     "state": {
+      "status": "completed",
+      "input": {
+       "description": "Auditar módulo M4",
+       "prompt": "Audite o módulo M4 (certificados) contra specs/M4-certificados.md no repositório em C:\\Users\\Usuário\\Documents\\GitHub\\semana-academica.\n\nEscopo:\n- Leia specs/M4-certificados.md integralmente, listando cada regra numerada / critério de aceite.\n- Localize a entrevista de origem (procure em docs/, specs/, entrevistas/, ou arquivos de entrevista do M4) e, para cada regra, diga se ela nasceu de uma pergunta da entrevista (cite pergunta/resposta ou trecho) ou se está sem origem.\n- Confira implementação API (api/) e interface web (web/) referentes a M4: para cada regra, indique o teste que a comprova (arquivo:linha, comando), avaliando se a prova é forte, fraca ou ausente. Cheque tanto testes da API quanto da interface.\n- Rode os comandos de teste definidos em projeto.json (leia o arquivo para descobrir os comandos reais, ex. npm test na api/ e web/) e registre os resultados reais (saída resumida, pass/fail, contagem). Não invente resultados — execute de fato via terminal.\n- Distinga claramente: requisitos confirmados vs itens D1/D2 que continuam em aberto.\n- Aponte provas ausentes ou fracas, sem corrigir nenhum arquivo. Não edite, não crie, não corrija código.\n\nEntrega esperada no relatório final (sua única mensagem de retorno):\n1. Lista de regras da spec com status (confirmada / D1 / D2 / sem origem)\n2. Tabela regra x origem na entrevista x teste(s) x força da prova\n3. Resultados reais dos comandos de teste do projeto.json (comandos rodados + output resumido)\n4. Lista de provas ausentes/fracas e D1/D2 em aberto\n5. Veredito geral do módulo M4.",
+       "subagent_type": "auditor"
+      },
+      "output": "<task id=\"ses_f4e2502d2ffeKpn7x8jR207QLZ\" state=\"completed\">\n<task_result>\n## Matriz de rastreabilidade\n\nTodas as regras R1–R16 citam P-xx que existem em `entrevistas/M4-certificados.md` e estão respondidas (nenhuma `PENDENTE`). R17 é decisão em aberto (não requisito). Origens conferidas uma a uma: 17 regras.\n\n| Regra | Origem | Teste que comprova | Veredito |\n|---|---|---|---|\n| R1 (escopo, envelope, listagem) | P-01 (definição do módulo e contrato) — resposta confirma emissão/listagem/verificação/extrato, só-leitura de M1–M3, sem M5 | `api/verificacoes/m4-certificados.spec.js:18` «rotas restritas sem X-Usuario → 401»; `:47` «organização → 403 antes da existência»; `:72` «lista vazia»; `:96` «só os do participante»; `:159` «verificação pública sem 401» | COMPROVADA, com ressalva (achado 1) |\n| R2 (condições cumulativas) | P-02 (RN-401–405) — inscrição confirmada + não cancelada + encerrada + 75% | `m4-certificados.spec.js:240` (cancelada→422); `:267` (5 status não-confirmados→403); `:306` (1s antes→422); `:333` (3/4 no instante exato→201); `:497` (cadeia de precedência); `:605` (emitido aparece em `GET /certificados`) | COMPROVADA |\n| R3 (encerrada inclusive no instante do fim) | P-02 — \"a partir do instante do fim do último encontro, inclusive\" | `m4-certificados.spec.js:306` «1s antes → `ATIVIDADE_NAO_ENCERRADA`»; `:333` «relógio no instante exato do fim → 201» | COMPROVADA |\n| R4 (75% sem arredondamento, `presencas×4 ≥ encontros×3`, todas as origens) | P-02 — fórmula inteira explícita na resposta | `m4-certificados.spec.js:333` (3/4 passa); `:374` (2/4 recusa, cita 8<12); `:406` (1/1, 2/2, 3/3, 4/5 passam; 1/2, 2/3, 3/5 recusam); `:464` (qr+qr_offline+manual = 3/4 → 201) | COMPROVADA |\n| R5 (carga integral) | P-11 (RN-406, RN-109) — soma de todos os encontros | `m4-certificados.spec.js:333` «carga 720 + `presencas:3` + `encontros:4`»; `m4-extrato.spec.js:106` «4×180=720, não 540» | COMPROVADA |\n| R6 (sem prazo máximo) | P-09 — \"não há prazo máximo\", sem expiração | `m4-certificados.spec.js:574` «relógio dias depois → 201 normal» | COMPROVADA |\n| R7 (201 primeira, 200 repetição, mesmo certificado) | P-03 (RN-407, RN-413) | `m4-certificados-reemissao.spec.js:46` «201→200 `deepEqual` do objeto completo»; `:83` «avanço do relógio não muda código nem `emitidoEm`»; `:123` «repetições não duplicam listagem»; `:255` «5 simultâneas → exatamente um 201 + quatro 200» | COMPROVADA |\n| R8 (formato `SA26-XXXX-XXXX`, alfabeto, unicidade) | P-04 (RN-407, RN-305) | `m4-certificados.spec.js:333` + `m4-certificados-reemissao.spec.js:217` «regex do formato, alfabeto sem `0/O/1/I`, length 14»; `m4-certificados-reemissao.spec.js:166` «3 códigos distintos» | COMPROVADA |\n| R9 (gerador livre; formato/alfabeto/unicidade garantidos) | P-04 — sem RN de algoritmo | `m4-certificados-reemissao.spec.js:166` + `:255` (unicidade das saídas, incl. concorrência) | COMPROVADA, com ressalva (achado 2) |\n| R10 (pública, case-insensitive, 404 inexistente) | P-05 (RN-408, RN-409) | `m4-certificados.spec.js:647` «corpo exato sem X-Usuario»; `:691` «minúsculas → 200 corpo canônico»; `:732` «inexistente maiúsculo e minúsculo → 404»; `:750` «com X-Usuario desconhecido/org continua 200» | COMPROVADA |\n| R11 (campos da verificação + abreviação) | P-05 — regra de partículas + exemplo \"Elisa F. da R.\" | `m4-certificados.spec.js:647` «corpo exato, `Carla M. S.`, não expõe nome completo nem `participanteId`»; `:792` «Elisa F. da R.»; `:834` «Isadora R. dos S.» — os 3 exemplos do aceite | COMPROVADA |\n| R12 (extrato: elegíveis, `codigo` null/preenchido, calculado na consulta) | P-06 (RN-410, RN-401–405) | `m4-extrato.spec.js:53` (exclusões + só do participante); `:263` (recalcula no relógio, corpo exato, `codigo:null`); `:312` (após emitir, código preenchido); `:348` (elegível sem emissão → null); `m4-certificados-sincronizacao.spec.js:60` (extrato antes `[]`, depois com código) | COMPROVADA |\n| R13 (brutos + `min(min(pal,240)+mini,1200)`) | P-07 (RN-406, RN-410–412) | `m4-extrato.spec.js:137` «300+1000→1300/1200»; `:173` «120/120/240/240»; `:209` «teto palestras, brutos intactos»; `:232` «teto geral 1320→1200»; `:106` (carga integral) — os 2 cenários do aceite exatos | COMPROVADA |\n| R14 (ordem da primeira emissão) | P-08 (RN-413) | `m4-certificados.spec.js:497` «inexistente 404; cancelada vence inscrição ausente; não-inscrito vence não-encerrada; não-encerrada vence presença insuficiente; encerrada sem presença → insuficiente» + `:240`, `:267`, `:306` individuais | COMPROVADA |\n| R15 (nova tentativa após sync offline até fim+2h; sem esperar o prazo) | P-10 (RN-404, RN-405, RN-310) | `m4-certificados-sincronizacao.spec.js:60` «422 → sync real via M3 no limite fim+2h inclusive → 201 carga integral + extrato»; `:148` «mínimo já atingido emite no encerramento» | COMPROVADA |\n| R16 (código nunca muda, mesma data; demais campos = orientação) | P-12 — explícito (código/data) + interpretação proposta (carga/presenças/encontros) | `m4-certificados-reemissao.spec.js:83` «mesmo código, `emitidoEm` fixo na 1ª emissão após avanço do relógio»; `:46` `deepEqual` do objeto | Confirmada na parte explícita / D2 em aberto |\n| R17 (posição da consulta 200 vs verificações gerais) | P-08 ressalva — em aberto, não requisito | — (nenhuma ordem pode ser cobrada; nenhum teste a verifica, corretamente) | D1 em aberto, sem prova exigível |\n\nStatus das regras: R1–R15 confirmadas (15); R16 confirmada na parte explícita com D2 em aberto; R17/D1 em aberto por definição. Nenhuma regra sem origem.\n\n## Suíte\n\nComandos do `projeto.json` (`testes: [\"npm --prefix api test\", \"npm --prefix web test\"]`), ambos rodados de fato:\n\n- `npm --prefix api test` → `# tests 133 / # pass 133 / # fail 0` (saída TAP `node --test verificacoes/*.spec.js`). Dela, 40 testes são do M4 (`m4-certificados.spec.js` 22 + `m4-certificados-reemissao.spec.js` 6 + `m4-certificados-sincronizacao.spec.js` 2 + `m4-extrato.spec.js` 10), todos `ok`, incluindo os subtests 94–133 listados nominalmente (R7, R8/R9, R15, R1, R2/R14, R6, R10/R11, R12/R13).\n- `npm --prefix web test` → `Test Files 10 passed (10) / Tests 70 passed (70)` (`vitest run`, 7.70s). Cobertura M4 na interface: `Extrato.test.jsx` 5, `MeusCertificados.test.jsx` 4, `VerificarCertificado.test.jsx` 4, `Atividade.test.jsx` 7 (2 de emissão) — todos com API falsa, ou seja, provam renderização, não as regras (ver achado 3).\n\nTempo: todas as regras dependentes do tempo usam `PUT /_teste/relogio` + `agora()` de `src/relogio.js` (`api/src/app.js:1036`, `:1055`, `:1114`); os `new Date(...)` restantes no caminho do M4 são formatação/parse de ISO armazenado, não leitura do relógio. Sem `Date.now()` nas regras do M4.\n\n## Achados\n\n1. [PROVA FRACA — parcial] R1, cláusula \"sem alterar atividades, inscrições ou presenças\": nenhum teste afirma que as linhas de M1/M2/M3 continuam intactas após a emissão (ex.: reler atividade/inscrição/presenças depois do 201). O envelope (401/403/listagem só-minha/pública) é forte; a não-mutação é só implícita. Cenário que expõe: emitir e depois conferir `GET /atividades/:id`, inscrição e presenças bit a bit. Referências: `specs/M4-certificados.md:82-85`; `api/src/app.js:1020-1077` (handler não toca nessas tabelas, só lê — por isso não é defeito, é lacuna de prova).\n2. [PROVA FRACA — parcial, observação] R9, ramo de colisão do gerador: `api/src/app.js:1006-1018` (loop com re-sorteio se o código já existe) e `:1056-1067` (`catch SQLITE_CONSTRAINT` na corrida) nunca são exercitados de forma dirigida — os testes `:166` e `:255` de `m4-certificados-reemissao.spec.js` verificam unicidade das saídas observadas (3 códigos distintos; 5 simultâneas → um 201), o que é prova honesta do que R9 exige (a própria R9 diz que o algoritmo é livre), mas o caminho \"colidiu, tentou de novo\" não tem teste que o dispare. Não é defeito; registra-se para não se presumir cobertura do ramo.\n3. [NATUREZA DA PROVA — interface] Os testes web do M4 (`web/src/paginas/extrato/Extrato.test.jsx`, `web/src/paginas/meus-certificados/MeusCertificados.test.jsx`, `web/src/paginas/verificar-certificado/VerificarCertificado.test.jsx`, `web/src/paginas/atividade/Atividade.test.jsx:121-149`) usam API falsa por prop e verificam texto na tela / chamada do método falso (`emitirCertificado`, `obterExtrato`, `verificarCertificado`, `listarCertificados`). Não executam nenhum cenário da spec contra a API; não contam como prova de nenhuma regra R1–R16. Apoio de interface adequado, prova de regra ausente por construção.\n4. [D1 EM ABERTO] R17: a implementação escolheu consultar o certificado existente **após** todas as verificações (`api/src/app.js:1044-1047`, depois de 404→cancelada→inscrição→encerrada→presença em `:1021-1043`). Qualquer ordem é aceitável enquanto D1 estiver em aberto; nenhum teste deve congelá-la. Nada a cobrar.\n5. [D2 EM ABERTO] R16/preservação de `cargaHorariaMinutos`/`presencas`/`encontros`: os testes `m4-certificados-reemissao.spec.js:46` e `:83` fazem `deepEqual` do objeto inteiro (congelam o snapshot na prática), indo além do mínimo exigido pelo critério de aceite 9 (`specs/M4-certificados.md:209-211`, só código + `emitidoEm`). Como a implementação devolve a linha armazenada (`api/src/app.js:1044-1047`), passam. Não é defeito nem \"não contratado\" — mas se D2 um dia decidir por correção/atualização, esses testes terão de ser revistos.\n6. [DE PASSAGEM — contrato, assunto do revisor-de-contrato] Nada divergente encontrado no M4: chaves exatas verificadas (`m4-certificados.spec.js:368`, `:683`, `m4-extrato.spec.js:203`), `GET /certificados/:codigo` sem `exigirUsuario` (`api/src/app.js:1096`), `codigo TEXT PRIMARY KEY` + `UNIQUE(atividadeId, participanteId)` (`api/src/banco.js:45-56`). Sem achado de contrato; segue o baile.\n\n## Veredito\n\nMódulo M4 pode ser aceito nas regras confirmadas (R1–R15 comprovadas, R16 comprovada na parte explícita): 40 testes de API + apoio de interface, suítes verdes (133/133 API, 70/70 web); restam em aberto por definição D1 (posição da reemissão-200) e D2 (imutabilidade absoluta/correção/revogação), sem prova exigível até decisão — com as ressalvas dos achados 1–3 (não-mutação de M1–M3 sem asserção dirigida; ramo de colisão do gerador não exercitado; testes web com API falsa não provam regras).\n</task_result>\n</task>",
+      "metadata": {
+       "parentSessionId": "ses_f4e25204bffepll6ChIEBWo3v3",
+       "sessionId": "ses_f4e2502d2ffeKpn7x8jR207QLZ",
+       "model": {
+        "modelID": "muse-spark-1.3-contributor-free",
+        "providerID": "opencode"
+       },
+       "truncated": false
+      },
+      "title": "Auditar módulo M4",
+      "time": {
+       "start": 1789690314033,
+       "end": 1789690402469
+      }
+     },
+     "metadata": {
+      "openai": {
+       "itemId": "fc_01a0b1db10e375d9a8a789dcb0e4b7e6"
+      }
+     },
+     "id": "prt_0b1daf4ea001qasL268Y8K7TcN",
+     "sessionID": "ses_f4e25204bffepll6ChIEBWo3v3",
+     "messageID": "msg_0b1dadfe3001rUGzqm2m2qp6vb"
+    },
+    {
+     "reason": "tool-calls",
+     "snapshot": "d5fbe04dcff5b5ceef93f4028efce2f880d76597",
+     "type": "step-finish",
+     "tokens": {
+      "total": 13385,
+      "input": 12219,
+      "output": 504,
+      "reasoning": 421,
+      "cache": {
+       "write": 0,
+       "read": 241
+      }
+     },
+     "cost": 0,
+     "id": "prt_0b1dc57a3001N6IePdfiVwZ304",
+     "sessionID": "ses_f4e25204bffepll6ChIEBWo3v3",
+     "messageID": "msg_0b1dadfe3001rUGzqm2m2qp6vb"
+    }
+   ]
+  },
+  {
+   "info": {
+    "parentID": "msg_0b1dadfcf001hd3sCaoxJ3xge4",
+    "role": "assistant",
+    "mode": "build",
+    "agent": "build",
+    "path": {
+     "cwd": "C:\\Users\\Usuário\\Documents\\GitHub\\semana-academica",
+     "root": "C:\\Users\\Usuário\\Documents\\GitHub\\semana-academica"
+    },
+    "cost": 0,
+    "tokens": {
+     "total": 17549,
+     "input": 4291,
+     "output": 792,
+     "reasoning": 65,
+     "cache": {
+      "write": 0,
+      "read": 12401
+     }
+    },
+    "modelID": "muse-spark-1.3-contributor-free",
+    "providerID": "opencode",
+    "time": {
+     "created": 1789690402971,
+     "completed": 1789690407848
+    },
+    "finish": "stop",
+    "id": "msg_0b1dc589b0010S805buqF1rClM",
+    "sessionID": "ses_f4e25204bffepll6ChIEBWo3v3"
+   },
+   "parts": [
+    {
+     "snapshot": "d5fbe04dcff5b5ceef93f4028efce2f880d76597",
+     "type": "step-start",
+     "id": "prt_0b1dc5e8a0015lYPs1PR7eTDZD",
+     "sessionID": "ses_f4e25204bffepll6ChIEBWo3v3",
+     "messageID": "msg_0b1dc589b0010S805buqF1rClM"
+    },
+    {
+     "type": "reasoning",
+     "text": "",
+     "time": {
+      "start": 1789690404492,
+      "end": 1789690404647
+     },
+     "metadata": {
+      "openai": {
+       "itemId": "rs_6aac822bb4e6b74d327e4eb9:rs_01a0b1dc794b73a3b05b60266895c161",
+       "reasoningEncryptedContent": "Q-PaDgHnMvNy8AyMlDA7n-i9YmWpd8hbCR51jKyTOVqdxaa-BDUBPnM5ZCeqUJDDCkfk2srp8naJd-J0Vt368U-kkwV8Fk1BO3pqQBj6PmctBsdUxMYjOsedAPFWJh9by6-DSd3xb0AYtLeEjobdoIRCmjyzjnLFF92X-s4V40JeUG_p6klyQdS3XrZXYhyhRxpJbGd7W17qa47CTV2Lwd5o9rI8_wLlAsdpdeETmotTperV_Y_dQeTidoo2bXwIP7tdgOJl9f6BwPkgw2-9PnOMPLQy4xqwFuXiYNtm3cemhVRDE_d5aoY_PI4ysIR5sBo5pjORXMDxtFX9zSrmwxME7ZUtXO78COVOIWsBcxX5nQ-ZCOavLOxRxV_8t5eFWsPsMQj912AKzYhjmtfa_oRVqKRYC0HLOJpPqqVbWeu61o1d_jhh-U4PbGeZySmpfxR1gD7S9p1z-LTgk4ixOmGsB4FUvk3xGCoGV6kEnVIOBi08LtQ6Hlq3L3UWmPY29zUsUEYWD5jTfzkAXCFa8PnBYGI6p5uou4_SZPnoQzSF06ePfvapniTNzGKTbg5xunFGd-FivqmXLi8KX6aP9BA4VrmG9VNjCJ1j3qc5j2-GrewKE4MYTcYcxN0f3vZmkQYw4c_RnqC4PahuULY0UsaeZRQ1nMb8TAUUcF5fMRpVFzUE9UUStwVJGy7XgZSx7o1fFkvIJHYb1FWszXVSWCLUZ1kTCJo4mlSNZMGkf7397VbSeoaxOfFl5hhDkTtothoB2ojTQEArUUH1OJbrELqny4d4vYTKc0BHXusKQDkxQcPM3I_CrQmZrI2_sPAIt2U6Kqn1jLEsgjhmQoIAK2eErFJHhfOcFX56pKvk0IVpBd2I-YWCbtgFgXtpBBrGJMFFcN-wQgdTjn178Rcif24R1_GOLDZrXsvIl4wmGC87CiJect2MVWqPLEUwUM6E8fw2YoIKf1S4Y_aFgBvfq-e2PvVtDDHpm3cYziwTo6rNahDCJr1-tiErJGfPnEV28f8jKRaiO0njOd8PQgF8z2cQFRbm7UonTV4-SRKz4PrDYa0fy67WPGezQRpvvOE4uZNc69lpUypbcGLk9LVEfoy8mpbsmCqeuGcjVUkoSd1uw7uaaVVvl6dUylIUWVIRwz7W6QQeDuc5GGX0FqXxqurOfyHQmS0m2t_Q_su4IsyQD6-idQoJzPFOSrBgYJIgBD0RsDRpb1yDf4sIuUgT93SPF9dL-PzDG401BcZyzTRe4fcqqD9EmzXmKSbwgCmS17BH9D5idOkDAk0t1eMm4FZ51PK95wr7CORGXqtb4d2xwTbQB4OkYw8rDa5v9e7-f9qK20CU5pxWRbjk0l3tPlX5DKIpnrB2N-9dxaPI8QkR-GUnOZr-LyJvKYqaAV2aGZlcNrKP113JGiT4rg"
+      }
+     },
+     "id": "prt_0b1dc5e8c001Mnh6ww0aGiuZh6",
+     "sessionID": "ses_f4e25204bffepll6ChIEBWo3v3",
+     "messageID": "msg_0b1dc589b0010S805buqF1rClM"
+    },
+    {
+     "type": "text",
+     "text": "Auditoria M4 vs `specs/M4-certificados.md` — concluída, sem alterar arquivos.\n\n**Origem:** todas R1-R16 nasceram da entrevista `entrevistas/M4-certificados.md` (P-01 a P-12, nenhuma PENDENTE). R17 é decisão em aberto, não requisito.\n\n**Requisitos confirmados:**\n- R1 escopo/envelope/listagem — COMPROVADA com ressalva\n- R2 condições cumulativas, R3 encerrada inclusive, R4 75% `presencas*4 >= encontros*3`, R5 carga integral — COMPROVADAS\n- R6 sem prazo máximo, R7 201/200 mesma emissão, R8 formato `SA26-XXXX-XXXX`, R9 gerador livre, R10 pública case-insensitive 404, R11 campos + abreviação (`Elisa F. da R.` etc), R12 extrato calculado na consulta, R13 `min(min(pal,240)+mini,1200)`, R14 ordem 404>cancelada>inscrição>encerrada>presença, R15 retry após sync offline até fim+2h — COMPROVADAS\n- R16 código/data nunca mudam — confirmada na parte explícita; resto é D2\n\n**D1/D2 em aberto:**\n- D1 / R17: posição da consulta 200 vs verificações. Implementação consulta após todas (`api/src/app.js:1044-1047`). Qualquer ordem vale, nenhum teste deve congelar.\n- D2 / R16: imutabilidade de `cargaHoraria/presencas/encontros`, correção, revogação. Critério 9 só exige código + `emitidoEm`.\n\n**Testes reais (`projeto.json`):**\n- `npm --prefix api test` → 133/133 pass, 0 fail. M4 = 40 testes (`m4-certificados` 22 + `reemissao` 6 + `sincronizacao` 2 + `extrato` 10).\n- `npm --prefix web test` → 10 files, 70/70 pass (vitest 7.7s). M4: `Extrato` 5, `MeusCertificados` 4, `VerificarCertificado` 4, `Atividade` 7.\n- Tempo: regras usam `PUT /_teste/relogio` + `agora()`; sem `Date.now()` no M4.\n\n**Provas ausentes/fracas:**\n1. R1 “sem alterar M1/M2/M3” — nenhum teste relê atividade/inscrição/presenças após 201. Envelope forte, não-mutação implícita.\n2. R9 ramo colisão do gerador (`app.js:1006-1018`, `catch SQLITE_CONSTRAINT :1056-1067`) — nunca disparado de forma dirigida; `:166` e `:255` só provam unicidade observada.\n3. Interface — `Extrato/MeusCertificados/VerificarCertificado/Atividade.test.jsx` usam API falsa por prop. Provam renderização, não provam R1-R16 por construção.\n4. D2: `reemissao.spec.js:46,83` fazem `deepEqual` do objeto inteiro, vão além do aceite 9. Passam hoje (devolve linha armazenada), mas terão de ser revistos se D2 decidir por correção.\n\n**Veredito:** M4 aceitável nas confirmadas (R1-R15 + R16 explícita), suítes verdes, com ressalvas 1-3. D1/D2 seguem em aberto sem prova exigível.",
+     "time": {
+      "start": 1789690404692,
+      "end": 1789690407308
+     },
+     "metadata": {
+      "openai": {
+       "itemId": "msg_01a0b1dc7ad672e5856f99d56e7e6caf"
+      }
+     },
+     "id": "prt_0b1dc5f540016AGzzcrx7goetH",
+     "sessionID": "ses_f4e25204bffepll6ChIEBWo3v3",
+     "messageID": "msg_0b1dc589b0010S805buqF1rClM"
+    },
+    {
+     "reason": "stop",
+     "snapshot": "d5fbe04dcff5b5ceef93f4028efce2f880d76597",
+     "type": "step-finish",
+     "tokens": {
+      "total": 17549,
+      "input": 4291,
+      "output": 792,
+      "reasoning": 65,
+      "cache": {
+       "write": 0,
+       "read": 12401
+      }
+     },
+     "cost": 0,
+     "id": "prt_0b1dc6aaf001MOW6teSAgxkDup",
+     "sessionID": "ses_f4e25204bffepll6ChIEBWo3v3",
+     "messageID": "msg_0b1dc589b0010S805buqF1rClM"
+    }
+   ]
+  },
+  {
+   "info": {
+    "role": "user",
+    "time": {
+     "created": 1789696090008
+    },
+    "agent": "build",
+    "model": {
+     "providerID": "opencode",
+     "modelID": "muse-spark-1.3-contributor-free"
+    },
+    "summary": {
+     "diffs": [
+      {
+       "file": "auditorias/M4-2026-09-17.md",
+       "patch": "Index: auditorias/M4-2026-09-17.md\n===================================================================\n--- auditorias/M4-2026-09-17.md\t\n+++ auditorias/M4-2026-09-17.md\t\n@@ -0,0 +1,47 @@\n+## Matriz de rastreabilidade\n+\n+Todas as regras R1–R16 citam P-xx que existem em `entrevistas/M4-certificados.md` e estão respondidas (nenhuma `PENDENTE`). R17 é decisão em aberto (não requisito). Origens conferidas uma a uma: 17 regras.\n+\n+| Regra | Origem | Teste que comprova | Veredito |\n+|---|---|---|---|\n+| R1 (escopo, envelope, listagem) | P-01 (definição do módulo e contrato) — resposta confirma emissão/listagem/verificação/extrato, só-leitura de M1–M3, sem M5 | `api/verificacoes/m4-certificados.spec.js:18` «rotas restritas sem X-Usuario → 401»; `:47` «organização → 403 antes da existência»; `:72` «lista vazia»; `:96` «só os do participante»; `:159` «verificação pública sem 401» | COMPROVADA, com ressalva (achado 1) |\n+| R2 (condições cumulativas) | P-02 (RN-401–405) — inscrição confirmada + não cancelada + encerrada + 75% | `m4-certificados.spec.js:240` (cancelada→422); `:267` (5 status não-confirmados→403); `:306` (1s antes→422); `:333` (3/4 no instante exato→201); `:497` (cadeia de precedência); `:605` (emitido aparece em `GET /certificados`) | COMPROVADA |\n+| R3 (encerrada inclusive no instante do fim) | P-02 — \"a partir do instante do fim do último encontro, inclusive\" | `m4-certificados.spec.js:306` «1s antes → `ATIVIDADE_NAO_ENCERRADA`»; `:333` «relógio no instante exato do fim → 201» | COMPROVADA |\n+| R4 (75% sem arredondamento, `presencas×4 ≥ encontros×3`, todas as origens) | P-02 — fórmula inteira explícita na resposta | `m4-certificados.spec.js:333` (3/4 passa); `:374` (2/4 recusa, cita 8<12); `:406` (1/1, 2/2, 3/3, 4/5 passam; 1/2, 2/3, 3/5 recusam); `:464` (qr+qr_offline+manual = 3/4 → 201) | COMPROVADA |\n+| R5 (carga integral) | P-11 (RN-406, RN-109) — soma de todos os encontros | `m4-certificados.spec.js:333` «carga 720 + `presencas:3` + `encontros:4`»; `m4-extrato.spec.js:106` «4×180=720, não 540» | COMPROVADA |\n+| R6 (sem prazo máximo) | P-09 — \"não há prazo máximo\", sem expiração | `m4-certificados.spec.js:574` «relógio dias depois → 201 normal» | COMPROVADA |\n+| R7 (201 primeira, 200 repetição, mesmo certificado) | P-03 (RN-407, RN-413) | `m4-certificados-reemissao.spec.js:46` «201→200 `deepEqual` do objeto completo»; `:83` «avanço do relógio não muda código nem `emitidoEm`»; `:123` «repetições não duplicam listagem»; `:255` «5 simultâneas → exatamente um 201 + quatro 200» | COMPROVADA |\n+| R8 (formato `SA26-XXXX-XXXX`, alfabeto, unicidade) | P-04 (RN-407, RN-305) | `m4-certificados.spec.js:333` + `m4-certificados-reemissao.spec.js:217` «regex do formato, alfabeto sem `0/O/1/I`, length 14»; `m4-certificados-reemissao.spec.js:166` «3 códigos distintos» | COMPROVADA |\n+| R9 (gerador livre; formato/alfabeto/unicidade garantidos) | P-04 — sem RN de algoritmo | `m4-certificados-reemissao.spec.js:166` + `:255` (unicidade das saídas, incl. concorrência) | COMPROVADA, com ressalva (achado 2) |\n+| R10 (pública, case-insensitive, 404 inexistente) | P-05 (RN-408, RN-409) | `m4-certificados.spec.js:647` «corpo exato sem X-Usuario»; `:691` «minúsculas → 200 corpo canônico»; `:732` «inexistente maiúsculo e minúsculo → 404»; `:750` «com X-Usuario desconhecido/org continua 200» | COMPROVADA |\n+| R11 (campos da verificação + abreviação) | P-05 — regra de partículas + exemplo \"Elisa F. da R.\" | `m4-certificados.spec.js:647` «corpo exato, `Carla M. S.`, não expõe nome completo nem `participanteId`»; `:792` «Elisa F. da R.»; `:834` «Isadora R. dos S.» — os 3 exemplos do aceite | COMPROVADA |\n+| R12 (extrato: elegíveis, `codigo` null/preenchido, calculado na consulta) | P-06 (RN-410, RN-401–405) | `m4-extrato.spec.js:53` (exclusões + só do participante); `:263` (recalcula no relógio, corpo exato, `codigo:null`); `:312` (após emitir, código preenchido); `:348` (elegível sem emissão → null); `m4-certificados-sincronizacao.spec.js:60` (extrato antes `[]`, depois com código) | COMPROVADA |\n+| R13 (brutos + `min(min(pal,240)+mini,1200)`) | P-07 (RN-406, RN-410–412) | `m4-extrato.spec.js:137` «300+1000→1300/1200»; `:173` «120/120/240/240»; `:209` «teto palestras, brutos intactos»; `:232` «teto geral 1320→1200»; `:106` (carga integral) — os 2 cenários do aceite exatos | COMPROVADA |\n+| R14 (ordem da primeira emissão) | P-08 (RN-413) | `m4-certificados.spec.js:497` «inexistente 404; cancelada vence inscrição ausente; não-inscrito vence não-encerrada; não-encerrada vence presença insuficiente; encerrada sem presença → insuficiente» + `:240`, `:267`, `:306` individuais | COMPROVADA |\n+| R15 (nova tentativa após sync offline até fim+2h; sem esperar o prazo) | P-10 (RN-404, RN-405, RN-310) | `m4-certificados-sincronizacao.spec.js:60` «422 → sync real via M3 no limite fim+2h inclusive → 201 carga integral + extrato»; `:148` «mínimo já atingido emite no encerramento» | COMPROVADA |\n+| R16 (código nunca muda, mesma data; demais campos = orientação) | P-12 — explícito (código/data) + interpretação proposta (carga/presenças/encontros) | `m4-certificados-reemissao.spec.js:83` «mesmo código, `emitidoEm` fixo na 1ª emissão após avanço do relógio»; `:46` `deepEqual` do objeto | Confirmada na parte explícita / D2 em aberto |\n+| R17 (posição da consulta 200 vs verificações gerais) | P-08 ressalva — em aberto, não requisito | — (nenhuma ordem pode ser cobrada; nenhum teste a verifica, corretamente) | D1 em aberto, sem prova exigível |\n+\n+Status das regras: R1–R15 confirmadas (15); R16 confirmada na parte explícita com D2 em aberto; R17/D1 em aberto por definição. Nenhuma regra sem origem.\n+\n+## Suíte\n+\n+Comandos do `projeto.json` (`testes: [\"npm --prefix api test\", \"npm --prefix web test\"]`), ambos rodados de fato:\n+\n+- `npm --prefix api test` → `# tests 133 / # pass 133 / # fail 0` (saída TAP `node --test verificacoes/*.spec.js`). Dela, 40 testes são do M4 (`m4-certificados.spec.js` 22 + `m4-certificados-reemissao.spec.js` 6 + `m4-certificados-sincronizacao.spec.js` 2 + `m4-extrato.spec.js` 10), todos `ok`, incluindo os subtests 94–133 listados nominalmente (R7, R8/R9, R15, R1, R2/R14, R6, R10/R11, R12/R13).\n+- `npm --prefix web test` → `Test Files 10 passed (10) / Tests 70 passed (70)` (`vitest run`, 7.70s). Cobertura M4 na interface: `Extrato.test.jsx` 5, `MeusCertificados.test.jsx` 4, `VerificarCertificado.test.jsx` 4, `Atividade.test.jsx` 7 (2 de emissão) — todos com API falsa, ou seja, provam renderização, não as regras (ver achado 3).\n+\n+Tempo: todas as regras dependentes do tempo usam `PUT /_teste/relogio` + `agora()` de `src/relogio.js` (`api/src/app.js:1036`, `:1055`, `:1114`); os `new Date(...)` restantes no caminho do M4 são formatação/parse de ISO armazenado, não leitura do relógio. Sem `Date.now()` nas regras do M4.\n+\n+## Achados\n+\n+1. [PROVA FRACA — parcial] R1, cláusula \"sem alterar atividades, inscrições ou presenças\": nenhum teste afirma que as linhas de M1/M2/M3 continuam intactas após a emissão (ex.: reler atividade/inscrição/presenças depois do 201). O envelope (401/403/listagem só-minha/pública) é forte; a não-mutação é só implícita. Cenário que expõe: emitir e depois conferir `GET /atividades/:id`, inscrição e presenças bit a bit. Referências: `specs/M4-certificados.md:82-85`; `api/src/app.js:1020-1077` (handler não toca nessas tabelas, só lê — por isso não é defeito, é lacuna de prova).\n+2. [PROVA FRACA — parcial, observação] R9, ramo de colisão do gerador: `api/src/app.js:1006-1018` (loop com re-sorteio se o código já existe) e `:1056-1067` (`catch SQLITE_CONSTRAINT` na corrida) nunca são exercitados de forma dirigida — os testes `:166` e `:255` de `m4-certificados-reemissao.spec.js` verificam unicidade das saídas observadas (3 códigos distintos; 5 simultâneas → um 201), o que é prova honesta do que R9 exige (a própria R9 diz que o algoritmo é livre), mas o caminho \"colidiu, tentou de novo\" não tem teste que o dispare. Não é defeito; registra-se para não se presumir cobertura do ramo.\n+3. [NATUREZA DA PROVA — interface] Os testes web do M4 (`web/src/paginas/extrato/Extrato.test.jsx`, `web/src/paginas/meus-certificados/MeusCertificados.test.jsx`, `web/src/paginas/verificar-certificado/VerificarCertificado.test.jsx`, `web/src/paginas/atividade/Atividade.test.jsx:121-149`) usam API falsa por prop e verificam texto na tela / chamada do método falso (`emitirCertificado`, `obterExtrato`, `verificarCertificado`, `listarCertificados`). Não executam nenhum cenário da spec contra a API; não contam como prova de nenhuma regra R1–R16. Apoio de interface adequado, prova de regra ausente por construção.\n+4. [D1 EM ABERTO] R17: a implementação escolheu consultar o certificado existente **após** todas as verificações (`api/src/app.js:1044-1047`, depois de 404→cancelada→inscrição→encerrada→presença em `:1021-1043`). Qualquer ordem é aceitável enquanto D1 estiver em aberto; nenhum teste deve congelá-la. Nada a cobrar.\n+5. [D2 EM ABERTO] R16/preservação de `cargaHorariaMinutos`/`presencas`/`encontros`: os testes `m4-certificados-reemissao.spec.js:46` e `:83` fazem `deepEqual` do objeto inteiro (congelam o snapshot na prática), indo além do mínimo exigido pelo critério de aceite 9 (`specs/M4-certificados.md:209-211`, só código + `emitidoEm`). Como a implementação devolve a linha armazenada (`api/src/app.js:1044-1047`), passam. Não é defeito nem \"não contratado\" — mas se D2 um dia decidir por correção/atualização, esses testes terão de ser revistos.\n+6. [DE PASSAGEM — contrato, assunto do revisor-de-contrato] Nada divergente encontrado no M4: chaves exatas verificadas (`m4-certificados.spec.js:368`, `:683`, `m4-extrato.spec.js:203`), `GET /certificados/:codigo` sem `exigirUsuario` (`api/src/app.js:1096`), `codigo TEXT PRIMARY KEY` + `UNIQUE(atividadeId, participanteId)` (`api/src/banco.js:45-56`). Sem achado de contrato; segue o baile.\n+\n+## Veredito\n+\n+Módulo M4 pode ser aceito nas regras confirmadas (R1–R15 comprovadas, R16 comprovada na parte explícita): 40 testes de API + apoio de interface, suítes verdes (133/133 API, 70/70 web); restam em aberto por definição D1 (posição da reemissão-200) e D2 (imutabilidade absoluta/correção/revogação), sem prova exigível até decisão — com as ressalvas dos achados 1–3 (não-mutação de M1–M3 sem asserção dirigida; ramo de colisão do gerador não exercitado; testes web com API falsa não provam regras).\n",
+       "additions": 47,
+       "deletions": 0,
+       "status": "added"
+      }
+     ]
+    },
+    "id": "msg_0b2331f98001e4UpHRZesTZlM4",
+    "sessionID": "ses_f4e25204bffepll6ChIEBWo3v3"
+   },
+   "parts": [
+    {
+     "type": "text",
+     "text": "Recupere o parecer completo produzido pelo subagente auditor nesta sessão, incluindo a matriz de rastreabilidade, resultados das suítes, achados e veredito. Salve integralmente, sem resumir nem editar, em auditorias/M4-2026-09-17.md.\n\nSe já houver um parecer salvo, não o sobrescreva; compare a origem e preserve ambos com nomes diferentes se necessário. Se não conseguir recuperar o parecer completo, informe isso sem reconstruí-lo a partir do resumo.\n\nFaça commit somente do novo parecer com a mensagem \"M4: parecer do auditor\". Não faça push. ",
+     "id": "prt_0b2331f9b001W10Q86bPd7fTec",
+     "sessionID": "ses_f4e25204bffepll6ChIEBWo3v3",
+     "messageID": "msg_0b2331f98001e4UpHRZesTZlM4"
+    }
+   ]
+  },
+  {
+   "info": {
+    "parentID": "msg_0b2331f98001e4UpHRZesTZlM4",
+    "role": "assistant",
+    "mode": "build",
+    "agent": "build",
+    "path": {
+     "cwd": "C:\\Users\\Usuário\\Documents\\GitHub\\semana-academica",
+     "root": "C:\\Users\\Usuário\\Documents\\GitHub\\semana-academica"
+    },
+    "cost": 0,
+    "tokens": {
+     "total": 21400,
+     "input": 5282,
+     "output": 169,
+     "reasoning": 3548,
+     "cache": {
+      "write": 0,
+      "read": 12401
+     }
+    },
+    "modelID": "muse-spark-1.3-contributor-free",
+    "providerID": "opencode",
+    "time": {
+     "created": 1789696090033,
+     "completed": 1789696100184
+    },
+    "finish": "tool-calls",
+    "id": "msg_0b2331fb000190s2dsgONWLL0k",
+    "sessionID": "ses_f4e25204bffepll6ChIEBWo3v3"
+   },
+   "parts": [
+    {
+     "snapshot": "d5fbe04dcff5b5ceef93f4028efce2f880d76597",
+     "type": "step-start",
+     "id": "prt_0b2332d83001Lflm9OGdCb81Wm",
+     "sessionID": "ses_f4e25204bffepll6ChIEBWo3v3",
+     "messageID": "msg_0b2331fb000190s2dsgONWLL0k"
+    },
+    {
+     "type": "reasoning",
+     "text": "",
+     "time": {
+      "start": 1789696093575,
+      "end": 1789696099322
+     },
+     "metadata": {
+      "openai": {
+       "itemId": "rs_6aac9864d2a7446545234878:rs_01a0b233490275a7a846129d635fb0ec",
+       "reasoningEncryptedContent": "Q-PaDgHXAYS4U8nw_8_zPJb0qNcrbC5wN7QIOjUMj5vOEdpdmPTdM5U-PlMgP_y9rlqpi0Muf39Z0znYBSkIMS1Pw_0XHrtqujxCIuSwqPdw5_Awr57v8nvkq8aZDhQMV34VBxl68R8T6aD5RgBw4yed4SBj8mGwFCioBQqgfDJuUGbJclMZc3vM9eJr9rDJmG1sO_A3xu0dKhrBWWjIFjH7yH-6zDeYImvG-uhN16fLqmzbTYzgOQ2w_1DB7e7o7FSAwNwqqwxSAYp2kGVJUj-vsahAeTCYgXRDesHXykZrG-Om9FIC0HK2XkWE7e6RVhOAWA9zEnu0yZ23lg1qnwlAWwhqZcxYHdmX7ELZ-X0jAyI8OkWhSNNclmpXZD3AIMwJRRoJPNGzUWHS6S1Ue0Y_7sDevdeZ3Kda6go7MOAYYrTP51dOkp134D_sBCL9TZHDbTBRi0WLihFkWpDPHLNf5gfpNr7r7iuVoGjsvqyblun_8rNQ60kXBSCoit8iPQxk_CAYpSQY3bQkMCUWQUR0xBE7HdR-JV8nso07rtvWMdz6LASqVfHNaZSjOVCITOMSDjl0negLQyShPzL7D3QHy3vOVKlx0csrAI33LwosAfCjY54XrgOTx_13WwYl7CxgE-czH1sbbp1-irTKtWqF5gs9NjYaJmGZpPJY45QQpUPHjva4_3ejpAnalNiEyX2h6krt85OM6PhVHm2zuwOB-KsFRBmezMgaEBLk9cClDIBweRl85DN0PgORXC5niEfhn0eAAid0UII5hsM6qHO0Y5-UwCES1npDFVAcdaDRNH9AWPHf5y_D718pTdieB-rkhKrGhm7lDVbLdbTIAvGcanV1tNE_D9tuDXLDDMf1ejwtj5oFBVXVpFLjOPGJX70sHRmIw0YxCUaknkIzfCKUT1SkxhFEZZE0QVKMeHOd9A4Ng9cxZo1k5OA44LfzsijO_LuIJR2wvfrBiCZbjQDGQQ64diQ0lsSn_FFEOi-O4Le73IrmuA5p93kB6ppgzCm582OaiqDk_OwI3BSbibBFZvsJGgZKYyn7T0v1NMh1cT_Zr3Req8jc_KR-Qrg7K6nDxC4XMlhO9FXkMDz_L_vqmMpSMwbR8wrJr9iNLUtt9OqKpVV4AH5v7kf0fJMjep4vqtlKC90hOx82twdeLmZgPHal9h5dCvXV36YCaItRIXJu86lqlrYLHePMi9iebRnZpAahrjVg4jiZ4oCCBkAf6Z8XaeGsBs45NfGM50I5F1wCNSFSQJBIufYmwrAStVDFB2RjwFhpjc_Oh5NQDPZg2H4YcIF-0_KodIlGkqCHl_XJxgI7SJiBPhi-iy-pFS86yexK51H9-PjMjzLmZL2MlJNl15ogOleZjwebxwvj7HCUDzdrBOPHMvLA0AgU3mfUsdDG_-t6inN_vZLjLiRlywj4KxZvbqAlag2fpFHqbZwAbntu6ACaiqTzqwzA2QJCvJ-HqNSxw_uCL4erOpBKTtDtemoc8iLuOCQAtw9GbqFdNInbWD1LD_EeoiSo6lth33mL3f9EvLKgQ5IygXzrz3P85SgOmfD4zUQSxvx8sCjZ5dKKFpKR7qTRf6n0JOeI_upo-5uiM_WGyVuZ4x82c8m20A4Jymeyr1aSDalOAQNBfZcthfPX_LcvL9Z6PkPDLaLSvAY6NeVcxvllNzfYqoAoqeHnAZ2j1IGhn2GJKifF9t-2fGuxVJLuenQqKgEXhausaXy7vygkRNa4qjzxdgYT-ruojUHMR79knDw1UIA4Wazq3gooqBTTTl-KKVHJkPYAeo93y_A4wJwN9JkB_HT9uh8a6vWQMJ-WtLPhJpTOi2HxKuPUJNwIVvROmgXUyGg-ElpWE98Asxiqvm5HOs3OAgoPeaiNEfEo6okBNk96uWChQCfsH3pAKbsjqweGRJOF2kg2gROrFhSV6l99iJ2cT3IRtE6_nyVJeUj1RMyV-lhd6IsoROANLuXGBgJqKYF4Y1TBIlXlKX_Fx_r9FnsJQzEUacgLgsfp_Sg7ZJXPXKQ7tJhoZL8KAS8MRsnjbUvdTNEXoza6KQlbiCvVowbOzO-KYaL5xM2hh3IIf9JjxYfjMIuYJL7KYfXuV3uCUrYcS4uDh88yROd3apuwnAl4IyP73bnBpE3o3RmmpvY7V48TE3lhVKIFZ-wcOIdSdCBOrkt_ShpF6gWgcOWfo3tV6n2XaqSgAQER1vHEBmAFYDH3R7iucOB4lznWLll7WUFniRUwcql9jJTFlQUXpnfiFV9DhxwE3rl9Q7PE078YJiy6Unsi3L5pVdDr625IcKuCz2kd7BB76Hz75yPPaQdQq_KC7pGEfoOYdaoM7Mlacs0cOZKL-60liL57R8xkC8-HXxtm3ndaV-5IHUn1ySEmsoC4BAdOSG4IdyHnSeS0NtN8F7POj5_2it3Gas_PPoVWtfF2G-I53_Kyt82AYk4Z7TDtXf5lWiRFTCPYrbZ7HDxwdsm-V_fikZXoNVVhfGcIndIYF67i02nnglSAvW1AXmh7DHbuzNvb0Ug1GzQz6hgPLdv8_K03lloaXy4Am91L7_VE8jZ93FB8j1QYtVqdojlkGylFfyEpzoGf-GH2gxA6L-ZH7SAI3SZbCyE7nOnvUCNkPQm3q6peC40J2mQLUahWJgAANO0rFzmHn8vTdv5_PmIZP0PRktIES0g4nTgp8xtA7HFLuK3HSgAiu5rWEjoqUUryMCUemmgXNArNkfGZjEAEIuBaJOr1ai-xBNCTrD1_3r7yxVIVlsEXLkYHKCdIG0SEUpWfU9qK-dGgPowNb6tI-wI_iNXH6eSS9TdAeiletWaWMoI83hBbwjWuXR6HXwZVqLlawp3wtXkFEf55eViZoxlZL5FK61A8TZiP5K7DfQrUq98-LXED9IsGZECMu4mFBVwQudyFxsVqMPfGMx6JhgR7HTM4xrPfm0OnYlRtKXdYu_XgCUqbetmakOhsCMwCQM_OEw8FKKAolxlJ1oAdol2DiAgCdgdOe15uOj3awhHAqqE4VhorWVYaakmOW4yUZpopZX3nZ722vichlRMRD9i5mS7w5WSnRffUPmpqB14-Qh36GoHHC4V79V5MnAG58NRkVHO_jCvoJQIzHiyyH_WozrXpV77THgX93Kc1eM4ZwOjfVw107XGNOM-j0tsy3__sVNOZuo9_M4lp-3RqAhl42FPTJ0_yJXV45Fugk4CKoybc0nbhXlEYfU4f8-6feeTYxHnuMGryySMuhEfQa9njIEoGvOXOQGJFLXeNW8fqArVDBBr_mhccSeh6RY9AWXMohe4DM8GQv_fNyq0krfPs_rpYCl9khOYqmZnl_Ug9uOO9JKWccGssUEQdQOnfGRI2McLNUF8NtXI0eZTA-wJ20nZ34vewiTL3cFllHDrU5k07mxaR9gkCIW-MdRAwnJcSsqHuYTAombzfqn-F-Icl96eLlwShJIFAXN66zjfQxKjOPf3vIw60CS3Uow3UNUtJ3Sklni71kKMDEw4CCp5n6NbTbG9B0-wJbXKTBjf5YS-ZgPtJ2ZMx_PZf_9FBljtS-jocAQd6tA6wDCDppr5Ou-vU9r4cCyS5Hb3PafUqzFkyjh6gjSMqPZxvqcvXoFYUKfZ5CQp4zqUgZsXZOanBNU82-4nJYdkyJ-rYSh0_6zOrW1ghBlR1jfeO_JPIRLCEAAn-8gGAVjMqpkMthUsEFH9nK538hPJ98N7410n9J1cLEWmq4mt2r2gFNv5qpZzD3VRZG7m7EPVZzYgEvFgcqofEJPnyMPw89pSEp_RURVnomnSe9YQXuqfQisyobXqHUhlTs-YLt6v2AQlm9wMXwXHoD7YItyWwZYeQ9tMY8ICLVJXotqQUXYDaFAbzaEFcUxemp6Y_NAggBxcMp3b9NiQWcias-dOLbGpp5-sVZwPe03aigtbi0xCodfJqxMQgBzJa4yOivo1ZMhW1jb3ojKMCZURbsbYkO73AvWP1WRD1ek0M6UtLQUGuOHmbus0RhTUk7FsIYfLcxQYWnV7iV1ebuxFW5aktjZb_x6HwDqhuYsTzyE1EEN-Yw0TyoMgYAIBKxtwEBxjPYYYAt5I6vIpbb6_i7Oo9VP-xLd-DK_RjlzgxeUcYT2rR2BpGequKrPSmguS-oa-LhMCAFIRB6-nakx_vNbK6zx0xZzM4fB3sgCw3OxwkhfAHwc-h0Ztr84WZMHvERzTlfWgMheexTqiFcK-1cgMNtjHQVttxJgKwbl4Q4McZCJ8H2mXEhXn0C84RKItrMtSHZHjbVZ-yr2RpUjJ9SpnynJoAJRNB-xlaalXl0AVVKWZD3IFSRE3ak8el7X6g3Uec18LmQ23rxBvPQ3NV-IrbJsYa-ZJBCJvxbsJlUZO1Q6w31hgM2GQYDYhuF6RyfM87bQT9apju_btlTjif8XvtiL--xfV_6LnBdHvokdm9RUy2QLsoLZLzWQ4lA9IJvYxtwMmrdv7Euz2UmWYMAne70SsYhKB4sflqxclarOmzxERXWRyq-96cgWUurB-yp9YgbymI8yRpTQFkEm7JFobOB3R40ZJ34Cn-1P7K0LL5Vj3LXH17ryDsJpUNt45MrBu23aWET34MDX-rvoAxEX8XtG3rEL7jkdFZpJMdLnyEr1moAix_1JQZsNaVspJTsomcyULenf6_ugpJ-SpAZb_CxBO_JmhBSQmgkBlZp4RLuZftGa_eTattU5vbk_o1VKJ1BVyegD8qN86IQzOeLJd7aqTGfHaaBMWXDNsKfcLZ-UJuobolYRRgA2sKrYfCKoDnpPS_5uTQ5pJXdzJoWI_wlyW5nr6o8E5M8NuChToQRLHD9HCTv3kmRpDUufklsn2b9rbTd7DB-RTdWVqQN5mRMzvb0tBkEXaVgV1p4_B4Mlg9FE_ZPuwbMBWHC1mjzu74VbL8zScR1uXEnMFi0u2uaDDEvZfiCWkxGAyLSuiLtms6ChEbokSndjDCU-34MiAzufFoLrhZv8P5eH6H1gvTr9C_sypcnZJWTqY4U1SzO6u-CiTnNBnTdS8uxYqj1PGT6-5vch3Cds7Hwx0cp57kYk-r-fiiIYF71blnwHu8yFec0ljsTmPD2xnqCbBDT_W2qnz_AaZ-jnpMnBqSNe6XjdyCczk-_My2ZN2BZtLn9hdL8Z9HhKPNG9iMu8b4HwQ7GgTXXJMT9hhKoB3SHJGVk1VRgkncR89OYWwNgz3DpbSbe501ONDKa_qix4UdiydRnT14RF4ZWn24e3kAlUeo0-mkBuFHlUApq2cUXMAnjMjGG-4JP5XuD-92UgjyK9Bpjoq5zf1Fif8ZQzSaXZCAqgmRnrYqNi63M7CZz1Ugd6GGPdZAieWrvhKVlfq26sQmZl1GBiS2JIjf5a1mupsAEZFzZY_21ZptavUtDZN1ortZ1f3LA8YlsTcTTLu0kURPpPjW8twZuigRVtb5z2gR3FfmzZHrCaMIvM8qXEjWBkFb4TIak3hQtYxujkM8gdAsQ8NOp1ujW2YN8iLVv66uwth8TF2ghqVsDKHpMLut8wPruXBlDtXuEaYEa6jG2nRZUk5LKy7xg3LFG5yLj-YyeXHSJ7pd4kRBe6rBGchT-rmL6iUhin_92qb2LOGi4y3pO5G38ry9MB5YiZtVgRIlU1_msTzunJq3t755pXZpwSatJKbq3mOE2hG_gWFnG3LVgID6_a4_7DDUv4l7ngykY795dVyqWrm0gyvTgmeinWhAVOnQQJ4l0W_zhzaRGmSQI5FcYungwFPz8QXC0w-Nfh9_cgeryF0eVt9KbgDjlkKV_JGj__hj7YGD3O4OnoZYLw4WV96relKa3v0nf5oHOOB-DZw8b_XP60u5oOgFvXci4c50pU3F15bbkWMLkmA9s5g2rZ6TcjTekbxWH6noKUrzIJmZkjsS_pjiDzcoiT37kZb2PyBvDCd0xIZ2qtl1NN7FK6h4zUaePg8xUyKyL4B0v5_oLQiWGWd4ojZJv2uWMc4MxzDIjzHaXIYtPxum84is3XlYZVdsw2KmiUGVQ94wTDOrm8OOLQByS5H1ivGaivG2hzbOa2H488N5tKNzpMynRJBkxOQ7MTNWnweEoSiJ9zerZC6G7qU2r7KohVEiurxIxYUwkG8gx46myXej7DMyDXYiHb0VWROY6VnPlLXedGhlSo1prbPOuDAHEsXaDrEs2kSZ1SAGh5fLLTVQUWzx_MoQ0a61j2NHxK_LS23OBKUZavIXTZQEG-hZ_iU5X9nNyfRkRCr4cbQpnHELAFfzXSrbJiQK39NyxV4OfHGudmDv9cHT1hjPPZ57FVMnAK9oZx5DT3dHMQAmI2j-CCFvQklcJHf7QQGtsAjXYBRCDKGL6dQKDimU68ptDmr2GniCwwqXG3VUmcYYKckwZFL5UQIzTARzSH8qkUEFLPbNdgVratbVouPJvv4oMpBhXaw3boK8MKZun0AB5alNRILf8areInbRvliFxMfCyk5dgaBnecSuLONOnFXePWJOL-kKyLisQibozhMpGMgF0wrmDrGuXSQ2L5Qog0CBGC0eaNPqeiA5zr7usmKJhMR-8BjYNP3gCGqP0NOjXRla4pz8QJ6zhNZzjq81Q-zusv1PYOWTVPoU7EbI-zE9D5JA_lwWw9k_DEvM0476xC43TrQIQ5xACaXRkoSatdsN4-qAAsDmO6CtTrfBt5hZS8SWgb16R_o_adUVIApQ8LdZi7f4qu9jlFgGFluPIHStmc00BnFFvRjiEjmkwLvzXBWVoDiXFj-bGqMR_jRPyqOnLcPHBVEGLO5jXYCQ-SoOSMCUfErmbrKx_4Xr-oYNSTmew6uVa5XUsIrq5Ds0riVd91Frlzq8pvq4TywHIqoqN2OdsM7e-OvmwZ-fDKHQQ-IrinSetjBa1k_RfBtwXOpemWHeRgJLCvENFp3PlsZGlYu2_Kjuz1XaMQOHEm3Qzn2onl2Kzwm-S_V48AoptjRF8OENPpR_r2pJJ0Migu1c_L-ACw1WBlVR1cUptAZ4yETVey8tc9sZBSZzf-hddp5f-HYD4oZDxPEQEMJls31-otrQaZ_f5RUKx7P4t8UVPgFUF_9lHpYnUtSfA3FKtVQGaGdzeeVwYmHfQRes3TPFX9Q0DN0JdhilYIB1ZP5ge8jP5e90OZYC14Lwb-DW5zfqJ2SdsoIdIcyjd6s9uorbsdSIiliN1DTFFvHRhLxOxscY13spMt71MnFCMHRXc2nKCrZ0WSO0I3kXnvRXzF2oepEQWZEkzcIbyNGtAvjHH_k2RGlwjCAMwlKJj9cWkpPb1NAk_q4OZVx844tbDyNR1zH0mC87sWMtb9fuptKr_BYygmKesfPAfu_joaIMFTya8r7YEZUoIyi66Mz4aOFVHB_YihBrdvQhk5MphGoZN70fmDOql1APNmk7nWFt0HfDjtLf2wndqWmCG6ahsYNtn_JLMNbPFSim9ipBWToeuZ-Kvf1pf_qKypdcmhx3-6NVUtFaIhHkDkDjbUBbi26u02Zxv1lR_vz41Op2nHvgWl2fzz70PWxCGZnPvTJWiWSjzJWwQgl5qaomyW5CZc_PrpMJ1wxUH6-UW6oPEmhZY4RC2g380e8zV5r-3v1pnOCLzXFOZdTczohDPd7duH7UyCG8KLjzdtp1f8t2OPHA2OpeaYWfvwSFbYVEm9qg5pJwfKNO05GYWcAbNDeAx7PB-n3xUGOfH1d3qFhR9F702QJJtRDmx5vooCxcMT_4dAQU9p0ckZMjCExcXqfqr9X3MZSSk2L6Ji1e3R6w-Lyp56T4eo9nG6k-I9DxQ09PrIw6QHPZ5w1ES-bAYlUT-m1oB2ul1b4h9GuRfibQsXOVfhd1VYP5_tkDyXKBSUDOkFlCIR1Fm8r_-89XojR1aIxCjFBWR1ghwMAACz3RXTrAfsh4Na9CrelSvbTT5cJvyIw5DrQYk1-dCo2eO82mUDXJ9ikkW3xeNjvnFKFo7BmZlyflEAg32fIgiAysnZ9pEkGAcCycSa1eHDFod12hnMJlcyBkrQ-EwUgbxo7HK6e027ou3__3lt2O1UosgjsJG2fJrS2Z-6LMmNSw1MbcH4lwMCqF7Ejy_qZj63FzhOl251B6cMUBZVqRlk2_FmXgCNoNshG7JHvgHmL33MPROdXNGXmB85bKJvxeePFwqkFDQGt24v7kCxZB0wYiSa_FDs0BzGyuPirChvHxScD0CsZ8uPg8ZRwAijfu_N7SVDbaAjzKBtdmyTk9Gb6XyB0liLgh3iBW8-xxuNNDYbNPrZxHEOjNVGqFowqeEx6u9zwjymF9Htkm9Gi9Acyzuy86Ys5cFSgsjtDrjs-lbXDIWeVN8QbFabkdFe5aB5BhcFkRmJ6b1jCy3hvkb7WcToJVTEKw1vpXwGZqSbDGHQR2uIgow4zrD2QOfZP4pyoN4pHSA6kHrK9EtSB9gT4HUQUMKe2EkLpkdIf0KMvSBpy4YA4xOb3r7eOTQZxR_gBu6qDArd_aLOzqZgGuyLgb0RAyYaHaTo4JyBcD-UlgyC5fQwbAF-kAr_Fh7XZu3eXcX-7Sl9jd1GpPhqKGyPDR2LvpTu-4GYvtYRWuzTdglboWACWKdzUAfccV83ZPsjB2BcTIExQUuWX5OrtcpIUEH0A8yN-yXaRuV3_cFlGAEDBHhQT_h1KTZNUVsX9fanqxA0mEH01xmLE6YUvnTadwhs1TL62cRVYu_Wr7BW7lnlbAcCyLgF9zeG5WTj25b035v3yzwIExv_E8I2A9LHViyyjv5wl5Bkbzd4wAwtRjiXBwKEQ5xyR1W1oiScaOH3S5mEGB5xbsjPzVEXnVZrBlbjCTzULANH3TTPMpLR1Kj0kNP2tyNDZdzum3ft0Z4fxVVOqZxJgtvUyWavIK9UubRPrq0DWbDOWr3mGzaEERIMzF7pNUB8AqGHyu6FepdHXR3wSD1XZ9TVVhvMOyImxPnVgPzZOvmqOMsIb0SZCEyqNN8g-XyA9aISpASPM6xHfhO2UN3yIXJ_T1C17ATaxdd_Skle-8-wsUX82kycDVKnzEfvcO0mLXaZQxEadggvcwdvP76Uv27L2saceGVsweNtroGxEUxFRPCBdJhLAZIMvF2D_SBSQ5UP7IBZIV86HC9nfT-yRdtrKkg3KDeqKKEvabVmQYT-LTBYLhPOkZZHn8R9j3rhcDrruARLjDki1adKrcBwLX8fXwbzYv8besamw25g_XBjMCEVxaBQqv5nOrcHTKhPRrDvNUfNohsjT9sHRy9fOFKZ4n7BmnPEySBL_dPpT2P5t02bXX8CrCt0EarhUKJsGWk6bVU15hb8MF_P9H_5_Jn90rImTGN-sY10VYOD6FgUly8lvMmwlaxk-dwAhTM7cfuopbxmBBTpqQZkoqc9OdakBBUX0XoEzBMGgpwK_ra-Q3NgaUe5xVt4thxHLDWfUqbhYwP-9_Z0BjwXVOD3e71bZl-PmjfxPgqnoCC9baIWh1zbDk6sPPd8ksmuke3nOre1wSuO6fW1dNoxjy-0--tBrnFXp1aWdf97hT5wKpXpfm22d4nP3XK9jM7ruEz1YduKLaaiysihNz8KBQnUvmLu-QjFa9Lbz254u1tZWVAJOPJsMiqvNykN13mo8xW1Zntu11BDFLPKhkPwaI-Mp0hUvazv7uc3R01l6--TMJFlpcH9-k5bBUX3qiWAcXI5UwGJmmC8cKpLuNgBYKHxv3F2xD1-eG-qr0sdiNfN9sgKViXPFQrtnYgmWLIzGB_GqrGJGTd9MHtYY0TJL5yHcKK-c_4T2-6-_wLt9YymMMPL2xKfmMvW0hZsAXdg7gH86_SY56Br1A5ODdA9XRMhJb4SC9EMK2QsKNrWAaz6MY-3ZFTjWNvwejkRW-Pd-iDEfKozFrbIGSGy8UhfAXvxc_3WxSz8L1PMp7ZHFPp4_nlkQF93Q-zDEWUU3HbnTdmMvvtDkLMJ5uWDAyZyQUcf-6q-Hqdj39n9e-AkGMvGNVh2qhY_LuwhnOr72nl06yfofnDqDyiMpIkMJm5zs5DW9uHsKA4Ipio7gS2CCAupXIWav8VAHBUbI2wu-rl8ugP92orzwdh5PVD9GGB-FxJ589CK-00uaPuZi4jeRKwI3DbSRlM8G6k2lWbxTcjWKoqM0aACScLzIFOBn0i_kxoh63srOdwjuERx89sjgxurECGJan1Yk5JUnsMiT8SD3zez43py7PsbbF5aOaf45LOW6N1OCnqUyPjZcPH3mYL2eXgWveqJunBkLcHJY4ewjYQoM2ZbTXqUrNuU_JaH5PTjEXz3-WG330IMJSqOTuMhGQqOaiji2lPWc8H_n8qhxpYR0yTFe0lJdoMZFlfdDqLZmtRd6vutJ79SjGF37A-4iIxW6i35Ka63n8Y6Iu_BDlR-9YqVO8Ga3hf5TuoSTZTXuDpOgIye0CM_P_mHou_S5nYh_wfphLqHezGVsaQsBM_4ma8dfRZSRulk6bBYrlpljUNVP9CBelZt42XzIpm9t_BrX2YhnIUj4jwbwcnVJgZplklGhJ5MduQI0GUMg8XBaYLukUftFsR-z3nvzsG1X9f_3WZFQdRr0UwVWnJOCYMt1oUOuhNYn7QH6zUyjoCKhVR5J2JoNYAuBigluY6XhxzgkT6-mWl9hMjSvP_LrzymG_7pDMDQriA1zIYGyxtDZBZbropfuUmZGS3g3ZoNo91sLyX2D592CXfXFotg9LIDmyVc6_-HlWx3k3xgyyQuRSoQbeZxnMgvGP4-sFDZmDhqSLMQH_y_P_HV-j-AY-LoSfRedA0w3et6dVE9HxK086IcdQjQNYbe0-qjgAPXscGCbBF0UU-T1JmdVm-yUe484mvQWA8wJx3ms3IopZm4mVNIwZQWb6aWgEizUcbDn5E92HET8wSYWQlxT6IP8_g8O16-wo2L6-e1LmGxRygOvryV1fJKzyXENIMD5SUF33WreW8gOtl5scIrzAV7lSUQdCj7BxB4tl3xq00v8KII5Z7M4TtBlpBnyywhnGkA1Y3FwtOa7YqKjctWj0jndBgxLw_gBZUsnFiToGFBvvBvBWVe6hjN03fsoGyx91q76Xk1j-gz5eMaRY9X75Jjssf6Wo_bqKKJupgvWkwJnqjUcfntcTfEoHKp9zo-fHPQhd-X0Rj-ntGR3vyUOiCLc_fEAgaQzITKowZ7glO_MspFCNpoL1f8XKDDzNLlt9wkXSJsCC0BgKrBvHPzQCk2McQmr_0Dl3zEPnR0bZoQ-FqGnOI9WMUjQT7phcsakpksOr4rCrdFnnGyVg462nyiUfVQEXTIG2LA55IqK2mxjvIdG40xYPO1tzjhCoDHjG1py4Z4U6sg3CRBR4jXb9-UxrBxPGZqFtw5ys4GxcjrFX-05Ket4ltUPAZA3bru2tCaj1nCLBk9b-mLTGPtFzkUjo-ja9svdbA_EBq2B1uvsRJCWGS9L04idkeMy08uOOlYD6IkozqH4z_k2OmNrW6c22maiXdd1pPQMVPnd7eDOamA8YJ5p_5JtuhqLeXSRgH8h9Ei91IW1zQDB947ns6psQ0wv3E0OBoxHahfL2FNdN0uC07wGVv5dlO56dff_o2ZmdCXZO42AL0sYmjjyLdQupntMhMRLbyzbf86Rt0vkKzhMQ7-zFlajgdSfivlWmXkgmT0MvhBMKG0iz6isNhgBSLA7jjNhmAn5CTHivfqlZtcyT6zXDZDPkbIxlYv7iPUZnPWNPasfTsn0_e-k0ch7XmCN5rW-yB-X7ZE1wtaDlW7qIGcVdH-bqNNM2QK_3A7n5vzqH0eAN3BKIqPBuI86aAeUU03R-jtAI-rpli4PtIfft0H5tc1I9aWma5KniDeUqlFMOVQB3eK-gNBKUqesuL9V-kEEg9Ny8gZ3SHygwryDkfP-bU7W-qCdcOAHsTDQNRKUIPrdcdxd5-Vyqgyzz3d7MDVvi7G1K0NUKmiQgpyZAfEDe1cnjRbwzQ5gEkjVAPElJHgwwZ-VbJkcXTgjRzbcVWnXYbPgGg55-Ya4iYbE6hjJSnvVkO1NBB5vD7sTw7QMa1WwekjFD9gA1fm5bu-X3Hf2tEtxD5MSJK9K3_TiR8IGDk9LG86bYFkpDBdrcFHYQUigJS91sv7yQc-XEkwFyT-SoTlTGUEjKC46K_W8f-ecl-kbLDyjLX7XHuuCJ0srBmPtJJNvgF4zb3ElPb_e84VI6vehVZNIkanK6jBVRaAdmMOrRqt_mtMpJ5lChZk1hu-UeA0Le0ht4YRpCSFrXgUouHfkpj1r98sfKpQEt2hab4eA8llwSPRFUiLGBd3FjsBJG1-5k4I9PjrexU30UfiVGMmln6k2-KF4nazSUZqE9UiNm-orWn2pps3Rtwtr5g-1y5fAEytBXnta2z3vTfB9lgGjb718vWKFztKJBqlsiGckC5AhTGoaetrPrA4X3DLTBUzFqEdur02d-A8Df7eJXPeXm5J5JuA6WQ1LCNKG3awsNb2i7hOsmuUQPfJLky_CjTtBexhffkBVRGeI3d82kHKTf-pYQA_qM63_KjqnyO5JVpcynm8EeHN1oucI-dbYpPlHQymllAZpflfgKlrNi2uXyFIwOTbpXACGxJ0B5qX_Si1iXaZW_SNcd0_zq-ssf3VfvXtvaqRnkHyYfl_XxGNKeRukff3RBm_yy3Kc1sPEZV-NnU4WPGRXWpzuxUAuagT2acAuMe3k3kh6BqKECIPVmxyLPPkk5lDngQckns7KEg5IgsIB4QFUeMzAMlRrVQr0lMtzsWKsqdg7awUOXv-MdAKd-sFwDeLP4GPEdn114_hmBR_lAbbIfzRMRg-QeOU8EUr6u7maBokrXS_ySx-xZYzbUBv24VUKCqBs_RUfTrT_pUy2BNo7YqpniIWFluCOkVhLMaxLXv4PXxA2el96201SMifw3yvB68Pel1doudwsotnp_-E_1bS86yKJfZqEu65uVFgxqHpBY6-eBA2QUOTTwx-ysWfX9tHPgF9tY0-B6LvnL8dI8e-7qN2NOusp8vz17-eHpSaVgG9y4iL5MhjHo42y-UrzcNnXRs0I6878MAzbsb4s4v0SrB-e5jbOcEX9pdeqmKolYM1GlB39yjY7SQIRHbYuV6CAVF-zxTt6brogBisjCBOPw9B-NEykH_Ea0TH9IYRWweiLrdCNOvNhtjdIsQI3zlYoFLqMdQGhaOWtS63BBsqHoqZJtlIdQRvg3M96h02-Zbg8Q5Om2csaGLMm7tzByBmtvn9FsDWMmomoFLl6yn88bCpyrIQNS7-cS5eQt-dXQZSlw1-k7MPnY9cbVEIkxuhwmYj2vvtkDiF_uTGEFmjkAsS-zP5_c60T2uZkrYZXFJbWpQf3_4Z_ok-IJuVqanc1fSVCTBGhEBrvIeCzSHJsjJ5HS3V81Gj5ZYWIKeD0gTc70UFVuR-clAKLmz-syDkPdrI9qPkRqlzQQcKhz3qDsaCycvHcoalS1Nhgre2r9GnwihMXxkjq8itTYywAob4_6BY6aYZrrTkA9YbqCG-uH5CCFg_E67EunYGdz-AdvnmBeiqO4fEWs1jXJVFQ_1w6inG6PkjG6gIL-USD5ZjBZuEpnTbpN8OCFLNFjjOjQjrPQmSLTL9lPWYumDiQ7TN5Ia9gayKXonLLqtZ3E1Nn8gIkjuCvRMoAE6-klLZMhb8SDUpOe-mdLz3PEzkPtoyAdUwbgRfO2MOclByD5agRHtfm8l50X06kiRRUXo5Bj3uzq4qMKY5i31hf4b65Ze5myeX6RWyC8NrAbh_9lmhOcwPQiIFq1TPcuMFyihjGpaSToCtrSjNX9tT2Ubfqw7g-4MRO6Xh0Bor5c4pdN1qCDw_JQwK3dQvdXJWcUtlS5qYvD1FM3VBIqo79DudSuRS9cg86UUWYI8SAIociYoST1bV_HcJCTX9SZQICo-EkPyk2U0OAIlFKsgKM-FPO0XvYSvA6Z4pLa-dACrnHijKWXb_YxVvRHuNW_hBUTDGGSGf0_IDTQ237Mu9sX0UF9i1c1GbJCW8Fy7u9ldC9gm44w9mYmpqY1AMv4JTobMThal6lGyb5aGo_vjF_wdzuh79vkRTBXYdsrn_-q_xa5Y-ICQrWWxRFYkgyX812VfQH-JiXg33pt90A1BDIsg1iHVSXfZqM-YEEXrMpPpTxnZNYuevQPll41rqtdhw2erq2qnJSSJHG6nXWxS2NE7naBlW1-kanT5W6NZ2Idu_oRuw8TVEYzoelsMh2nlGEyeQdJsf3XSlbsgMpdnF5Xv2CFn_gxiyO2A5uMzKhb40-yhE0Rhosi_ctxFOb22Q4OB5qOdfWWAdyyOhoySFslqJXhl7mfuJoBf6-PsIO5f1a0c2kF4ArURND1eH62g4g2R6X9LN0YjBUi7VlrU1KXzoIR6gl7pXTXC0BEhRGoAMMHzEjYtj5XgiUjOr83FNwyXq6XBmBMWYU_GV7ElAKOdvqLskM7Tl6EuMrubKTwvyDASGzS4lUfZvOE0ynmA2yBIKpoONaqaSV7zICjGva-YvzfZUzpXG8Hni8yN2-Cxqp6zNAbLu2hbDQOYGpcAa0XIvaLZkcteL0Uoo5WYD2LeGCrVJb16p-gGUkbzsCh4r87H15q5sKgubutsXESg-3wV1TMvB4f74vqAxxs-tMCiR6KQACSk3jIwFxPLAni0zV4Ksm5FFRH5iX4Pr2ApZzG7ZTnJO9m91tZ3gz25J8PMzzv65pzaQ4_JZHy2eqdC3Zoj-RZGB6jvPLozPUdo2j3dUyVKEbckchQkSDvNd2wsXxIdN1QLBg-2GkHYIxZrhzma4jNj3OE-EcLOyz6knYYGWQ85x1eKbSrP_XVdcobGM6mkP4XWTeC5IRa_kS5L1hCaae6jf_XSAtwZrmQGwJ-le8nYZrYnDVP1uLxqgocFPVCEWeN5yAF7Y1cICpTA3fDTbDfi3UFnRSvcLnxegumEfTbSQPwEZstUbjzIW7SHMDdIWPPK-gNCsMkYa2V3uNxjCCRV38DqQO-Q2fOunRrm0kUH8_GeET2BrYeHIqJ1O7lcGnN7P4B6q_h78j7YKA6TcpzsRnQ7akQKrtueEVJI03v05SF50AFoL4K1WBSDk8QE5gIgZZBphigL67L0K1MYnfVaBvyr302GnLEqGHLwngCJLbCFjfxyFIiqifuxrFQzN2cXbf9B4u64iv7lT_zqj1pdC7ccR00MgWxKbWpQjMnwqWB7CHaOEUI00TyAAKipGfsgFxSow_higTjFNuBU1c80GeiuXkbR_mM0sD0-qhj6mNoQot3ng27mxof_j-0q1y09AlSaPJmdRbXOtw8K-mU68xLosMDt1_7HzAjMUabN9oytyc8JdEPHVIeeiK4mF_LeodO3EdR4DqKkAILWXM7tC2Ft1mC_Fg9Qg4J8eoLEMZc_kCRcvLDVhpg4DE6T9BqusLj-X1pauYim7DQaZEUHUDYvL8hTbyMMLdRRLSYxy-EF_qGJza2ryR4p5rricO9mJZ6xNQtoN6j9X80aCL1w3EK_fF7tlhpW5BxnC8S2OR8wZeWavOnIlFI-3hztLN-O7V4e010zu8GWmpVqUzsFJSC3hcvSqPYrY3EUcimNNoia7MI_7qLmzpSwmDxe0KfedwZPpNO-OCVwc7f7U-RU5O1GHy6BN-nGzRIlSqbWFmjeerlnsnf4cJnAu_pp2TjIYdGg3uPmEBcJ1Tc4hrJH4EHWFwf-LOheudUTnLFZrBy2uOc31KrRYoRz9kOF_s3RpHxfHmM99r5l5nj8P4_T6lfM3o8Yb-upLK78LOIh5S3zaJIk57Xan6KRxqjzSByIa0se9jdnwCKMKKLlD-IpbVFlRfR4_Xqo83m1YdI8PgE4AsS-i7CIFYOhhUdJM9CWgyZQ1tlhiXwc1TLDjDyblzZ76NIKyYsEdNwY0BysU1EH3HxlPYLei8MvWMzewE8XwnAFMa7Qqtn_vikasLRCKlWI2NxGkk4RViEX50Bwd0zQT2kC4imPfKR1dRfWS3tCJFractwQZVmFUntPt2RSrofiTYVQd_0LIaPJDUNcs5mXlO3hZS3mmPljlqwD6BZGAsV4urQNWCjkC1ff6_mZlB4VBFlu0-SSWHRIAeQeMvOPArdyd-d30MJfZ2yV1vxSPT20NtStwW1jMWTyHo57BeNaVkdtqZ88TcVcyLQ5pEwIwI_4lUDtVkGLFwfkR4_aLZXuJe_mpi5OyqpPKTdxcq8KjXH3JnP9yJ1LsCD-bkzhm1g7vYVQ4NkrxbOuzu5o66GVAQzz1FiBYvlQInoZYxk5b6U-4F6GmJnGpIZT2bIlXKhJibJ_1gByZtdMMO_mfJuft-rvIay3QqWA7_WMc2NQvV_mzJHR_Ux4Y9VxtL5co_xKOBmWLqdsHDwOGWX3nlSB_nG9Ulpu7i3zir2kpwuZneQh73bX5CEWm3YwXnlucYHUO7aBtoth9EvimRNS4iM0P53t6n5FnYON5YOTo58HisvoWA0O18VnbOhpcZRiWsSNfK5VQjxRbV_EqZMONNlZfisG0C479dZ_wGRrC2KZaOdW29Kj0Wftrhw0sERl7f99OeSTxdMkufojYwEcuKTMCYNCwebDe8rDgNTSe86d3-nKyXaAOmVDsaQXsoHtd4nGdwPAsBi9ctXCN6pqyzo9B3MmUDvkjTLWhjjKkVePrieoyuTfgca08EiM9DCRkkPwqQdWplxnVLcTig_FIyvoYTv_IXbGUQF62Sl7X7vBt_5jv-MeiQneLopKktOX1Y7wN20BL-7JkH4nKV4GyDGj8kHWf8bJ8sVlLGSr1QrwgdW2j3onTzl9XMxQXV5noal6eXakEepgYOegLMt8pPLm3x4m-wPjpWTcdu_zg8vJH5hF7koJsiVInEUefPeZdwsW7G-l683cwUkvj7Z2jfxpnnQeIx8UQgn4Sl98PWBmBb9ePqWymX0M3bEYYjpEEWaRCWtD65pFbfJuGp_u6wOEdKPTEjxHkm0zj20cWS4z41Es6MMJF5MZOEIoPJKeXH3Kqn0_m9i97YEia9XfYrgUF-EieBAc3CvtR37WX_LzqIMmRt1cCs-ESBTlYxPTxeUZzq3Uf87DAaZ6imJj-JYjrvoIs_3UjbrjdrCsVTUWCUD1cySOMW_lew7u1LBazLvQMO9nOSELS2J3cZ-84Ivd_1qXp6c3W_FueRyWwq2HDSuMSOCwaV3gAdmQg3u96ycMx7d4YGEfGGfEtbZ0wfa_YGfnIBWYTBmT-YB9xnc5chH-ISF-7QyCDlB4sSyhTX79AhH4q64Waq0iAjdM3uabe8QpJWFYYRYzYVYjqw3ocYxDCf4BaSyFbgn9gZxHC-1epkViSWXVgfLBAw3KjCnrkM-Fd1yAxjlWOdxs7q8B7oHG7ovKEgjAm8-HV6Sb7OhSbCOM_scfImKVNQT6DPWU6aSeyafm7fMd5ZWQCg6WNyO6QEu-PwXRNgTL_sbYpKmD4EDtWDTolWU3Kr8Acdhld6Y-1IXE4tJt7V4lur94OfCkHjyYGFF06M_aW-sNeSOPOyzS3mKfiSv6caPsxaWEFWVmNUOBC-9Veb8e4PS7i2Z8iZPzcR3TfkXM-Fhget-CE7p1KblByvqbD0ifWBKltA4j1tKrsH2TUjAXRaM-iOzon5TxK82YQAnnufOjKj3O-iN14HWia41D7f45jLPsDr4hGToJQtOY6gZV08N8cYQQl8zC2IdiHqqriqCBUhHKAjgw5-4Q4uqZb_vYKMAW37Wn6UGjtxIAFbJXFGcEccsdIlI50HCge5L_OdviceeBNaVIfx2Ja4FFSpdDL7nKm7ZrHZfOBSOfntrYHVNTUK4rT7kHzHu9JCHKSZ0ULz3dWKd0Z_DtJQasmG4uvI1ZfDK1c0bCC3CIB6y29GerpijFnTNFHmyMleK8kOxc5uwjOI85BWNv6RbK_oBRg7VnMPWK_Sis21qo21UUqe8zlgSxwXineMW7lNhnjU5ixgGq7DAUlBQ2SpeoiKCi4pj0n8Yi_Rpb5myyqVT9dtKpXVgcrzJ4Ohe9Td29WCkDBrocRppX_wxKu8PX8F0Sj6rzB2fwF7FDqBm9BFQoajFJ9-u9YyEK9cWp8LhqWZ2eu1jBszF9uei-AKSg_yUDkHCkNF9VA3oCIO6eUhBp7G1qASihGPADRm_kUvkiBzvV_qm5cu5YUjNqzRNC8RVNA3Cc0aKT6zTH5c-a0-Ib0DPTL_blpCTxq0LJnDeL9MPDpqXkDfXPfkF1E-g-h3cxAve4deVP3ZGHJ7PY7mNlTKpxnH3hq3-cSBvCZqw6fjmq11qiBxC63ToyqdAkgX2-ectNUbukDVF9tQU9I4_ilb3UC9A8Kh1KCL9kXpWBpRPC5KNx4kK6Pd293TbqJENDBNi2fJ621B_3Q2kvXfn7pZI4j91FDwFtu4FY3Qo2hA3U00iEY9bYtqkmNXFylWkXR0knJx_iSds0hRl9qcROMgsQmQb87wb-rRzHHBhnEuwz10CH4AsmA4R6fEishHUYv1-mp2YOJXWPUfxSHDrHKrvsq-e_dKtNmG6OkOxUvZTHpoaj3PpzOVO15wCk0yKsQWxDIAKzrsDiPDM69dX7R2nF9Kk0jC3qikGAokZItheEseuLSUu7NDyPoaWR47rbQ5e9KKRwy0ogRS80zS64SYSAnovSFY_CTr64kG4S1fHNMjXu4xYjL42XtxHuz9Snjc9SMNgQBJaawGnFcc4rSqMesaYz_piaMPbZSn-0tB6CTo9xywrZBxU5kkSwp3ni67FsgGpQRY9R9WqOyJkqKN-dntxksRREDrX3MZBK4dVz9pHkbKmO0kGp4L91yqlpHU_RiudnF9eDsyqW38dp_sMAofnfeUW6SugIoXj4gO1p6Ej95I1KmMCr78pDcShSU6sTlVBOPOGIMjsMuyqz85FVPjVVbXvHzDgoLcgzYwlrEgnOZ2YADeawd0AA6qNvXEmE-LtCeq6wybDp7c_cu3J_4m-KvQdZAp4Tp5PPc7Y9wa0-mcp0l44L7aRrqvsMeGAEGjgN6tjPBn4gql7uaOj6W817jypKII9lrFp_or2QdXHuXLpRhb8uozFSUvLlVzlvhfwau9S46DTR5SGZsTKMOZfsIY91i__7jy-caYBBx6uKQNZZy2swTb-jxoba91MUst6VcFsHphBjsaCxV_fO5sO2PKI0B7-v-A7JF2YHgRTrVJ0GanpHkbAR0FxpvSz-r3piJy4zhgNUIGD6LVy9bfNdzqErtgyvXcPqwm5a_le4w1nUiiei4feUR_Be0k0ctOEcdCMD4-WDU_e8-0nOsWakTxCOln9WDgc1t19d9KwXmjkaEyfzxASYsiO8M__hI7kxQiys6bIml7njgty7BnGRBppjgrYESDhYzuNGdGSPNYKSDql3TKmBxekodTI53PijaDWgll-Edz41UggEzpID4dWq-i-jY0IwvwyB99uCDP02jCDwmPbwn_fVgwuuohg29PjDN-icNXlQvCP8LQ4ShQGITqFZ9-S5aLz4KRpPpXjjJ2ZcfYjZlA8EtJz2O1aIsgCdc036PtJmz2E306FW7ti-5NFDKbdK9y2HRqH2qxYsdeSLZn1N-LEYEzlxTvxBohUVKHPlnb-Vc3c_P5kqqTyeTaDGysZk4KIERQ5PT6XuRC_qKSxKHyIMFfhzc--u6wh-epbIhPAsA3co9DA2SnwJx4ElLzA6Y8jXK2kb1B8xuBGF-2jVl3Xbt7upV29KiqCFLImUkGIMnnq9Jlu2INCjHnP2Z67EGqmA2gDVdUcdRFyGSNa7fQbwoCWzDWiX7xmytuy33z8u8D6we6E0lzbSDPgeBH5NUnIE_e9kYja90TLPfYyPgffG3HQLGHZ13w-QGeY2ZWvM2C5SOTlvvYwWoP-b-pXdG_huJMuYebqXmGu8FNCr4X4nNLCA1kZq-Cjn7OcTZ1gW9hF7wrjPkUzzPrspvt2h-1s5r7Uxd7BSbmneXZnEjv0kq3vE6NrWrF8iXJZr9nAeFjdLw7hI1wnP4fGvVIjSyzwT9VjEYrvLp3LTlZVYAQAf4zWIVUiTWVEGty6OIEIQHARMC94ldxgwpkokjTO5SpuAf84efgG3XXoSU5CPWi8ii6-dYnC9oQFK0mZM2eDoPD48z4aumuWnbYXXJQuFj_wCTz0C9QWLs_sO3SysESN-g6OAkDi31NZm9U3s97p0mcWwUYqtL6cDTNV6I5i3Dat-KZPZJSlm5L7bGJh-WqR52T_z7XKW9wDWq4_SpmnnxKJIKIUsr2flFwNoEUn_KESLylTdQQo9Bmd6aZ9mK7narAnCsNz7_dB86hqAKNOzm9jeeKOgz0i7dFYqomB4jPbqm-yCOOaWwtafrijgnpvpvLknNevjj0dmKAtfCg2ZqGNXyaiVO6sBvmpAFUCOwtN0bKvkZOfFybRKci6gv_fJFwfR4Ot6qUujZuRqqXvzDPEjlu5NN4yeja8oL4MAFGc5rHSGx1lwtjoW_NLAJNSrNGoujzzqj4_4AOuIsOdCxoondt9VBzkz7UKtkWZfgdXjX7c9tm5Nfn9HNFxQ6adGhQAuGH2NpmpXFpEy-LtMkCAAhOvcig0r1NaOKEacYK5UxZZsSp6DTfbUpmtR-nfgPEylhvIiR0Tj5GdQvgxjazRZtshzYZZoi-495VEJPcOrKDd8yPfqT05f_m17nKy_kRyNP8L-2H9h7fw_vEVBRTKr1FhLNXFmu3I2vkIupmaxa1LePm2cg2ePlcOKIUpo8kkH2Rfb96Set4s45MhLs7kI55XPRsy8w49EWYfRn01KAeenROlA1skQt5S3RCgns-ASSAZQ2z7AOELntEteUZG_4PGpsh6GVo0LTTg_jTs1NxHn94GTzO4tlSOfBJ_W1HWw52cHetd6U9ICdDeQucQC5JVMiQY7Zj16PLpLPsM3mYXzvmF0kNaiz_Tm34kMQNbzv8_lNse9lsr4SveIMAjVex0NW2fRTnHRwKYJQPnsxJ-5YaB-nAn9pT6ntYIzU7FcY2CVpmbsq0t_6lnQesQTH-Xkq1gfwPxSXohq4B3CWfB8oOp_xYGncrL09WcHapRD1I6ZkCxvbXmtPKIrTscRLpqT4i5LDP1lMy2sslYqFv9nigdmLCD6eFAZSzYEeRtGqnzEN_e0XqOQNmiCXEM9IJGoTNCLQrjuNCumptoopozcZK9qEX1rXmhAdfnMyQrIRdkOCH3snr2O5q-61TMmHNCRbkwXOctSRv5wEU1GNrmT_IKTNXfO6cjRtHboztGxaouKtiAkmcqrE-GWGswh6p7tCdV-Kdk3Qn9KmO9BK-0vp4h3l_YiyLj1p52DqV_S4DlgZbXcc3G5UwreAgB_2bwuSM-FkTqITUlJloWH90Q-nxFTPNGXd-8jrPr0hDy0huI1fhMRov2HsFz37C2e8VZZQ-CrcurVodnipAtcWcSDAbGkSiHrQPm99Ars71icU8QNJ1Z-lQ7NlIdfpP-3uuYUc-foxQ4RpTgx-pn5Qj07Z0Ro52dQ2clAmh7KepBJBCltDP9nFogzzVm3n8sY6CIrhj2zP0Z0tNT_2BQlDSZHUp1Y9Bz7MfglpVKj-IFUVvySMMRhP1astQLPfQn-XD-MnK41tHwBquNUwpg9G_Z85t2GHHOpIgebX9Kf6uLemOtJU6YlsnwHU8aka1NakQw8gyLaQTIOjE5gA6DonyCiIpmPhJUD4lkwooILcfFoaNRz5UfX97AJW3Dt-zdrytI-Dx1HzMtJcuGaX-nyKr1kbcdURuwF2Cy0-hyp5oAVbrA5IgmWAQp2soZ9DGC7M9bFYKKbClCPClqkkeZtz8R3DBiw5w1h4v_fwQHi3oFXxWtL5D7bA1VyIyTMYyi5MpWjA7IO0A9JfKsaJBZZl-a2W58RaQEufH-7KvZYlRvxjaHzhQZC-V2zY9EZWFDVdgV-WVjPAfUu2ZKkEx5Zg"
+      }
+     },
+     "id": "prt_0b2332d87001J3k0FgIjbqCuPu",
+     "sessionID": "ses_f4e25204bffepll6ChIEBWo3v3",
+     "messageID": "msg_0b2331fb000190s2dsgONWLL0k"
+    },
+    {
+     "type": "text",
+     "text": "Recuperando o parecer integral do auditor para arquivar sem edições.",
+     "time": {
+      "start": 1789696099414,
+      "end": 1789696099428
+     },
+     "metadata": {
+      "openai": {
+       "itemId": "rs_01a0b233604b7799943d2f8be44cf5a4",
+       "phase": "commentary"
+      }
+     },
+     "id": "prt_0b23344560018S3X6gTBqCVbrd",
+     "sessionID": "ses_f4e25204bffepll6ChIEBWo3v3",
+     "messageID": "msg_0b2331fb000190s2dsgONWLL0k"
+    },
+    {
+     "type": "tool",
+     "tool": "read",
+     "callID": "call_01a0b23360b1701fbc9438a7dd9f84ef",
+     "state": {
+      "status": "error",
+      "input": {
+       "filePath": "C:\\Users\\Usuário\\Documents\\GitHub\\semana-academica\\auditorias\\M4-2026-09-17.md"
+      },
+      "error": "File not found: C:\\Users\\Usuário\\Documents\\GitHub\\semana-academica\\auditorias\\M4-2026-09-17.md",
+      "time": {
+       "start": 1789696099619,
+       "end": 1789696099634
+      }
+     },
+     "metadata": {
+      "openai": {
+       "itemId": "fc_01a0b23360b1701fbc9438a7dd9f84ef"
+      }
+     },
+     "id": "prt_0b2334466001L2y9uM1b1XoJal",
+     "sessionID": "ses_f4e25204bffepll6ChIEBWo3v3",
+     "messageID": "msg_0b2331fb000190s2dsgONWLL0k"
+    },
+    {
+     "type": "tool",
+     "tool": "read",
+     "callID": "call_01a0b233611577c9939169503700b670",
+     "state": {
+      "status": "completed",
+      "input": {
+       "filePath": "C:\\Users\\Usuário\\Documents\\GitHub\\semana-academica\\auditorias"
+      },
+      "output": "[276 caracteres omitidos]",
+      "title": "auditorias",
+      "time": {
+       "start": 1789696099626,
+       "end": 1789696099640
+      }
+     },
+     "metadata": {
+      "openai": {
+       "itemId": "fc_01a0b233611577c9939169503700b670"
+      }
+     },
+     "id": "prt_0b23344ba0010gGxUmkOvEqwpe",
+     "sessionID": "ses_f4e25204bffepll6ChIEBWo3v3",
+     "messageID": "msg_0b2331fb000190s2dsgONWLL0k"
+    },
+    {
+     "reason": "tool-calls",
+     "snapshot": "d5fbe04dcff5b5ceef93f4028efce2f880d76597",
+     "type": "step-finish",
+     "tokens": {
+      "total": 21400,
+      "input": 5282,
+      "output": 169,
+      "reasoning": 3548,
+      "cache": {
+       "write": 0,
+       "read": 12401
+      }
+     },
+     "cost": 0,
+     "id": "prt_0b2334657001amllywUcEjhlu6",
+     "sessionID": "ses_f4e25204bffepll6ChIEBWo3v3",
+     "messageID": "msg_0b2331fb000190s2dsgONWLL0k"
+    }
+   ]
+  },
+  {
+   "info": {
+    "parentID": "msg_0b2331f98001e4UpHRZesTZlM4",
+    "role": "assistant",
+    "mode": "build",
+    "agent": "build",
+    "path": {
+     "cwd": "C:\\Users\\Usuário\\Documents\\GitHub\\semana-academica",
+     "root": "C:\\Users\\Usuário\\Documents\\GitHub\\semana-academica"
+    },
+    "cost": 0,
+    "tokens": {
+     "total": 21915,
+     "input": 3947,
+     "output": 121,
+     "reasoning": 198,
+     "cache": {
+      "write": 0,
+      "read": 17649
+     }
+    },
+    "modelID": "muse-spark-1.3-contributor-free",
+    "providerID": "opencode",
+    "time": {
+     "created": 1789696100188,
+     "completed": 1789696103438
+    },
+    "finish": "tool-calls",
+    "id": "msg_0b233475c001SnmoLrZO32HkOB",
+    "sessionID": "ses_f4e25204bffepll6ChIEBWo3v3"
+   },
+   "parts": [
+    {
+     "snapshot": "d5fbe04dcff5b5ceef93f4028efce2f880d76597",
+     "type": "step-start",
+     "id": "prt_0b2334ea9001hkCMmc0w5bcWON",
+     "sessionID": "ses_f4e25204bffepll6ChIEBWo3v3",
+     "messageID": "msg_0b233475c001SnmoLrZO32HkOB"
+    },
+    {
+     "type": "reasoning",
+     "text": "",
+     "time": {
+      "start": 1789696102059,
+      "end": 1789696102632
+     },
+     "metadata": {
+      "openai": {
+       "itemId": "rs_6aac986c133632c245ab498b:rs_01a0b23367ee716e866228d811afbf66",
+       "reasoningEncryptedContent": "Q-PaDgFIhzdjudhuoORu15EIsw0T0C0mll1iCud-Ad43o_iwrtaUNBHz9_FvtueBxSQposU-ukO_vCJFwmLgnFgNzIVSGd-snDUkBifImZdxb_kl_1yxTZ_AUH7Hz4l3KzJIxzEnRTmVdGSjviX-jpDYVzczB2tk7kJxfrNjsWLFr2Fn74HNK1T3cJFraQP0wF9AllGsSfxb_2yQqeOeJEKAjpUDkbXMavdKbYBv57IadZRuRSsWYc789rwjNPVUCx-xf6B1DPKwn9Rl0gh4P5rGIuSf4Ob-FaBMwp_ecspTGexOFE49t6EQkwKbmC2TEjKRu48_SNqMm-HO_6LDw5_7V3AZs8HSJAVjqsNIkU3fK0pOu9NVKutRgD4bArLJ82DPxwGZH-Ro5YWhzeUirX6MH0CC0-gFLFHydXyMnH-HVMMi2yCTFvA1GG_qr05XdgFGF3rRcNrFbzRzIIwgvzzwLB27F00MRm373LXG1xun6yisOP3kxhY88IEZ2inpDdi0Oir-_8Y8CQ55pMwZkaw13k5P1Y7_S5GbKkVzEMtQ2Vr9DBCewOUwUgEFx-MGwBKQGYf-LABQtymb6NCNBVJeGCGsADgqYNSQqCi79qIkZilgTJ8kcuTqOW7qDZZ2EXUYilPdnQBr_lExdgnpr5hcEnFgRlB6ZCUNxKj_cXnVuilHS008fzM1bInJEGmuNNVEiWNhXe7APG9SBSN4AGaxLhuT_2uN43r04EBqcUsOJ3qWDn8aej73VuwmVBYoYOKrOQ8GNk0Se7nprlN3hOKXAL9tGvPTByNdn44kix6EPL15NvMcb2oJgpoEsYREcEKvOnSZ5kmXa3JsDsLg88NuseaF09joY17kt5osyo0lXSWpHAjg2II-oGkn-K3rTQmJlIBdYg7W_m4kTr8goAYkaP2EgW8falpEc7MjkaBlXtdgG3Y0ZLzvyDHd7fDe-BvCVmxwEHJVBCewLeBRgIFZsXKZgz1GPCGoe30lQw2fpg5NvGOvaF72k0uRFPsUpCUf_E4RJuK-IwvUPEmxLjc1WUEosoTrTrs7hsGq7j-QhNlhXs5pmioeIGmIg-o5gbhB6DhSWRH1_vXsSuM49w-3Yxt4mVfn4nK7MK_uEkl2mW5ZYIaVi_OOUQfLdCiErJaj_a2hR_YoN9Ir0laKTGo91jKzpUvsmDqNDB26dC36JLN_IP2eS_sEMKDfsp4Ug5wKgxTrKAo-KB4WvKqIXEPvxlp_Uyfj3ZqG78d52Ke3eKLY3pH6ic6c2_oHMTC6inMx6bnHZPJpiZsFcyK2MHS5qZ42CbQwo5M_iEQx6CZjac_9hoNseQ_2T6IgGaUkisjplwndpxIF086WMPBLLiHrllsJzdP6cLLe8BkcMQ_SJNlCVPyklkt8GvFBkF1NczlHT9qw04-bNO1zgl88n_GJ04iyE_SDnR1E6Jg6GI_wJ88LJW0rsBoudcxVOeniNPreOIODi9NGOByNplX-GM4ALu8tT7JvDfYoIN1F2yV2bsp1WrRaPwpRMCDYU2Qxs5Zptnb5jHGJ6IK56kHsIPCLgX6P_2hOT9pfjsO901BvmhV55VaUDCX1Ag9pqfpnovd1HlEn393o93xTcKcLk_4w1kmRc4ARFa_DPLIG_cTZej6kl8DwQ2Fz6LCVPaPKwoj51PYTnUr5Y8ynYL9XIOjLddk4AAnxyGHC4se4qZ4DKSmt_55il3rDN7jpDey_xKEUjEIr4KYznC-akXtZplu2bYEXOhgrCfSOpTCytBcoafoTiw-AoCebPYogaKUQpMyWiI_bHfbZZ8KuAvNKpf9KHjNWpjtaqEMUwxOc8wmRB6ERfagBhUla9B-k-zsmZnmo5X0k5OMjHVixwdlxHVnoaKBPHfMRRNYmY1FShRyFsMvyTE4-rSnc-NZvVe55l0VhHAtAOwtxu-Xld-XMqDRdikMSba5_fUfR5GYWz9rgCv6DXCA-FQ4Ry-BxkNECh7KuZc4_khjd3oN-EYSZ8BNbaWys-oxd37xkc_hOtXyaR_wh1I5mZD_Ksi7_nV-FanHCFHoxXc1Bi0XKlU3AoZ6yiHf56pEzd1XvZDfc8Spb2vH3MyU1WG5rd59MraxRSAl_h2i1kFEaOEjXrNzerH2QoqCNlXKxvMcvlvRirmHDVTfvA4AYbOUPpcE4LJczIPfiGW-AocqSGIILXjG5CKDZr51gADo1NeJqVXRsFmkBiVgHMoL1R8RzT9_k6izoL_2GV03j0BM94mygDN01Ychv5pxQ4lqDcvXM64tlv8TrPBjq9vPoW9FTW3qrRw_Gq0PBbQa8VF53JkF2LQ_ksEYOxwt22vAU_9J_FfCTEONGM8AUUcw-EFqHNvUX8UsMyQew8Q01YMi-em3ZIKS7Um5uzPu_A738lKzN0px4P1uVdWQtpOObQO5JP4yHOBwinGOxUSnjZsZB6TM3X8XCV2Jzu7AANnfwGFQZWG4KsnSbPzj8F8X1ud7SwjzzmBWrtajrJdBItBwttg_lY29QzFSBhKBV5KJmyu8dcJuY3kd301dKENWf8c3rWQg_uNT4cYqc6mvMM4du7To54i_xPuz3GCZn_ESJ5ZlOizpGqaVkirveQuJPo5wFkvZlNIpqS62qvYwkvYJyQlW7yrkJQsjCtEN2N7uYEG27AVgflt5i0vFsgALBWpwStN49tDWpXru7uNw7K7GBlN1cWPHORh0fy45ytEZHI6sjvU9ViE7GR4A5WK86vt6BpoPWRV6N3JgtjSlkDAAHkX6KhPCWQwvsItHpR74tCVXbmwo"
+      }
+     },
+     "id": "prt_0b2334eab001nDZyBgpn7LuPoT",
+     "sessionID": "ses_f4e25204bffepll6ChIEBWo3v3",
+     "messageID": "msg_0b233475c001SnmoLrZO32HkOB"
+    },
+    {
+     "type": "tool",
+     "tool": "todowrite",
+     "callID": "call_01a0b2336d6273fe84c3a3f44ebb4791",
+     "state": {
+      "status": "completed",
+      "input": {
+       "todos": [
+        {
+         "content": "Salvar parecer integral do auditor em auditorias/M4-2026-09-17.md",
+         "priority": "high",
+         "status": "in_progress"
+        },
+        {
+         "content": "Commit somente do novo parecer com mensagem 'M4: parecer do auditor'",
+         "priority": "high",
+         "status": "pending"
+        }
+       ]
+      },
+      "output": "[\n  {\n    \"content\": \"Salvar parecer integral do auditor em auditorias/M4-2026-09-17.md\",\n    \"status\": \"in_progress\",\n    \"priority\": \"high\"\n  },\n  {\n    \"content\": \"Commit somente do novo parecer com mensagem 'M4: parecer do auditor'\",\n    \"status\": \"pending\",\n    \"priority\": \"high\"\n  }\n]",
+      "metadata": {
+       "todos": [
+        {
+         "content": "Salvar parecer integral do auditor em auditorias/M4-2026-09-17.md",
+         "status": "in_progress",
+         "priority": "high"
+        },
+        {
+         "content": "Commit somente do novo parecer com mensagem 'M4: parecer do auditor'",
+         "status": "pending",
+         "priority": "high"
+        }
+       ],
+       "truncated": false
+      },
+      "title": "2 todos",
+      "time": {
+       "start": 1789696102895,
+       "end": 1789696102899
+      }
+     },
+     "metadata": {
+      "openai": {
+       "itemId": "fc_01a0b2336d6273fe84c3a3f44ebb4791"
+      }
+     },
+     "id": "prt_0b23351140018kLKr9vipxh3E6",
+     "sessionID": "ses_f4e25204bffepll6ChIEBWo3v3",
+     "messageID": "msg_0b233475c001SnmoLrZO32HkOB"
+    },
+    {
+     "reason": "tool-calls",
+     "snapshot": "d5fbe04dcff5b5ceef93f4028efce2f880d76597",
+     "type": "step-finish",
+     "tokens": {
+      "total": 21915,
+      "input": 3947,
+      "output": 121,
+      "reasoning": 198,
+      "cache": {
+       "write": 0,
+       "read": 17649
+      }
+     },
+     "cost": 0,
+     "id": "prt_0b23353130019fEfQv6su9F8uL",
+     "sessionID": "ses_f4e25204bffepll6ChIEBWo3v3",
+     "messageID": "msg_0b233475c001SnmoLrZO32HkOB"
+    }
+   ]
+  },
+  {
+   "info": {
+    "parentID": "msg_0b2331f98001e4UpHRZesTZlM4",
+    "role": "assistant",
+    "mode": "build",
+    "agent": "build",
+    "path": {
+     "cwd": "C:\\Users\\Usuário\\Documents\\GitHub\\semana-academica",
+     "root": "C:\\Users\\Usuário\\Documents\\GitHub\\semana-academica"
+    },
+    "cost": 0,
+    "tokens": {
+     "total": 25370,
+     "input": 535,
+     "output": 3341,
+     "reasoning": 5,
+     "cache": {
+      "write": 0,
+      "read": 21489
+     }
+    },
+    "modelID": "muse-spark-1.3-contributor-free",
+    "providerID": "opencode",
+    "time": {
+     "created": 1789696103441,
+     "completed": 1789696109927
+    },
+    "finish": "tool-calls",
+    "id": "msg_0b23354110017iOtFEfHGOf7Lu",
+    "sessionID": "ses_f4e25204bffepll6ChIEBWo3v3"
+   },
+   "parts": [
+    {
+     "snapshot": "d5fbe04dcff5b5ceef93f4028efce2f880d76597",
+     "type": "step-start",
+     "id": "prt_0b2335a1d001QUTJSx3fu4dg2b",
+     "sessionID": "ses_f4e25204bffepll6ChIEBWo3v3",
+     "messageID": "msg_0b23354110017iOtFEfHGOf7Lu"
+    },
+    {
+     "type": "reasoning",
+     "text": "",
+     "time": {
+      "start": 1789696104991,
+      "end": 1789696104993
+     },
+     "metadata": {
+      "openai": {
+       "itemId": "rs_6aac986f45a42cb6c6ae44dd:rs_01a0b23374657312b5cbf15d258b2742",
+       "reasoningEncryptedContent": "Q-PaDgE-D5e5nKbkNVHajilSCarM0yX0pmI02S-uS37NUn3fG8XZRm7svEtlye0D5EKYzivpBB31Eox8jOIkARw8NJYtPfGDX2INPIf7oARVowQAaaZHjCGEV9PIEGH-IQEnwsSkBFIQ_UW11_Ob4MdCl7DtW1UIjKgE_-fHIH0ztZg0jZyQurmn32WGOqbB45aY0MY1I4i-8svyw6OWVP4fq2ZARI5kWqVzyqSfGf8Md-09u09ahzjCU20nPVOoMSCbShD2pru1eKNmjaTwrj3QiTOeNUEC0EA5rZknDhfBZ32EANehxLdEXUgSWG7enNShnbjdeyUxFw6XXZ-SZ4W-wNfTLxg3ZHC5wm4UIPt0qdzcERtHZFHgci_ymWMo0bAeQHHUruNON7dJu6fat5CgqMddwrZVwyeMp6mS-JCDvc6qB8NfhV1eerJeDDpGyUQu0Pgk_rBntWTG7Dqo9asq94j8cj_6VnwNvIUXFNfHWsjUzxl2l68ZFgDsjWlOgfNlxAauDwghJOBuqSBbB0ThHNmIJLprjkibhynxDihv31BQeRKTCijV_dL2BGsJj5UnvnQWd4Dn2NoSxOzMWP-To1XtqnYcg--12ui0CcFwj50MJEoi2CtlQKc6KhZ0pCIGxx9jIwVYojwiJ71okg_6UZSl9k1gKOo2QGVCDsX_QNM7bymMHwuX88_QxD-bZeUdRcN1SiIT4LL7qw3O0yqg6ZP0eb1N4Z87PG42qSouUMvQTulDUePUglKcDz4WXyaV4f0S6GBLOTNEiM7uyeGjC6FRQHdAYcZ7SnxqX47UlVU9kez9ZefU3OPpkZqVRZD5zgYzyFmPiK4GI9ZTfvZU2SuJAtcsrXuetlMC0XPUxe-RBMEvEe7TtDDL0Ik4NLmfIFuBVByCK0T6LUSyGmziWcXZMUXDQosx980IYtqmK2DFtkh6BvRzXagp0ZyYccQETOslWchTBAv3SiE0kF5EuZ6ronFzHSouqnX-aFhQjA-4LYVhFNsK2A47K2R2tdwzaTCfnErtlA_9lbPdpEfM9P_txeWu-0oo1P2inexbni8LQxoTr2GrENx538QlXJaipXI9QDPX-CD1L-9HaQ64egV5YIeJRfQR9Yegdubsx3a0Qdjs-tdMG4ohDFDY0eW_n4eMJeLpnikGtzhMu9_83JNuG7XbZAmmVjITW8pDdAkHm1siRvbFLbA4uQfsyL_GLcfXkZQ-cWVDOip7Ga3bZHqHnhOhhCXFuum252blH8sU6m1WQ-ISPHtVHRh8XAOVPlEDOxd5kDvHxljELdHXk7SsvYrtABdgJriiUIwlIeF4WZiHoy1rpLWlEqMAOTZnZAnvPwKhyqWqlXj9HkPrlthEI3clKuEf-5f43RTDSZigOf9sMZ4pa1NSgLmZaryvpDzK0p0mLD7axw"
+      }
+     },
+     "id": "prt_0b2335a1f001Om2ZzYwJuG837A",
+     "sessionID": "ses_f4e25204bffepll6ChIEBWo3v3",
+     "messageID": "msg_0b23354110017iOtFEfHGOf7Lu"
+    },
+    {
+     "type": "tool",
+     "tool": "write",
+     "callID": "call_01a0b233748774c18b399333b92c35a5",
+     "state": {
+      "status": "completed",
+      "input": {
+       "content": "## Matriz de rastreabilidade\n\nTodas as regras R1–R16 citam P-xx que existem em `entrevistas/M4-certificados.md` e estão respondidas (nenhuma `PENDENTE`). R17 é decisão em aberto (não requisito). Origens conferidas uma a uma: 17 regras.\n\n| Regra | Origem | Teste que comprova | Veredito |\n|---|---|---|---|\n| R1 (escopo, envelope, listagem) | P-01 (definição do módulo e contrato) — resposta confirma emissão/listagem/verificação/extrato, só-leitura de M1–M3, sem M5 | `api/verificacoes/m4-certificados.spec.js:18` «rotas restritas sem X-Usuario → 401»; `:47` «organização → 403 antes da existência»; `:72` «lista vazia»; `:96` «só os do participante»; `:159` «verificação pública sem 401» | COMPROVADA, com ressalva (achado 1) |\n| R2 (condições cumulativas) | P-02 (RN-401–405) — inscrição confirmada + não cancelada + encerrada + 75% | `m4-certificados.spec.js:240` (cancelada→422); `:267` (5 status não-confirmados→403); `:306` (1s antes→422); `:333` (3/4 no instante exato→201); `:497` (cadeia de precedência); `:605` (emitido aparece em `GET /certificados`) | COMPROVADA |\n| R3 (encerrada inclusive no instante do fim) | P-02 — \"a partir do instante do fim do último encontro, inclusive\" | `m4-certificados.spec.js:306` «1s antes → `ATIVIDADE_NAO_ENCERRADA`»; `:333` «relógio no instante exato do fim → 201» | COMPROVADA |\n| R4 (75% sem arredondamento, `presencas×4 ≥ encontros×3`, todas as origens) | P-02 — fórmula inteira explícita na resposta | `m4-certificados.spec.js:333` (3/4 passa); `:374` (2/4 recusa, cita 8<12); `:406` (1/1, 2/2, 3/3, 4/5 passam; 1/2, 2/3, 3/5 recusam); `:464` (qr+qr_offline+manual = 3/4 → 201) | COMPROVADA |\n| R5 (carga integral) | P-11 (RN-406, RN-109) — soma de todos os encontros | `m4-certificados.spec.js:333` «carga 720 + `presencas:3` + `encontros:4`»; `m4-extrato.spec.js:106` «4×180=720, não 540» | COMPROVADA |\n| R6 (sem prazo máximo) | P-09 — \"não há prazo máximo\", sem expiração | `m4-certificados.spec.js:574` «relógio dias depois → 201 normal» | COMPROVADA |\n| R7 (201 primeira, 200 repetição, mesmo certificado) | P-03 (RN-407, RN-413) | `m4-certificados-reemissao.spec.js:46` «201→200 `deepEqual` do objeto completo»; `:83` «avanço do relógio não muda código nem `emitidoEm`»; `:123` «repetições não duplicam listagem»; `:255` «5 simultâneas → exatamente um 201 + quatro 200» | COMPROVADA |\n| R8 (formato `SA26-XXXX-XXXX`, alfabeto, unicidade) | P-04 (RN-407, RN-305) | `m4-certificados.spec.js:333` + `m4-certificados-reemissao.spec.js:217` «regex do formato, alfabeto sem `0/O/1/I`, length 14»; `m4-certificados-reemissao.spec.js:166` «3 códigos distintos» | COMPROVADA |\n| R9 (gerador livre; formato/alfabeto/unicidade garantidos) | P-04 — sem RN de algoritmo | `m4-certificados-reemissao.spec.js:166` + `:255` (unicidade das saídas, incl. concorrência) | COMPROVADA, com ressalva (achado 2) |\n| R10 (pública, case-insensitive, 404 inexistente) | P-05 (RN-408, RN-409) | `m4-certificados.spec.js:647` «corpo exato sem X-Usuario»; `:691` «minúsculas → 200 corpo canônico»; `:732` «inexistente maiúsculo e minúsculo → 404»; `:750` «com X-Usuario desconhecido/org continua 200» | COMPROVADA |\n| R11 (campos da verificação + abreviação) | P-05 — regra de partículas + exemplo \"Elisa F. da R.\" | `m4-certificados.spec.js:647` «corpo exato, `Carla M. S.`, não expõe nome completo nem `participanteId`»; `:792` «Elisa F. da R.»; `:834` «Isadora R. dos S.» — os 3 exemplos do aceite | COMPROVADA |\n| R12 (extrato: elegíveis, `codigo` null/preenchido, calculado na consulta) | P-06 (RN-410, RN-401–405) | `m4-extrato.spec.js:53` (exclusões + só do participante); `:263` (recalcula no relógio, corpo exato, `codigo:null`); `:312` (após emitir, código preenchido); `:348` (elegível sem emissão → null); `m4-certificados-sincronizacao.spec.js:60` (extrato antes `[]`, depois com código) | COMPROVADA |\n| R13 (brutos + `min(min(pal,240)+mini,1200)`) | P-07 (RN-406, RN-410–412) | `m4-extrato.spec.js:137` «300+1000→1300/1200»; `:173` «120/120/240/240»; `:209` «teto palestras, brutos intactos»; `:232` «teto geral 1320→1200»; `:106` (carga integral) — os 2 cenários do aceite exatos | COMPROVADA |\n| R14 (ordem da primeira emissão) | P-08 (RN-413) | `m4-certificados.spec.js:497` «inexistente 404; cancelada vence inscrição ausente; não-inscrito vence não-encerrada; não-encerrada vence presença insuficiente; encerrada sem presença → insuficiente» + `:240`, `:267`, `:306` individuais | COMPROVADA |\n| R15 (nova tentativa após sync offline até fim+2h; sem esperar o prazo) | P-10 (RN-404, RN-405, RN-310) | `m4-certificados-sincronizacao.spec.js:60` «422 → sync real via M3 no limite fim+2h inclusive → 201 carga integral + extrato»; `:148` «mínimo já atingido emite no encerramento» | COMPROVADA |\n| R16 (código nunca muda, mesma data; demais campos = orientação) | P-12 — explícito (código/data) + interpretação proposta (carga/presenças/encontros) | `m4-certificados-reemissao.spec.js:83` «mesmo código, `emitidoEm` fixo na 1ª emissão após avanço do relógio»; `:46` `deepEqual` do objeto | Confirmada na parte explícita / D2 em aberto |\n| R17 (posição da consulta 200 vs verificações gerais) | P-08 ressalva — em aberto, não requisito | — (nenhuma ordem pode ser cobrada; nenhum teste a verifica, corretamente) | D1 em aberto, sem prova exigível |\n\nStatus das regras: R1–R15 confirmadas (15); R16 confirmada na parte explícita com D2 em aberto; R17/D1 em aberto por definição. Nenhuma regra sem origem.\n\n## Suíte\n\nComandos do `projeto.json` (`testes: [\"npm --prefix api test\", \"npm --prefix web test\"]`), ambos rodados de fato:\n\n- `npm --prefix api test` → `# tests 133 / # pass 133 / # fail 0` (saída TAP `node --test verificacoes/*.spec.js`). Dela, 40 testes são do M4 (`m4-certificados.spec.js` 22 + `m4-certificados-reemissao.spec.js` 6 + `m4-certificados-sincronizacao.spec.js` 2 + `m4-extrato.spec.js` 10), todos `ok`, incluindo os subtests 94–133 listados nominalmente (R7, R8/R9, R15, R1, R2/R14, R6, R10/R11, R12/R13).\n- `npm --prefix web test` → `Test Files 10 passed (10) / Tests 70 passed (70)` (`vitest run`, 7.70s). Cobertura M4 na interface: `Extrato.test.jsx` 5, `MeusCertificados.test.jsx` 4, `VerificarCertificado.test.jsx` 4, `Atividade.test.jsx` 7 (2 de emissão) — todos com API falsa, ou seja, provam renderização, não as regras (ver achado 3).\n\nTempo: todas as regras dependentes do tempo usam `PUT /_teste/relogio` + `agora()` de `src/relogio.js` (`api/src/app.js:1036`, `:1055`, `:1114`); os `new Date(...)` restantes no caminho do M4 são formatação/parse de ISO armazenado, não leitura do relógio. Sem `Date.now()` nas regras do M4.\n\n## Achados\n\n1. [PROVA FRACA — parcial] R1, cláusula \"sem alterar atividades, inscrições ou presenças\": nenhum teste afirma que as linhas de M1/M2/M3 continuam intactas após a emissão (ex.: reler atividade/inscrição/presenças depois do 201). O envelope (401/403/listagem só-minha/pública) é forte; a não-mutação é só implícita. Cenário que expõe: emitir e depois conferir `GET /atividades/:id`, inscrição e presenças bit a bit. Referências: `specs/M4-certificados.md:82-85`; `api/src/app.js:1020-1077` (handler não toca nessas tabelas, só lê — por isso não é defeito, é lacuna de prova).\n2. [PROVA FRACA — parcial, observação] R9, ramo de colisão do gerador: `api/src/app.js:1006-1018` (loop com re-sorteio se o código já existe) e `:1056-1067` (`catch SQLITE_CONSTRAINT` na corrida) nunca são exercitados de forma dirigida — os testes `:166` e `:255` de `m4-certificados-reemissao.spec.js` verificam unicidade das saídas observadas (3 códigos distintos; 5 simultâneas → um 201), o que é prova honesta do que R9 exige (a própria R9 diz que o algoritmo é livre), mas o caminho \"colidiu, tentou de novo\" não tem teste que o dispare. Não é defeito; registra-se para não se presumir cobertura do ramo.\n3. [NATUREZA DA PROVA — interface] Os testes web do M4 (`web/src/paginas/extrato/Extrato.test.jsx`, `web/src/paginas/meus-certificados/MeusCertificados.test.jsx`, `web/src/paginas/verificar-certificado/VerificarCertificado.test.jsx`, `web/src/paginas/atividade/Atividade.test.jsx:121-149`) usam API falsa por prop e verificam texto na tela / chamada do método falso (`emitirCertificado`, `obterExtrato`, `verificarCertificado`, `listarCertificados`). Não executam nenhum cenário da spec contra a API; não contam como prova de nenhuma regra R1–R16. Apoio de interface adequado, prova de regra ausente por construção.\n4. [D1 EM ABERTO] R17: a implementação escolheu consultar o certificado existente **após** todas as verificações (`api/src/app.js:1044-1047`, depois de 404→cancelada→inscrição→encerrada→presença em `:1021-1043`). Qualquer ordem é aceitável enquanto D1 estiver em aberto; nenhum teste deve congelá-la. Nada a cobrar.\n5. [D2 EM ABERTO] R16/preservação de `cargaHorariaMinutos`/`presencas`/`encontros`: os testes `m4-certificados-reemissao.spec.js:46` e `:83` fazem `deepEqual` do objeto inteiro (congelam o snapshot na prática), indo além do mínimo exigido pelo critério de aceite 9 (`specs/M4-certificados.md:209-211`, só código + `emitidoEm`). Como a implementação devolve a linha armazenada (`api/src/app.js:1044-1047`), passam. Não é defeito nem \"não contratado\" — mas se D2 um dia decidir por correção/atualização, esses testes terão de ser revistos.\n6. [DE PASSAGEM — contrato, assunto do revisor-de-contrato] Nada divergente encontrado no M4: chaves exatas verificadas (`m4-certificados.spec.js:368`, `:683`, `m4-extrato.spec.js:203`), `GET /certificados/:codigo` sem `exigirUsuario` (`api/src/app.js:1096`), `codigo TEXT PRIMARY KEY` + `UNIQUE(atividadeId, participanteId)` (`api/src/banco.js:45-56`). Sem achado de contrato; segue o baile.\n\n## Veredito\n\nMódulo M4 pode ser aceito nas regras confirmadas (R1–R15 comprovadas, R16 comprovada na parte explícita): 40 testes de API + apoio de interface, suítes verdes (133/133 API, 70/70 web); restam em aberto por definição D1 (posição da reemissão-200) e D2 (imutabilidade absoluta/correção/revogação), sem prova exigível até decisão — com as ressalvas dos achados 1–3 (não-mutação de M1–M3 sem asserção dirigida; ramo de colisão do gerador não exercitado; testes web com API falsa não provam regras).\n",
+       "filePath": "C:\\Users\\Usuário\\Documents\\GitHub\\semana-academica\\auditorias\\M4-2026-09-17.md"
+      },
+      "output": "Wrote file successfully.",
+      "metadata": {
+       "diagnostics": {},
+       "filepath": "C:\\Users\\Usuário\\Documents\\GitHub\\semana-academica\\auditorias\\M4-2026-09-17.md",
+       "exists": false,
+       "truncated": false
+      },
+      "title": "auditorias\\M4-2026-09-17.md",
+      "time": {
+       "start": 1789696109039,
+       "end": 1789696109060
+      }
+     },
+     "metadata": {
+      "openai": {
+       "itemId": "fc_01a0b233748774c18b399333b92c35a5"
+      }
+     },
+     "id": "prt_0b2335a23001DxEBjojoxnodZY",
+     "sessionID": "ses_f4e25204bffepll6ChIEBWo3v3",
+     "messageID": "msg_0b23354110017iOtFEfHGOf7Lu"
+    },
+    {
+     "reason": "tool-calls",
+     "snapshot": "a5a63be70f1aa1dfe9f9780b4f58f53b83280503",
+     "type": "step-finish",
+     "tokens": {
+      "total": 25370,
+      "input": 535,
+      "output": 3341,
+      "reasoning": 5,
+      "cache": {
+       "write": 0,
+       "read": 21489
+      }
+     },
+     "cost": 0,
+     "id": "prt_0b2336c12001O5ggKS15rmTGF6",
+     "sessionID": "ses_f4e25204bffepll6ChIEBWo3v3",
+     "messageID": "msg_0b23354110017iOtFEfHGOf7Lu"
+    },
+    {
+     "type": "patch",
+     "hash": "d5fbe04dcff5b5ceef93f4028efce2f880d76597",
+     "files": [
+      "C:/Users/Usuário/Documents/GitHub/semana-academica/auditorias/M4-2026-09-17.md"
+     ],
+     "id": "prt_0b2336d64001tJPABodwBO6F8i",
+     "sessionID": "ses_f4e25204bffepll6ChIEBWo3v3",
+     "messageID": "msg_0b23354110017iOtFEfHGOf7Lu"
+    }
+   ]
+  },
+  {
+   "info": {
+    "parentID": "msg_0b2331f98001e4UpHRZesTZlM4",
+    "role": "assistant",
+    "mode": "build",
+    "agent": "build",
+    "path": {
+     "cwd": "C:\\Users\\Usuário\\Documents\\GitHub\\semana-academica",
+     "root": "C:\\Users\\Usuário\\Documents\\GitHub\\semana-academica"
+    },
+    "cost": 0,
+    "tokens": {
+     "total": 25558,
+     "input": 3394,
+     "output": 121,
+     "reasoning": 42,
+     "cache": {
+      "write": 0,
+      "read": 22001
+     }
+    },
+    "modelID": "muse-spark-1.3-contributor-free",
+    "providerID": "opencode",
+    "time": {
+     "created": 1789696109932,
+     "completed": 1789696112065
+    },
+    "finish": "tool-calls",
+    "id": "msg_0b2336d6c001sgbZgjoF6Bykr6",
+    "sessionID": "ses_f4e25204bffepll6ChIEBWo3v3"
+   },
+   "parts": [
+    {
+     "snapshot": "a5a63be70f1aa1dfe9f9780b4f58f53b83280503",
+     "type": "step-start",
+     "id": "prt_0b2337201001kCsoi9o715d1zh",
+     "sessionID": "ses_f4e25204bffepll6ChIEBWo3v3",
+     "messageID": "msg_0b2336d6c001sgbZgjoF6Bykr6"
+    },
+    {
+     "type": "reasoning",
+     "text": "",
+     "time": {
+      "start": 1789696111107,
+      "end": 1789696111359
+     },
+     "metadata": {
+      "openai": {
+       "itemId": "rs_6aac98769b5a9d29bf61405e:rs_01a0b2338e4176a4b1f44d3dafdd4948",
+       "reasoningEncryptedContent": "Q-PaDgElbTF2fto2J66vH4w2RJeWpvnnz2ekK4XhaWpLAOtVT8BQ79e2xLdiZ5HmAABES7wPvCNXrZvMXhHLkGDIQUv0hCyAR3S0mwuEcwUD-Hcj8u3H1ANmtT6VgDtefMOELh2vBQWpyu8lJwrJHCkX9bybjF7mM6RHJfRJv-sTz-6eDJJBkym6o2dWzYB5O0VuW0GwsNxkyUgOC0c1P8DnBrEXjwx-dy7fXmK1Dt2o5F1sl60LMn0D66jCRkT9fbbUkEmcjieVuVM4N5P-fbBazcu1kc0MipZnD-JnecVtKjZRiDChuNDZ7_HNObMcW9uPdP4CvKZrEi1VSI5tB_O7Qw48G9PvdS7Y4RtO981-MY04GcToDgb2OokV9FeScZ6u3AvE1V6-NGWAMzH3w2HCfcDgLFU0kmFvl1WYxFYeaqL1Y8TTqqNH7_IWewSOKn7XZM-nBToKEl4RgFLzQnBZ3eT5BVfmznPvS7K2aNP4OBBIcEG0dGHh_hIfKzjz2VluN5xnuTO7K3hx1z-IxhmNKvEuPiVklrgaM9WYf_7IKQL7IRPVRr0jmJGxjcZBKn51cf5yRgHlpjtvmwZA-V65WOEKrz7JDe_RRW3Ufq2bkNbyARnB8aDxnGP5EVEHnAyu302kl67lOUmthhO_tSMfqcqK3IthhLsnKGVzNjfNmO5-LjdHFpbCAeFVzcg08wHyfg7EmG6_AAEXKtHBPAATPu3sr0uqCYofL3OSMzAJOO2bls86GSkIWp6ByoqMa2j1O2nJeuVM9BqqiRvF_4kkyFxmgixygnG-0ev-3DG2wqFQkiaN0UQ3qf8LYd5uyBZsw3fv8e3IN1JCPnfzR2k8iwS6OYjsmh-9JTE92MNQGGWy5IEvN9qhGe2_RO5pYKbZLzlm390dEMUApkAhLxCI2d2IduYSqqT_iIhkcfi8dRWKOCI_BJRQQPG411ivMOaL14gKzOyvTP7n15iPa0vwg9qfV9Vm4amL7NkNyiJJKtDFihThqIVU6-E0w48JTvIkTYi5kqjkvGiFVu7KRoWrK_CMew-mu2S6uHrGvVZ5aVRkUScaBiX2rWa89NNvHm5mFGr4IdNqyuTVQjXNeCHbmDwjEOhG26hnsLjGoeWG87QXW9JAXJtmdhSkUc60sHc7ZUkyc7EO6cf8WIapmf3JmjhTkk9P5SuMHCRsTyikgmfhs9mG60oSI9-cZSa6BN85iyUOFMEz1FVEXgB1CdnIQtAEup-68ZoRK5C3yToX2ZbeEORZefpfPnLklDJP_oY6J4HLmoiI7f16Ia1ovYK2jyLqagMx7NfgAgi_dNVG4eOg1nlpPJ052SsOgbipRK9G0cOYJPoKQhYOBIQozHIJgoICRwS5JuEjqtafTs9eFuSW-bzOXrKuaQvK66ti8bU1hlRN7nGj5pvTsg"
+      }
+     },
+     "id": "prt_0b2337203001f0lixgTVZCl1V9",
+     "sessionID": "ses_f4e25204bffepll6ChIEBWo3v3",
+     "messageID": "msg_0b2336d6c001sgbZgjoF6Bykr6"
+    },
+    {
+     "type": "tool",
+     "tool": "todowrite",
+     "callID": "call_01a0b2338f6a77f5a888c5a771f0d922",
+     "state": {
+      "status": "completed",
+      "input": {
+       "todos": [
+        {
+         "content": "Salvar parecer integral do auditor em auditorias/M4-2026-09-17.md",
+         "priority": "high",
+         "status": "completed"
+        },
+        {
+         "content": "Commit somente do novo parecer com mensagem 'M4: parecer do auditor'",
+         "priority": "high",
+         "status": "in_progress"
+        }
+       ]
+      },
+      "output": "[\n  {\n    \"content\": \"Salvar parecer integral do auditor em auditorias/M4-2026-09-17.md\",\n    \"status\": \"completed\",\n    \"priority\": \"high\"\n  },\n  {\n    \"content\": \"Commit somente do novo parecer com mensagem 'M4: parecer do auditor'\",\n    \"status\": \"in_progress\",\n    \"priority\": \"high\"\n  }\n]",
+      "metadata": {
+       "todos": [
+        {
+         "content": "Salvar parecer integral do auditor em auditorias/M4-2026-09-17.md",
+         "status": "completed",
+         "priority": "high"
+        },
+        {
+         "content": "Commit somente do novo parecer com mensagem 'M4: parecer do auditor'",
+         "status": "in_progress",
+         "priority": "high"
+        }
+       ],
+       "truncated": false
+      },
+      "title": "1 todos",
+      "time": {
+       "start": 1789696111527,
+       "end": 1789696111531
+      }
+     },
+     "metadata": {
+      "openai": {
+       "itemId": "fc_01a0b2338f6a77f5a888c5a771f0d922"
+      }
+     },
+     "id": "prt_0b2337304001SML5N4iIVEsbxh",
+     "sessionID": "ses_f4e25204bffepll6ChIEBWo3v3",
+     "messageID": "msg_0b2336d6c001sgbZgjoF6Bykr6"
+    },
+    {
+     "reason": "tool-calls",
+     "snapshot": "a5a63be70f1aa1dfe9f9780b4f58f53b83280503",
+     "type": "step-finish",
+     "tokens": {
+      "total": 25558,
+      "input": 3394,
+      "output": 121,
+      "reasoning": 42,
+      "cache": {
+       "write": 0,
+       "read": 22001
+      }
+     },
+     "cost": 0,
+     "id": "prt_0b23374c4001HIaZh4C6R2F8sv",
+     "sessionID": "ses_f4e25204bffepll6ChIEBWo3v3",
+     "messageID": "msg_0b2336d6c001sgbZgjoF6Bykr6"
+    }
+   ]
+  },
+  {
+   "info": {
+    "parentID": "msg_0b2331f98001e4UpHRZesTZlM4",
+    "role": "assistant",
+    "mode": "build",
+    "agent": "build",
+    "path": {
+     "cwd": "C:\\Users\\Usuário\\Documents\\GitHub\\semana-academica",
+     "root": "C:\\Users\\Usuário\\Documents\\GitHub\\semana-academica"
+    },
+    "cost": 0,
+    "tokens": {
+     "total": 25767,
+     "input": 338,
+     "output": 95,
+     "reasoning": 5,
+     "cache": {
+      "write": 0,
+      "read": 25329
+     }
+    },
+    "modelID": "muse-spark-1.3-contributor-free",
+    "providerID": "opencode",
+    "time": {
+     "created": 1789696112069,
+     "completed": 1789696114766
+    },
+    "finish": "tool-calls",
+    "id": "msg_0b23375c50013fl3PUvNDIUtfY",
+    "sessionID": "ses_f4e25204bffepll6ChIEBWo3v3"
+   },
+   "parts": [
+    {
+     "snapshot": "a5a63be70f1aa1dfe9f9780b4f58f53b83280503",
+     "type": "step-start",
+     "id": "prt_0b2337bfb001PCYCp4J9uUbjYe",
+     "sessionID": "ses_f4e25204bffepll6ChIEBWo3v3",
+     "messageID": "msg_0b23375c50013fl3PUvNDIUtfY"
+    },
+    {
+     "type": "reasoning",
+     "text": "",
+     "time": {
+      "start": 1789696113662,
+      "end": 1789696113665
+     },
+     "metadata": {
+      "openai": {
+       "itemId": "rs_6aac9878937d436c7c494b6b:rs_01a0b233963b730194e29cb010c23249",
+       "reasoningEncryptedContent": "Q-PaDgEybb9fAPOLQv8J3ceLrp5cj0T8Lkjc5Ot86L8BirXYhqpXV2D53XGjQ-XzD_WKS-6y0Ov8RsH2pnb9G7KN00ltGTMVxtLp0-6zq5RuYUXLKoIX07x3aJPmgbDw9SzjIVkFAkFZBSO-u7oM0S784CR3w2o3SY-iP6Eb2a1ityghTsMm2U7lLLQp-ZtRe91thFj5L4mUS809lzbzgI80eTwYbGqDxk4PdE8Nw39vo0AGz6TNGhgTo3Ji6y4L-cnMVzZbDOU9rfdilYOL9ARyglba6f6eo-8ONIF_rqeJ9AB2SZzwwlrWteyyytZNj3HAKYZj6u55X4T2mG5xFwdgtBVghr65Ga_q6Nft8Pt-4cMZGS5OGAMMjN1ipDlB3Q0Rfz4dw50-pL3SlHGGdQ0KSsoWp4gxYI0sGGhPHfQcjpS0Mf3yREUscx3-Fq4FFBMzbf-UTxOsLsIEUWlx7kY6T_czSRnmb2HzFSJKHg1E3ENuOwBHMirjAuv8uDZZcRm7PYgpL7Ceg6AAA6kNTeu0TwzbuXI6Fsi506h2UHClg0xVju607gifhzaYU_um35ckPmGbMYPoV0tJXOve6q_yS4C6nVG7Li1reLtN6VhZr7snxV4vbrlamzw2yeTBsEY8o3J45FifrjbkMf6SQuaNXkOZBDpqo-4Jp40v7RLJ7FED_m591LUEaBZRBhuhuW5Cgh2JBWeZKfjUqDuDepXJiQF5HGBQDTe1RrugQdtXTN3liFVX4s7XYWC2SnAS9TzDQFBybBEWVBBsE0IQQJnPTlbdY2S4jyeBrZGre-WWMJOUCq4Ad79NK4rMJXpLKgfMF5g4x8Kcub_8Rg-JYhFZzqlG03pv_4AyjUGL1mA8fVNz7uYrsNR_H84V1JoTM9Te890q6tn3qxDEifl-fTkt19wgBFXR3QrsfQiwZo7cqiLJT7-tyv6xDFf0Igtstl92uivdZkzvG1sGuxWPRtvcxPAxDTqLBEzg5SadpzGwORJin4JSNfqS5CtaZpNqrNWbHM7Ccb5K8zWtFT-V9iriK78YPnN5l_JnUm-Wb6Wn-KhDm77nLZwferd43dLU6fWjRIx6F5d6BYfqNGfJkV1PljCpN7JjNQSJ_FmjnT82Yg79T0jUjeHX8pn1ZVRohG58fqjbuO1lnquGykyP46yjfdd8Jjf6txjnElbFu19WWYjR1FpYKn6SqMw85s5yk6qQusgaWZtQu7ogM-CbKl9qSGfrFEDdJ3FRYUMTu9HJ25NbtjtCySeeCwym5eMrI8ay2d7zgDDB1-IxJIz_2Up2orYg5VL6iRbG4vhKx45taTAB1VXbn0pIdREOJQ-xQdSr0ZxZrgI5G7l-Ff6wpPAqgaWhSZOYO4S-68Va91V2Uuekgk2tXYNNcWw4YC6-kjHnA0lCNgi31DjJ7w"
+      }
+     },
+     "id": "prt_0b2337bfe001AME0Y8LMrFj4QL",
+     "sessionID": "ses_f4e25204bffepll6ChIEBWo3v3",
+     "messageID": "msg_0b23375c50013fl3PUvNDIUtfY"
+    },
+    {
+     "type": "text",
+     "text": "Parecer arquivado. Vou conferir o estado do git para commitar só o novo arquivo.",
+     "time": {
+      "start": 1789696113668,
+      "end": 1789696113671
+     },
+     "metadata": {
+      "openai": {
+       "itemId": "rs_01a0b2339663707888f8729d88f3ede7",
+       "phase": "commentary"
+      }
+     },
+     "id": "prt_0b2337c04001J5frPnF0ecCcDl",
+     "sessionID": "ses_f4e25204bffepll6ChIEBWo3v3",
+     "messageID": "msg_0b23375c50013fl3PUvNDIUtfY"
+    },
+    {
+     "type": "tool",
+     "tool": "bash",
+     "callID": "call_01a0b2339735738488efccbce9bca43a",
+     "state": {
+      "status": "completed",
+      "input": {
+       "command": "git status --porcelain; echo \"---\"; git log --oneline -5"
+      },
+      "output": "?? auditorias/M4-2026-09-17.md\n---\r\n4c84e72 M4-R1,R10,R11,R12,R13: telas de certificados e extrato\n5a285d4 M4-R15: verifica emissao apos sincronizacao offline\nf9ffcf2 M4-R7,R8,R9: verifica reemissao e garante emissao unica\nadb4833 M4-R12,R13: extrato de atividades elegiveis com tetos de horas\n47d4798 M4-R10,R11: verificacao publica com nome abreviado\n",
+      "metadata": {
+       "output": "?? auditorias/M4-2026-09-17.md\n---\r\n4c84e72 M4-R1,R10,R11,R12,R13: telas de certificados e extrato\n5a285d4 M4-R15: verifica emissao apos sincronizacao offline\nf9ffcf2 M4-R7,R8,R9: verifica reemissao e garante emissao unica\nadb4833 M4-R12,R13: extrato de atividades elegiveis com tetos de horas\n47d4798 M4-R10,R11: verificacao publica com nome abreviado\n",
+       "exit": 0,
+       "truncated": false
+      },
+      "title": "git status --porcelain; echo \"---\"; git log --oneline -5",
+      "time": {
+       "start": 1789696113680,
+       "end": 1789696114268
+      }
+     },
+     "metadata": {
+      "openai": {
+       "itemId": "fc_01a0b2339735738488efccbce9bca43a"
+      }
+     },
+     "id": "prt_0b2337c090017arVkAzeQ7sVW0",
+     "sessionID": "ses_f4e25204bffepll6ChIEBWo3v3",
+     "messageID": "msg_0b23375c50013fl3PUvNDIUtfY"
+    },
+    {
+     "reason": "tool-calls",
+     "snapshot": "a5a63be70f1aa1dfe9f9780b4f58f53b83280503",
+     "type": "step-finish",
+     "tokens": {
+      "total": 25767,
+      "input": 338,
+      "output": 95,
+      "reasoning": 5,
+      "cache": {
+       "write": 0,
+       "read": 25329
+      }
+     },
+     "cost": 0,
+     "id": "prt_0b2337f58001nb1zr0DZdVqdmJ",
+     "sessionID": "ses_f4e25204bffepll6ChIEBWo3v3",
+     "messageID": "msg_0b23375c50013fl3PUvNDIUtfY"
+    }
+   ]
+  },
+  {
+   "info": {
+    "parentID": "msg_0b2331f98001e4UpHRZesTZlM4",
+    "role": "assistant",
+    "mode": "build",
+    "agent": "build",
+    "path": {
+     "cwd": "C:\\Users\\Usuário\\Documents\\GitHub\\semana-academica",
+     "root": "C:\\Users\\Usuário\\Documents\\GitHub\\semana-academica"
+    },
+    "cost": 0,
+    "tokens": {
+     "total": 26024,
+     "input": 331,
+     "output": 87,
+     "reasoning": 21,
+     "cache": {
+      "write": 0,
+      "read": 25585
+     }
+    },
+    "modelID": "muse-spark-1.3-contributor-free",
+    "providerID": "opencode",
+    "time": {
+     "created": 1789696114770,
+     "completed": 1789696117081
+    },
+    "finish": "tool-calls",
+    "id": "msg_0b2338052001wBDeedpktVjg3U",
+    "sessionID": "ses_f4e25204bffepll6ChIEBWo3v3"
+   },
+   "parts": [
+    {
+     "snapshot": "a5a63be70f1aa1dfe9f9780b4f58f53b83280503",
+     "type": "step-start",
+     "id": "prt_0b233849f001K8qGu14C0MWvOL",
+     "sessionID": "ses_f4e25204bffepll6ChIEBWo3v3",
+     "messageID": "msg_0b2338052001wBDeedpktVjg3U"
+    },
+    {
+     "type": "reasoning",
+     "text": "",
+     "time": {
+      "start": 1789696115873,
+      "end": 1789696115958
+     },
+     "metadata": {
+      "openai": {
+       "itemId": "rs_6aac987bd265a4d3012b4420:rs_01a0b233a0cc7689ba3c87c89ffa62b4",
+       "reasoningEncryptedContent": "Q-PaDgHGHHID3LmKM68dBYTe2PT8t_akLiPYtxo45HjA1RvA52z-PFiE8B4Z3PxdvJ_02EmkvwB6bOmFMzkJ-sUGF8AwU0xWqby3UyA6eASA388LHPQdag14Kh6mURhZ676BJxvCLT4awQ_R4y5SRdQMLo-jI4gTNvszLwo3HGxfQ6-T0IuebGrZBO6EIss9G7gJ0n2NNvFyPnbyexuieZtf203XpWElhfSn-ta1bF0iJoGp-Cmzm4nZnstj6m3F-INEx5XRAAxRWmVM6JzAP_MDU5fBcsF87hBvmGCEE6zzercv452aFGQJKTeaYDQp6bnULZtBvuEuX4ZAgS1jLJ7WpifIsdBMnPz5F_ZId2voum3BJ-zbWvhwWNYL41IyLOZUm0tgo6-nMr5ZjxjoZ2KM3_KCrCJceOAdvdsVEPagvt4xXcFAwLTKagPrGnSzmn9QXI498_h6s5WYFRLcgY-PlVg3D1v8rq2KO-7evzb-8ugZhIkHNnjOvOGetZ66DkG-lhLC-L_9CSd-7MSXMETBQA73Y-wIjNbVrswIsRGWjDEsmlMcZ1nhEnv6zemGMB5J2aG90YcmJWs859-1VECvt8wGkoWHOexAmgvUbFtPjYjFOwlbWobVQG6k1lZ_OSi-bvqxkZpn2bFPxvNAnE-ypvE1AEVVHW541o9FMCF4nP03CyaqENa7Nf9brZKx-d6nb0MeKAyXtlJieIn83eOk3IgX28lGNsBAzGU7_sJBo-qYDxsAl2Xq2EbrtbquZP_RYvDCJZnOdf6b4RnPLqjDpuGKvadPsXsxcK6rQ-oS2PuVWnc1vPJulZHcoY6hgClrpx7AZMzC2Xk4v4iIveV-3p04iqm2N1Eyf3lQw2zElAMEAT370XTL7ImnHGhfuvT0nEk1UspoEYDRRHMWisTKbwdjVb1tq92SKAUYK9mT4cPllrJFC1Dw8TKQoy0tLDPSwEKze5SJNCqGLGy_SaKYHa3Zpb2aGvKlZXAp6E79K1X719cHslIr79L_Btq73AxBvwKXb5yiSj7xW-BD-wW7vKqV-5xOzEAuTGfuyOC-vTu2Ek1B5tETkMt6roStml3mBsSgPX0XDFuzrGD2GGVTRT1vEyct1hcGx1jYQRScD37WGMScSE6o32oBIc-Ae6-Xjsiyne94FL8XYczejZJR9THYT7iPKTllweuM1qWTgwBjQPURxhUZ2knY87hu4rqhFaS17mhvqW1E8Nam0xVADzNRJ8dIAn3cMj5cw3ElAL7tS1DBAhppevPYPO9tTHHEBsa_zpk3SEBe-vrj_L9-IlaFhILdQflF6QsOUdmavxkuR1mp6RdztjwabfJU6JaLVfG2aItz10FTOiTCNlVRmWDwAdl6K_mR063RF2nfnG8R3f93yL2o5NKdW0cha-pC_S_sUQQpY3JhNQ"
+      }
+     },
+     "id": "prt_0b23384a1001TOT5CF9G7XbsmI",
+     "sessionID": "ses_f4e25204bffepll6ChIEBWo3v3",
+     "messageID": "msg_0b2338052001wBDeedpktVjg3U"
+    },
+    {
+     "type": "tool",
+     "tool": "bash",
+     "callID": "call_01a0b233a16a723697d601fe1886395c",
+     "state": {
+      "status": "completed",
+      "input": {
+       "command": "git add \"auditorias/M4-2026-09-17.md\"; if ($?) { git status --porcelain }; if ($?) { git diff --cached --stat }"
+      },
+      "output": "warning: in the working copy of 'auditorias/M4-2026-09-17.md', LF will be replaced by CRLF the next time Git touches it\nA  auditorias/M4-2026-09-17.md\n auditorias/M4-2026-09-17.md | 47 +++++++++++++++++++++++++++++++++++++++++++++\n 1 file changed, 47 insertions(+)\n",
+      "metadata": {
+       "output": "warning: in the working copy of 'auditorias/M4-2026-09-17.md', LF will be replaced by CRLF the next time Git touches it\nA  auditorias/M4-2026-09-17.md\n auditorias/M4-2026-09-17.md | 47 +++++++++++++++++++++++++++++++++++++++++++++\n 1 file changed, 47 insertions(+)\n",
+       "exit": 0,
+       "truncated": false
+      },
+      "title": "git add \"auditorias/M4-2026-09-17.md\"; if ($?) { git status --porcelain }; if ($?) { git diff --cached --stat }",
+      "time": {
+       "start": 1789696116180,
+       "end": 1789696116586
+      }
+     },
+     "metadata": {
+      "openai": {
+       "itemId": "fc_01a0b233a16a723697d601fe1886395c"
+      }
+     },
+     "id": "prt_0b2338504001r7QZEeJzpJBbKn",
+     "sessionID": "ses_f4e25204bffepll6ChIEBWo3v3",
+     "messageID": "msg_0b2338052001wBDeedpktVjg3U"
+    },
+    {
+     "reason": "tool-calls",
+     "snapshot": "a5a63be70f1aa1dfe9f9780b4f58f53b83280503",
+     "type": "step-finish",
+     "tokens": {
+      "total": 26024,
+      "input": 331,
+      "output": 87,
+      "reasoning": 21,
+      "cache": {
+       "write": 0,
+       "read": 25585
+      }
+     },
+     "cost": 0,
+     "id": "prt_0b2338860001hEDmN4lnIRdrrO",
+     "sessionID": "ses_f4e25204bffepll6ChIEBWo3v3",
+     "messageID": "msg_0b2338052001wBDeedpktVjg3U"
+    }
+   ]
+  },
+  {
+   "info": {
+    "parentID": "msg_0b2331f98001e4UpHRZesTZlM4",
+    "role": "assistant",
+    "mode": "build",
+    "agent": "build",
+    "path": {
+     "cwd": "C:\\Users\\Usuário\\Documents\\GitHub\\semana-academica",
+     "root": "C:\\Users\\Usuário\\Documents\\GitHub\\semana-academica"
+    },
+    "cost": 0,
+    "tokens": {
+     "total": 26229,
+     "input": 286,
+     "output": 83,
+     "reasoning": 19,
+     "cache": {
+      "write": 0,
+      "read": 25841
+     }
+    },
+    "modelID": "muse-spark-1.3-contributor-free",
+    "providerID": "opencode",
+    "time": {
+     "created": 1789696117086,
+     "completed": 1789696123934
+    },
+    "finish": "tool-calls",
+    "id": "msg_0b233895d001Njg0XwJalWuOPQ",
+    "sessionID": "ses_f4e25204bffepll6ChIEBWo3v3"
+   },
+   "parts": [
+    {
+     "snapshot": "a5a63be70f1aa1dfe9f9780b4f58f53b83280503",
+     "type": "step-start",
+     "id": "prt_0b2339b46001wo0zzzAcReEJGb",
+     "sessionID": "ses_f4e25204bffepll6ChIEBWo3v3",
+     "messageID": "msg_0b233895d001Njg0XwJalWuOPQ"
+    },
+    {
+     "type": "reasoning",
+     "text": "",
+     "time": {
+      "start": 1789696121672,
+      "end": 1789696121898
+     },
+     "metadata": {
+      "openai": {
+       "itemId": "rs_6aac987f279dc9c415614de8:rs_01a0b233b0d7719dadb819d8d9cc552e",
+       "reasoningEncryptedContent": "Q-PaDgGLR3Bp10bQk8Yzffk4I3szwCGYtXFgYAwBew3QTANvcamMwuwXwydPBl9aGyD_LkOP--J1nvXw7dP2opR3GkIrrV4nUfhR96-jkVcWhqA3Ij3pv94jJ-nKxZ563Xp5qE6GvMpaITZIkqV05H7NMvZDt3TvB-3WGtHqesXDGwIAvHL9_sLsoXyZEiV74aG4cmL3YRGIvwNUA7mPFpiLRYw-T2GVU0MopEjI5EmmSOoDeeU5EFPvVV4bD2ykPOTujH7mILCx9VWk-adMZxtm2DSQjMIdQqSb3ipvhd6wwRHnXvgyAcQpWuZUoAwniDMI0Hr3_1wUWjr9V2X425h8xTzMes__FCKxU9BXG3XsNIm3VLM6tRHeR-SAHA3xmLuw8ZmM5t90OXgAARjBlvjlbsHd-LTk6_nWKIZ7uxMKfir34zgnVF7y-K84QUFgAw4yB9thjW-7rkWnkovmzQgvBQFWuc3eHMhSea0OhaIHWgseX8E4KMTCAx0ytnyZMSgMFt_EGi8oVcIbAR5y9ykDSOKeOwacF0SJXdG709ZrP1tn7XZNM-XL9_nKgjY6BKhrDLRBhh3zHPi3c5lHXiFlwXoR99CFrUG12ypECftkk94m8Q7Iri2gdy3LxvXub_fNGHUg0UMb3IPEmsLmQ2NhO-03BEf_ItswA9PQYOS45KY0Yqv0esC5iK5zJzu0DXlNIQXCm20w76SJ8H5x1VDoXXiZmjpOlnkyxAm0wo4gqR4L1oIyJqRNq9PymD_VrfqD9RKWgok0is-lcKLJmYRQyY26GWWm9TxjpeYeOhvwgvSikakHB96QaFLcHXJYKrheRnWBLoXzeT4kl3RqFFmf1yMEnhzo0u30v7wNfJkto5gfSomCMksv7_fWD3SARQRTtojgxb6aMfx6hC8T6ewRfH7OHCVoxNWSzlemha0zvVBYx9MRG92DGztbEvwRSsVl33Bd-6YM4V0TlqztlBUHtfnvV19dDu-ePdZb7Axf7pXhFrHdcePeHwdFoWc-bFKpW3EXG3v-ewxdJyuAZcaSUQJSFugKWDdrzKXsfRwkicM9KhZTlbnhziXyOslpEeTlaj59AarvGNmTa82urFyViEUbTZrzZPUaYuay7rx2wzCtzgz4NIWIZT4xHP7KOYJc_woXJh0HDvi5NQ5i0JVqE0HrKp_Ax3vGeal3SdFKWQ3Oo9LgU1ReXQPv73rdc8BzbTznYrpPUIvZNVN4nQLmjpx-5xyxgV9YGljItwqb_echdb1MrRzzs5LcW670sS4UJpc13ohRMHUfaZFrUEmbbIKTvUH34PLzLJesOfOmpzenEFQ-aPFc020jgeI6HWXatRIE3YhUZeTvbk0FLAH-DescQN6CYltbsjlUaJh4bOvVdJLF2zZobLayhEYdJ0TV2YzNW8p09hoNAA"
+      }
+     },
+     "id": "prt_0b2339b48001pjB6h7XJunsSEe",
+     "sessionID": "ses_f4e25204bffepll6ChIEBWo3v3",
+     "messageID": "msg_0b233895d001Njg0XwJalWuOPQ"
+    },
+    {
+     "type": "tool",
+     "tool": "bash",
+     "callID": "call_01a0b233b13377398d1a66607ad9b2b6",
+     "state": {
+      "status": "completed",
+      "input": {
+       "command": "git commit -m \"M4: parecer do auditor\"; if ($?) { git log --oneline -3; echo \"---\"; git status --porcelain }"
+      },
+      "output": "[main e80239b] M4: parecer do auditor\n 1 file changed, 47 insertions(+)\n create mode 100644 auditorias/M4-2026-09-17.md\ne80239b M4: parecer do auditor\n4c84e72 M4-R1,R10,R11,R12,R13: telas de certificados e extrato\n5a285d4 M4-R15: verifica emissao apos sincronizacao offline\n---\r\n",
+      "metadata": {
+       "output": "[main e80239b] M4: parecer do auditor\n 1 file changed, 47 insertions(+)\n create mode 100644 auditorias/M4-2026-09-17.md\ne80239b M4: parecer do auditor\n4c84e72 M4-R1,R10,R11,R12,R13: telas de certificados e extrato\n5a285d4 M4-R15: verifica emissao apos sincronizacao offline\n---\r\n",
+       "exit": 0,
+       "truncated": false
+      },
+      "title": "git commit -m \"M4: parecer do auditor\"; if ($?) { git log --oneline -3; echo \"---\"; git status --porcelain }",
+      "time": {
+       "start": 1789696122468,
+       "end": 1789696123004
+      }
+     },
+     "metadata": {
+      "openai": {
+       "itemId": "fc_01a0b233b13377398d1a66607ad9b2b6"
+      }
+     },
+     "id": "prt_0b2339ca1001kf0k0PKxZcgIFK",
+     "sessionID": "ses_f4e25204bffepll6ChIEBWo3v3",
+     "messageID": "msg_0b233895d001Njg0XwJalWuOPQ"
+    },
+    {
+     "reason": "tool-calls",
+     "snapshot": "a5a63be70f1aa1dfe9f9780b4f58f53b83280503",
+     "type": "step-finish",
+     "tokens": {
+      "total": 26229,
+      "input": 286,
+      "output": 83,
+      "reasoning": 19,
+      "cache": {
+       "write": 0,
+       "read": 25841
+      }
+     },
+     "cost": 0,
+     "id": "prt_0b233a324001RTi0IO28DclQDf",
+     "sessionID": "ses_f4e25204bffepll6ChIEBWo3v3",
+     "messageID": "msg_0b233895d001Njg0XwJalWuOPQ"
+    }
+   ]
+  },
+  {
+   "info": {
+    "parentID": "msg_0b2331f98001e4UpHRZesTZlM4",
+    "role": "assistant",
+    "mode": "build",
+    "agent": "build",
+    "path": {
+     "cwd": "C:\\Users\\Usuário\\Documents\\GitHub\\semana-academica",
+     "root": "C:\\Users\\Usuário\\Documents\\GitHub\\semana-academica"
+    },
+    "cost": 0,
+    "tokens": {
+     "total": 26477,
+     "input": 254,
+     "output": 120,
+     "reasoning": 6,
+     "cache": {
+      "write": 0,
+      "read": 26097
+     }
+    },
+    "modelID": "muse-spark-1.3-contributor-free",
+    "providerID": "opencode",
+    "time": {
+     "created": 1789696123938,
+     "completed": 1789696125726
+    },
+    "finish": "tool-calls",
+    "id": "msg_0b233a422001TTZ1U7b9XLWytz",
+    "sessionID": "ses_f4e25204bffepll6ChIEBWo3v3"
+   },
+   "parts": [
+    {
+     "snapshot": "a5a63be70f1aa1dfe9f9780b4f58f53b83280503",
+     "type": "step-start",
+     "id": "prt_0b233a9050018AudCP2UMRaBIX",
+     "sessionID": "ses_f4e25204bffepll6ChIEBWo3v3",
+     "messageID": "msg_0b233a422001TTZ1U7b9XLWytz"
+    },
+    {
+     "type": "reasoning",
+     "text": "",
+     "time": {
+      "start": 1789696125191,
+      "end": 1789696125194
+     },
+     "metadata": {
+      "openai": {
+       "itemId": "rs_6aac9884546faada27cc49dc:rs_01a0b233c4ab75d9a6844c371501b7a9",
+       "reasoningEncryptedContent": "Q-PaDgEGtZRWyLnGaNVfOb0B9PJxTlzqQ96zgqbuml-INn1VZinL5-KgT2u7H0gji2gY3C2LPO9iIMXt_OxJr4NCqA6CtzbkOuZlDWFrsNDEJ9INiX0YrbPtDQj4jljczA-deCPmUX00y_q-Lf0mGaeiwJGr35MGqUoyA9tJ-TjNmTXC1ErQJIKeeTZwHxFvVbGWdmgKmxmFqwNOOWLOQxuM932bqvX5IFu5Ti4Zt1kcjMgu970QU6ulY2_cjdfjnBauNFM21W3bosCsyu7QqE8kiP8o529VVcbxLiqVh87RnkJ0HS3szP3b8tA-8EX7B3HcU60C2rFjOo6HjsKntgSZ07rakG2qhX7ZB68X9ZeeDH1P0fWGP2rREdew-TehArCS2VkRVa70slvREQjKFybnza0VYsX12V4VH-bSP1k7gkDnLCyX-T2YIjTen1esv7bF28nZHMGBdI0yoaKrkmRXA_sa5xnFo4uCJbEWECevcQOQ_xLLQ2rIPsFvgr-74VCMnKwSeZGk6Aue8RdXhU1OHgmxlEkTvtgwI0Nya9vqVIPj2hVRtt8BcAOLbNyaSlj3THfvHAu2QWyj2kCquCkq9U0TpMBbchNm1JsWV4sUVTik7MH3lXXOUyfQ-LSJrV6MsrUkpZQRoiesghRuhezqTzQthk_5la7evfKGgfmN_1LnV5r5x44zCCzV4GL1pEwEJtxLLbLOV3_DqiImIzfjkyRzXejzkkWbndJVBbxZuRUfXY0Enkc3DCWUzp1cimrokF1w38mwxtIW3UHSO5baJSfRm0saqZfzpJ2aDynDjuEelnQ5cQBkvoWeAK03wjbw_KF5SX-SFBq3ZLDNcQRlr3EYFggDf_fh7tTIqhfsXivq8QyOBF25mwXU-b6GWF3a9pP7QwBzt64U1s9K-BqmtMMsl7fbiy7u_SZUqYop7ZZVytlbm-DhBtCb0pHUCn8fJZ60aIz8Zuez5_hPlaOT4iwBweZukAD9vVMYn1DXoTslj2qG52VcRypYePAdGnigYz4Fe2pqkb1jc627vyhEmcj_vFmQC-6Aky1nfBg615RC47As5Wb9v4dMCgD6j9PFGoerAtLsn3BOeqILvaJQgn_hXSbFyt1fXNmlxOi9pFKLwcqCWQ3sFsQ43d7syXWqHAzJl9tmJ7gErcbpihlKG6wPBgqBKz_QPj9GBuQ2I4K6dWRR3i42NQ0GKVKKjlB_mqeFEsJ5EOuQdqUfKzODC51buXqhK4kJK-wdzJcusV5rXVH65v34JGm0cXBlAnKUFuk53uSLHoR-UEKgXcLA7eYfnGKFu5r-RVFCNFt_ydSBBAKjv_0bNBBWxXXspl4_ty-3b4_hKM1jJNV6GZ1iHYIENuKJJZPAI4wWXKoxUxLd638Rbl7-aN3X36-2mbO85xvVGeg1vox4Ww"
+      }
+     },
+     "id": "prt_0b233a907001RPiyU63NlPYSbq",
+     "sessionID": "ses_f4e25204bffepll6ChIEBWo3v3",
+     "messageID": "msg_0b233a422001TTZ1U7b9XLWytz"
+    },
+    {
+     "type": "tool",
+     "tool": "todowrite",
+     "callID": "call_01a0b233c4de779697631acb47b4a0d8",
+     "state": {
+      "status": "completed",
+      "input": {
+       "todos": [
+        {
+         "content": "Salvar parecer integral do auditor em auditorias/M4-2026-09-17.md",
+         "priority": "high",
+         "status": "completed"
+        },
+        {
+         "content": "Commit somente do novo parecer com mensagem 'M4: parecer do auditor'",
+         "priority": "high",
+         "status": "completed"
+        }
+       ]
+      },
+      "output": "[\n  {\n    \"content\": \"Salvar parecer integral do auditor em auditorias/M4-2026-09-17.md\",\n    \"status\": \"completed\",\n    \"priority\": \"high\"\n  },\n  {\n    \"content\": \"Commit somente do novo parecer com mensagem 'M4: parecer do auditor'\",\n    \"status\": \"completed\",\n    \"priority\": \"high\"\n  }\n]",
+      "metadata": {
+       "todos": [
+        {
+         "content": "Salvar parecer integral do auditor em auditorias/M4-2026-09-17.md",
+         "status": "completed",
+         "priority": "high"
+        },
+        {
+         "content": "Commit somente do novo parecer com mensagem 'M4: parecer do auditor'",
+         "status": "completed",
+         "priority": "high"
+        }
+       ],
+       "truncated": false
+      },
+      "title": "0 todos",
+      "time": {
+       "start": 1789696125202,
+       "end": 1789696125205
+      }
+     },
+     "metadata": {
+      "openai": {
+       "itemId": "fc_01a0b233c4de779697631acb47b4a0d8"
+      }
+     },
+     "id": "prt_0b233a90c001mosGOydNonYhCP",
+     "sessionID": "ses_f4e25204bffepll6ChIEBWo3v3",
+     "messageID": "msg_0b233a422001TTZ1U7b9XLWytz"
+    },
+    {
+     "reason": "tool-calls",
+     "snapshot": "a5a63be70f1aa1dfe9f9780b4f58f53b83280503",
+     "type": "step-finish",
+     "tokens": {
+      "total": 26477,
+      "input": 254,
+      "output": 120,
+      "reasoning": 6,
+      "cache": {
+       "write": 0,
+       "read": 26097
+      }
+     },
+     "cost": 0,
+     "id": "prt_0b233aa2a001iANZ4XvxNybgQ7",
+     "sessionID": "ses_f4e25204bffepll6ChIEBWo3v3",
+     "messageID": "msg_0b233a422001TTZ1U7b9XLWytz"
+    }
+   ]
+  },
+  {
+   "info": {
+    "parentID": "msg_0b2331f98001e4UpHRZesTZlM4",
+    "role": "assistant",
+    "mode": "build",
+    "agent": "build",
+    "path": {
+     "cwd": "C:\\Users\\Usuário\\Documents\\GitHub\\semana-academica",
+     "root": "C:\\Users\\Usuário\\Documents\\GitHub\\semana-academica"
+    },
+    "cost": 0,
+    "tokens": {
+     "total": 26711,
+     "input": 360,
+     "output": 119,
+     "reasoning": 7,
+     "cache": {
+      "write": 0,
+      "read": 26225
+     }
+    },
+    "modelID": "muse-spark-1.3-contributor-free",
+    "providerID": "opencode",
+    "time": {
+     "created": 1789696125730,
+     "completed": 1789696128175
+    },
+    "finish": "stop",
+    "id": "msg_0b233ab22001ipjgdi78oc9ph2",
+    "sessionID": "ses_f4e25204bffepll6ChIEBWo3v3"
+   },
+   "parts": [
+    {
+     "snapshot": "a5a63be70f1aa1dfe9f9780b4f58f53b83280503",
+     "type": "step-start",
+     "id": "prt_0b233b03e001WSH4xpCgYlHZG8",
+     "sessionID": "ses_f4e25204bffepll6ChIEBWo3v3",
+     "messageID": "msg_0b233ab22001ipjgdi78oc9ph2"
+    },
+    {
+     "type": "reasoning",
+     "text": "",
+     "time": {
+      "start": 1789696127041,
+      "end": 1789696127043
+     },
+     "metadata": {
+      "openai": {
+       "itemId": "rs_6aac9886670fce057b6a4083:rs_01a0b233cbba72f68ee0a69a42069df7",
+       "reasoningEncryptedContent": "Q-PaDgE2a7wJXxcVpEszBolJK1A1YBzSnFgS9mUZsqhGlo_VLD1cYfMgo5Zr0_Ls1YoVuE2_zwTTRkgK5JuU-q9fSji6zrwuHZAPObEboWQ20GhB6I2DatXJ4YRYX93lG665U_WaUqH4NO5iNeKIkmK6S4pgHYyzV6K6UbWtGEn6i8lBP1spIsthy0_iIAb56QF6AheLUl4KRZ-NtUF-ltS1vAeJNF6yCIguvdL2KAlqoWVJ7VlaK6kJ9iEU23HR1tv-ulPaOQkYtSaY-_N-RvuoVQjxwtU4Nq7DK3QFOEIP1NtSgeoUMLTyI0yq2j4TpApLHGcEyqr-KpYtlxn2Ibu6MOp9-1648EtEv1dJHsW9QPt9kua4-YM9QXFEBboASc_HV9ffwqy2wHgDkNCRJSsdraB-PCNdLcKPwFp9_ZMBXRFyWSFeOauwTG7VkXu4m9WhRH_40P4lNWUnyEBLnjv3NgrpSIQ7H3DsuoSna6hTq36TQufnloG_ucjhw_sRd2R-CRdmKSBrthFYQL13jGdW_GGfBlnBJXowPq6ac5VhiNoRu6IWbvUQ2bjRIdy0krQDmjR36tHf8JE0-g3pXhzQBqRaUhVwRqtjG4JuZoEiqzlL3PLMzCTylnlVJ8Y4ucb_avGWFDfA8M9Ygtu1267tRtepCZZyjjIn8tB6_JpcpOYJTEvZPY74srtNkh0tBs_8k_AMAeFlnKg_zfmR-gS8bIYBYESq9TjVklw0SH3tSJm9rI7y8KKV4lok4KKv2CXZY6A-CUj_xa0kvtW6cz73d6gB0DdXnP1wZuxB4ZaWyfliqW2FDEvwUNwA7eGwLIWHM3uo2KRJauQSWVSej9eFKBBHh8a6VslJEpUE_j82wmu-I_g6Zk9f5tjy-emvhiMcaxeFUfTqXBX7pID0ZfvHxZ2erk4mVio4KZ_gdvd87Cm78NHJFaz_Qgxuoj_r8vy0XMyA6BM2kfuGZx43r1K7y-eOJywZgnvFmj1AWZYgiWeYjqp-NohPXjlRoc0jwGSf7R-Q4300j4n1kxddKP2fIfZC8v0wUPMhXn5lKCwNemqSSlrGID-A2D7olxjux_-TZN9FclHrSFSR2NY3dQ7VicnzJ5whK5qnDN6jSG1kxfYBq1mLjMtJE4Ispfh6XXaC0_f3rDNL9gxXTuCOCtEH_YXQRim1TSrMaBCf1ulbewZ8EphzaFlN4kJDK1yRbQMTqiAnd_Lt_8ILHh55F19lMURkaoHtgo5vCW2Cd2kY9wTvbs0hzrAEo3wPw7DWAHVhDPrq4bj8WqkIB88ajv0dacjZ_k8rJYPH4JJ5DwnK4V55cWqb845cEKS9mI3Od6FqhnsuCrNUNTvtfY6220LwL5NkcJs6KLJomEgjXC5EJ5IwQ1bkw40cuD1TJEhhcuMKHlLWFn_0RlclwQ"
+      }
+     },
+     "id": "prt_0b233b041001v5eL24M8FLNhlX",
+     "sessionID": "ses_f4e25204bffepll6ChIEBWo3v3",
+     "messageID": "msg_0b233ab22001ipjgdi78oc9ph2"
+    },
+    {
+     "type": "text",
+     "text": "Parecer do auditor recuperado integralmente da sessão (task `ses_f4e2502d2ffeKpn7x8jR207QLZ`) e salvo sem edição em `auditorias/M4-2026-09-17.md`.\n\nVerificações:\n- Arquivo não existia antes; nenhum sobrescrito, nenhum renome necessário.\n- Commit `e80239b` criado só com o novo parecer, mensagem `M4: parecer do auditor`. Sem push, `git status` limpo.",
+     "time": {
+      "start": 1789696127044,
+      "end": 1789696127474
+     },
+     "metadata": {
+      "openai": {
+       "itemId": "msg_01a0b233cbe7762197d246e2ec869afc"
+      }
+     },
+     "id": "prt_0b233b044001JthR6l5WHW6mgk",
+     "sessionID": "ses_f4e25204bffepll6ChIEBWo3v3",
+     "messageID": "msg_0b233ab22001ipjgdi78oc9ph2"
+    },
+    {
+     "reason": "stop",
+     "snapshot": "a5a63be70f1aa1dfe9f9780b4f58f53b83280503",
+     "type": "step-finish",
+     "tokens": {
+      "total": 26711,
+      "input": 360,
+      "output": 119,
+      "reasoning": 7,
+      "cache": {
+       "write": 0,
+       "read": 26225
+      }
+     },
+     "cost": 0,
+     "id": "prt_0b233b3b8001YKgFcsk9GI7u72",
+     "sessionID": "ses_f4e25204bffepll6ChIEBWo3v3",
+     "messageID": "msg_0b233ab22001ipjgdi78oc9ph2"
+    }
+   ]
+  }
+ ]
+}
