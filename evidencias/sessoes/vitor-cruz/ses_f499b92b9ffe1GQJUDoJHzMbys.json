@@ -1,0 +1,566 @@
+{
+ "info": {
+  "id": "ses_f499b92b9ffe1GQJUDoJHzMbys",
+  "slug": "quick-nebula",
+  "projectID": "ef5c31e66779deb7b442cd2960ce806c7cc88c17",
+  "directory": "C:\\Users\\Vitor Cruz\\OneDrive\\Documentos\\Trabalho Semana Academica\\semana-academica",
+  "path": "",
+  "title": "New session - 2026-09-18T21:20:30.022Z",
+  "agent": "build",
+  "model": {
+   "id": "nemotron-3.5-lightning-free",
+   "providerID": "opencode"
+  },
+  "version": "1.18.31",
+  "summary": {
+   "additions": 0,
+   "deletions": 0,
+   "files": 0
+  },
+  "cost": 0,
+  "tokens": {
+   "input": 30205,
+   "output": 678,
+   "reasoning": 867,
+   "cache": {
+    "read": 113152,
+    "write": 0
+   }
+  },
+  "time": {
+   "created": 1789766430022,
+   "updated": 1789766466595
+  }
+ },
+ "messages": [
+  {
+   "info": {
+    "role": "user",
+    "time": {
+     "created": 1789766430045
+    },
+    "agent": "build",
+    "model": {
+     "providerID": "opencode",
+     "modelID": "nemotron-3.5-lightning-free"
+    },
+    "summary": {
+     "diffs": [
+      {
+       "file": "api/src/app.js",
+       "patch": "Index: api/src/app.js\n===================================================================\n--- api/src/app.js\t\n+++ api/src/app.js\t\n@@ -1,1401 +1,1401 @@\n import crypto from 'node:crypto';\r\n import express from 'express';\r\n import { novoBanco, resetarBanco } from './banco.js';\r\n import { ehModoTeste, agora, resetarRelogio, definirRelogio } from './relogio.js';\r\n import { contarVagasOcupadas } from './contagem.js';\r\n \r\n const ALFABETO_CODIGO = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';\r\n \r\n function codigoDoEncontro(encontroId, inicioMinutoMs) {\r\n   const digest = crypto.createHash('sha256').update(`${encontroId}|${inicioMinutoMs}`).digest();\r\n   let codigo = '';\r\n   for (let i = 0; i < 6; i += 1) {\r\n     codigo += ALFABETO_CODIGO[digest[i] % ALFABETO_CODIGO.length];\r\n   }\r\n   return codigo;\r\n }\r\n \r\n export function criarServidor({ banco = novoBanco(':memory:') } = {}) {\r\n   resetarBanco(banco);\r\n \r\n   banco.prepare('CREATE TABLE IF NOT EXISTS bloqueios (participanteId TEXT PRIMARY KEY, nome TEXT, atividades TEXT, bloqueadoDesde TEXT)').run();\r\n   banco.prepare('CREATE UNIQUE INDEX IF NOT EXISTS idx_bloqueios_participante ON bloqueios (participanteId)').run();\r\n \r\n   const app = express();\r\n   app.use(express.json());\r\n   app.use((err, req, res, next) => {\r\n     if (err && err.type === 'entity.parse.failed') {\r\n       return res.status(422).json({\r\n         erro: 'DADOS_INVALIDOS',\r\n         mensagem: 'O corpo precisa ser um JSON válido.',\r\n       });\r\n     }\r\n     next(err);\r\n   });\r\n \r\n   const usuarioPorId = banco.prepare('SELECT id, nome, papel FROM usuarios WHERE id = ?');\r\n \r\n   function exigirUsuario(req, res, next) {\r\n     const id = req.get('X-Usuario');\r\n     const usuario = id ? usuarioPorId.get(id) : undefined;\r\n     if (!usuario) {\r\n       return res.status(401).json({\r\n         erro: 'USUARIO_DESCONHECIDO',\r\n         mensagem: 'Envie um X-Usuario que exista nos dados iniciais.',\r\n       });\r\n     }\r\n     req.usuario = usuario;\r\n     next();\r\n   }\r\n \r\n   function exigirOrganizacao(req, res, next) {\r\n     if (req.usuario.papel !== 'organizacao') {\r\n       return res.status(403).json({\r\n         erro: 'SOMENTE_ORGANIZACAO',\r\n         mensagem: 'Só a organização cria ou altera atividades.',\r\n       });\r\n     }\r\n     next();\r\n   }\r\n \r\n   function gerarId(prefixo) {\r\n     return `${prefixo}${crypto.randomBytes(4).toString('hex')}`;\r\n   }\r\n \r\n   if (ehModoTeste()) {\r\n     app.post('/_teste/reset', (req, res) => {\r\n       resetarBanco(banco);\r\n       resetarRelogio();\r\n       res.status(204).end();\r\n     });\r\n \r\n     app.get('/_teste/relogio', (req, res) => {\r\n       res.json({ agora: agora().toISOString() });\r\n     });\r\n \r\n     app.put('/_teste/relogio', (req, res) => {\r\n       const iso = req.body && req.body.agora;\r\n       if (typeof iso !== 'string' || !definirRelogio(iso)) {\r\n         return res.status(422).json({\r\n           erro: 'DADOS_INVALIDOS',\r\n           mensagem: 'Envie um corpo {\"agora\": \"<ISO>\"} com uma data válida.',\r\n         });\r\n       }\r\n       res.json({ agora: agora().toISOString() });\r\n     });\r\n   }\r\n \r\n   app.get('/salas', exigirUsuario, (req, res) => {\r\n     const salas = banco.prepare('SELECT id, nome, capacidade FROM salas ORDER BY nome').all();\r\n     res.json(salas);\r\n   });\r\n \r\n   const encontrosPorAtividade = banco.prepare(\r\n     'SELECT id, inicio, fim FROM encontros WHERE atividadeId = ? ORDER BY inicio',\r\n   );\r\n \r\n   function formatarIsoBrasilia(date) {\r\n     const partes = new Intl.DateTimeFormat('en-CA', {\r\n       timeZone: 'America/Sao_Paulo',\r\n       year: 'numeric',\r\n       month: '2-digit',\r\n       day: '2-digit',\r\n       hour: '2-digit',\r\n       minute: '2-digit',\r\n       second: '2-digit',\r\n       hour12: false,\r\n     }).formatToParts(date);\r\n     const pegar = (tipo) => partes.find((p) => p.type === tipo).value;\r\n     return `${pegar('year')}-${pegar('month')}-${pegar('day')}T${pegar('hour')}:${pegar('minute')}:${pegar('second')}-03:00`;\r\n   }\r\n \r\n   function getFechoMs(atividadeId) {\r\n     const encontros = encontrosPorAtividade.all(atividadeId);\r\n     return encontros.length > 0 ? Date.parse(encontros[0].inicio) - 30 * 60000 : Infinity;\r\n   }\r\n \r\n   function processarFilaEExpiracoes(atividadeId) {\r\n     const atividade = banco.prepare('SELECT id, vagas FROM atividades WHERE id = ?').get(atividadeId);\r\n     if (!atividade) return;\r\n \r\n     const fechoMs = getFechoMs(atividadeId);\r\n     const agoraMs = agora().getTime();\r\n \r\n     let mudou = true;\r\n     while (mudou) {\r\n       mudou = false;\r\n \r\n       const convocadas = banco.prepare(\r\n         'SELECT id, convocadaAte FROM inscricoes WHERE atividadeId = ? AND status = ?'\r\n       ).all(atividadeId, 'convocada');\r\n \r\n       for (const c of convocadas) {\r\n         if (c.convocadaAte && agoraMs > Date.parse(c.convocadaAte)) {\r\n           banco.prepare('UPDATE inscricoes SET status = ?, convocadaAte = ? WHERE id = ?').run('expirada', null, c.id);\r\n           mudou = true;\r\n           atribuirVagasDisponiveis(atividadeId, Date.parse(c.convocadaAte));\r\n         }\r\n       }\r\n     }\r\n   }\r\n \r\n   function atribuirVagasDisponiveis(atividadeId, tempoLiberacao) {\r\n     const fechoMs = getFechoMs(atividadeId);\r\n     if (tempoLiberacao >= fechoMs) return;\r\n \r\n     const atividade = banco.prepare('SELECT vagas FROM atividades WHERE id = ?').get(atividadeId);\r\n     if (!atividade) return;\r\n \r\n     while (true) {\r\n       const inscricoes = banco.prepare('SELECT status FROM inscricoes WHERE atividadeId = ?').all(atividadeId);\r\n       const ocupadas = inscricoes.filter(i => i.status === 'confirmada' || i.status === 'convocada').length;\r\n \r\n       if (ocupadas >= atividade.vagas) break;\r\n \r\n       const proximo = banco.prepare(\r\n         'SELECT id FROM inscricoes WHERE atividadeId = ? AND status = ? ORDER BY rowid ASC LIMIT 1'\r\n       ).get(atividadeId, 'em_espera');\r\n \r\n       if (!proximo) break;\r\n       if (tempoLiberacao >= fechoMs) break;\r\n \r\n       let convocadaAteMs = tempoLiberacao + 2 * 3600 * 1000;\r\n       if (convocadaAteMs > fechoMs) {\r\n         convocadaAteMs = fechoMs;\r\n       }\r\n       const convocadaAteIso = formatarIsoBrasilia(new Date(convocadaAteMs));\r\n \r\n       banco.prepare('UPDATE inscricoes SET status = ?, convocadaAte = ?, posicaoNaEspera = NULL WHERE id = ?')\r\n         .run('convocada', convocadaAteIso, proximo.id);\r\n     }\r\n   }\r\n \r\n   function serializarAtividade(linha) {\r\n     processarFilaEExpiracoes(linha.id);\r\n     const encontros = encontrosPorAtividade.all(linha.id);\r\n     const cargaHorariaMinutos = Math.round(\r\n       encontros.reduce(\r\n         (soma, e) => soma + (Date.parse(e.fim) - Date.parse(e.inicio)) / 60000,\r\n         0,\r\n       ),\r\n     );\r\n     const agoraMs = agora().getTime();\r\n     let situacao = 'prevista';\r\n     if (linha.cancelada) {\r\n       situacao = 'cancelada';\r\n     } else if (agoraMs >= Date.parse(encontros[encontros.length - 1].fim)) {\r\n       situacao = 'encerrada';\r\n     } else if (agoraMs >= Date.parse(encontros[0].inicio)) {\r\n       situacao = 'em_andamento';\r\n     }\r\n     const ocupadas = vagasOcupadas(linha.id);\r\n     const vagasRestantes = Math.max(0, linha.vagas - ocupadas);\r\n     const emEsperaLinhas = banco.prepare('SELECT COUNT(*) as count FROM inscricoes WHERE atividadeId = ? AND status = ?').get(linha.id, 'em_espera');\r\n     const emEspera = emEsperaLinhas ? emEsperaLinhas.count : 0;\r\n     return {\r\n       id: linha.id,\r\n       titulo: linha.titulo,\r\n       tipo: linha.tipo,\r\n       salaId: linha.salaId,\r\n       vagas: linha.vagas,\r\n       encontros: encontros.map((e) => ({ id: e.id, inicio: e.inicio, fim: e.fim })),\r\n       cargaHorariaMinutos,\r\n       situacao,\r\n       ocupadas,\r\n       vagasRestantes,\r\n       emEspera,\r\n     };\r\n   }\r\n \r\n   function diaEmBrasilia(iso) {\r\n     const partes = new Intl.DateTimeFormat('en-CA', {\r\n       timeZone: 'America/Sao_Paulo',\r\n       year: 'numeric',\r\n       month: '2-digit',\r\n       day: '2-digit',\r\n     }).formatToParts(new Date(iso));\r\n     const pegar = (tipo) => partes.find((p) => p.type === tipo).value;\r\n     return `${pegar('year')}-${pegar('month')}-${pegar('day')}`;\r\n   }\r\n \r\n   function encontrosValidos(encontros) {\r\n     const INICIO_JANELA_MS = Date.parse('2026-10-19T00:00:00-03:00');\r\n     const FIM_JANELA_MS = Date.parse('2026-10-24T00:00:00-03:00');\r\n     const ordenados = [...encontros].sort((a, b) => Date.parse(a.inicio) - Date.parse(b.inicio));\r\n     for (let i = 0; i < ordenados.length; i++) {\r\n       const encontro = ordenados[i];\r\n       const inicioMs = Date.parse(encontro.inicio);\r\n       const fimMs = Date.parse(encontro.fim);\r\n       const duracaoMinutos = (fimMs - inicioMs) / 60000;\r\n       if (\r\n         !Number.isFinite(inicioMs) ||\r\n         !Number.isFinite(fimMs) ||\r\n         duracaoMinutos < 60 ||\r\n         duracaoMinutos > 240 ||\r\n         diaEmBrasilia(encontro.inicio) !== diaEmBrasilia(encontro.fim) ||\r\n         inicioMs < INICIO_JANELA_MS ||\r\n         fimMs > FIM_JANELA_MS\r\n       ) {\r\n         return false;\r\n       }\r\n       if (i > 0 && inicioMs < Date.parse(ordenados[i - 1].fim)) {\r\n         return false;\r\n       }\r\n     }\r\n     return true;\r\n   }\r\n \r\n   app.get('/atividades', exigirUsuario, (req, res) => {\r\n     const dia = req.query.dia;\r\n     const tipo = req.query.tipo;\r\n     if (tipo !== undefined && tipo !== 'palestra' && tipo !== 'minicurso') {\r\n       return res.status(422).json({ erro: 'DADOS_INVALIDOS', mensagem: '?tipo só aceita palestra ou minicurso.' });\r\n     }\r\n     let linhas = banco.prepare('SELECT id, titulo, tipo, salaId, vagas, cancelada FROM atividades').all();\r\n     if (dia !== undefined) {\r\n       linhas = linhas.filter((linha) =>\r\n         encontrosPorAtividade.all(linha.id).some((e) => diaEmBrasilia(e.inicio) === dia),\r\n       );\r\n     }\r\n     if (tipo !== undefined) {\r\n       linhas = linhas.filter((linha) => linha.tipo === tipo);\r\n     }\r\n     const porInicio = linhas.map((linha) => {\r\n       const encontros = encontrosPorAtividade.all(linha.id);\r\n       return { linha, inicio: encontros.length ? Date.parse(encontros[0].inicio) : Infinity };\r\n     });\r\n     porInicio.sort((a, b) => a.inicio - b.inicio || a.linha.titulo.localeCompare(b.linha.titulo));\r\n     res.json(porInicio.map((item) => serializarAtividade(item.linha)));\r\n   });\r\n \r\n   app.get('/atividades/:id', exigirUsuario, (req, res) => {\r\n     const linha = banco\r\n       .prepare('SELECT id, titulo, tipo, salaId, vagas, cancelada FROM atividades WHERE id = ?')\r\n       .get(req.params.id);\r\n     if (!linha) {\r\n       return res.status(404).json({ erro: 'NAO_ENCONTRADO', mensagem: 'Atividade inexistente.' });\r\n     }\r\n     res.json(serializarAtividade(linha));\r\n   });\r\n \r\n   function temConflitoDeSala(salaId, encontros) {\r\n     const atividadesNaSala = banco.prepare('SELECT id, cancelada FROM atividades WHERE salaId = ?').all(salaId);\r\n     const folga = 15 * 60000;\r\n     for (const atividade of atividadesNaSala) {\r\n       if (atividade.cancelada) continue;\r\n       for (const existente of encontrosPorAtividade.all(atividade.id)) {\r\n         for (const novo of encontros) {\r\n           const inicioNovoMs = Date.parse(novo.inicio);\r\n           const fimNovoMs = Date.parse(novo.fim);\r\n           const inicioExistenteMs = Date.parse(existente.inicio);\r\n           const fimExistenteMs = Date.parse(existente.fim);\r\n           const separado = fimExistenteMs + folga <= inicioNovoMs || fimNovoMs + folga <= inicioExistenteMs;\r\n           if (!separado) return true;\r\n         }\r\n       }\r\n     }\r\n     return false;\r\n   }\r\n \r\n   const salaExiste = banco.prepare('SELECT id, capacidade FROM salas WHERE id = ?');\r\n   const inserirAtividade = banco.prepare(\r\n     'INSERT INTO atividades (id, titulo, tipo, salaId, vagas, cancelada) VALUES (?, ?, ?, ?, ?, 0)',\r\n   );\r\n   const inserirEncontro = banco.prepare(\r\n     'INSERT INTO encontros (id, atividadeId, inicio, fim) VALUES (?, ?, ?, ?)',\r\n   );\r\n \r\n   function vagasOcupadas(atividadeId) {\r\n     const existeInscricoes = banco\r\n       .prepare(`SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'inscricoes'`)\r\n       .get();\r\n     if (!existeInscricoes) return 0;\r\n     const inscricoes = banco\r\n       .prepare('SELECT status FROM inscricoes WHERE atividadeId = ?')\r\n       .all(atividadeId);\r\n     return contarVagasOcupadas(inscricoes);\r\n   }\r\n \r\n   app.post('/atividades', exigirUsuario, exigirOrganizacao, (req, res) => {\r\n     const corpo = req.body;\r\n     if (!corpo || typeof corpo !== 'object' || Array.isArray(corpo)) {\r\n       return res.status(422).json({ erro: 'DADOS_INVALIDOS', mensagem: 'Envie um objeto JSON no corpo.' });\r\n     }\r\n \r\n     const salaId = corpo.salaId;\r\n     const sala = typeof salaId === 'string' ? salaExiste.get(salaId) : undefined;\r\n     if (typeof salaId === 'string' && !sala) {\r\n       return res.status(404).json({ erro: 'NAO_ENCONTRADO', mensagem: 'Sala inexistente.' });\r\n     }\r\n \r\n     const camposDoContrato = ['titulo', 'tipo', 'salaId', 'vagas', 'encontros', 'cargaHorariaMinutos'];\r\n     const desconhecido = Object.keys(corpo).find((campo) => !camposDoContrato.includes(campo));\r\n     if (desconhecido) {\r\n       return res.status(422).json({ erro: 'DADOS_INVALIDOS', mensagem: `\"${desconhecido}\" não existe no contrato.` });\r\n     }\r\n \r\n     const titulo = typeof corpo.titulo === 'string' ? corpo.titulo.trim() : corpo.titulo;\r\n     if (typeof titulo !== 'string' || titulo.length < 1 || titulo.length > 120) {\r\n       return res.status(422).json({ erro: 'DADOS_INVALIDOS', mensagem: 'titulo é obrigatório e vai de 1 a 120 caracteres após trim.' });\r\n     }\r\n     if (corpo.tipo !== 'palestra' && corpo.tipo !== 'minicurso') {\r\n       return res.status(422).json({ erro: 'DADOS_INVALIDOS', mensagem: 'tipo deve ser palestra ou minicurso.' });\r\n     }\r\n     if (typeof salaId !== 'string' || salaId === '') {\r\n       return res.status(422).json({ erro: 'DADOS_INVALIDOS', mensagem: 'salaId é obrigatório.' });\r\n     }\r\n     const vagas = corpo.vagas;\r\n     if (!Number.isInteger(vagas) || vagas < 1) {\r\n       return res.status(422).json({ erro: 'DADOS_INVALIDOS', mensagem: 'vagas precisa ser inteiro de no mínimo 1.' });\r\n     }\r\n     if (\r\n       !Array.isArray(corpo.encontros) ||\r\n       corpo.encontros.some((e) => !e || typeof e.inicio !== 'string' || typeof e.fim !== 'string')\r\n     ) {\r\n       return res.status(422).json({ erro: 'DADOS_INVALIDOS', mensagem: 'encontros precisa ser uma lista de {inicio, fim}.' });\r\n     }\r\n \r\n     const quantidadeDeEncontros = corpo.encontros.length;\r\n     const quantidadeOk =\r\n       corpo.tipo === 'palestra'\r\n         ? quantidadeDeEncontros === 1\r\n         : corpo.tipo === 'minicurso'\r\n           ? quantidadeDeEncontros >= 2 && quantidadeDeEncontros <= 5\r\n           : false;\r\n     if (!quantidadeOk) {\r\n       return res.status(422).json({\r\n         erro: 'QUANTIDADE_DE_ENCONTROS',\r\n         mensagem: 'palestra tem exatamente 1 encontro; minicurso tem de 2 a 5.',\r\n       });\r\n     }\r\n     if (!encontrosValidos(corpo.encontros)) {\r\n       return res.status(422).json({\r\n         erro: 'ENCONTRO_INVALIDO',\r\n         mensagem: 'Encontro precisa de 1h a 4h, sem cortar meia-noite, dentro de 19 a 23/10 e sem se sobrepor a outro da mesma atividade.',\r\n       });\r\n     }\r\n     if (vagas > sala.capacidade) {\r\n       return res.status(422).json({\r\n         erro: 'VAGAS_ACIMA_DA_CAPACIDADE',\r\n         mensagem: `vagas não pode passar da capacidade da sala (${sala.capacidade}).`,\r\n       });\r\n     }\r\n     if (temConflitoDeSala(salaId, corpo.encontros)) {\r\n       return res.status(409).json({\r\n         erro: 'CONFLITO_DE_SALA',\r\n         mensagem: 'A sala já tem atividade nesse horário com menos de 15 min de folga.',\r\n       });\r\n     }\r\n \r\n     const id = gerarId('atv_');\r\n     inserirAtividade.run(id, titulo, corpo.tipo, salaId, vagas);\r\n     for (const encontro of corpo.encontros) {\r\n       inserirEncontro.run(gerarId('enc_'), id, encontro.inicio, encontro.fim);\r\n     }\r\n     const linha = banco.prepare('SELECT id, titulo, tipo, salaId, vagas, cancelada FROM atividades WHERE id = ?').get(id);\r\n     res.status(201).json(serializarAtividade(linha));\r\n   });\r\n \r\n   app.patch('/atividades/:id', exigirUsuario, exigirOrganizacao, (req, res) => {\r\n     const atividade = banco\r\n       .prepare('SELECT id, titulo, tipo, salaId, vagas, cancelada FROM atividades WHERE id = ?')\r\n       .get(req.params.id);\r\n     if (!atividade) {\r\n       return res.status(404).json({ erro: 'NAO_ENCONTRADO', mensagem: 'Atividade inexistente.' });\r\n     }\r\n \r\n     const corpo = req.body;\r\n     if (!corpo || typeof corpo !== 'object' || Array.isArray(corpo)) {\r\n       return res.status(422).json({ erro: 'DADOS_INVALIDOS', mensagem: 'Envie um objeto JSON no corpo.' });\r\n     }\r\n     if (Object.keys(corpo).length === 0) {\r\n       return res.status(422).json({ erro: 'DADOS_INVALIDOS', mensagem: 'O corpo precisa de pelo menos um campo editável.' });\r\n     }\r\n     const camposDoContrato = ['id', 'titulo', 'tipo', 'salaId', 'vagas', 'encontros', 'cargaHorariaMinutos', 'situacao', 'ocupadas', 'vagasRestantes', 'emEspera'];\r\n     const desconhecido = Object.keys(corpo).find((campo) => !camposDoContrato.includes(campo));\r\n     if (desconhecido) {\r\n       return res.status(422).json({ erro: 'DADOS_INVALIDOS', mensagem: `\"${desconhecido}\" não existe no contrato.` });\r\n     }\r\n     if ('titulo' in corpo) {\r\n       const titulo = typeof corpo.titulo === 'string' ? corpo.titulo.trim() : corpo.titulo;\r\n       if (typeof titulo !== 'string' || titulo.length < 1 || titulo.length > 120) {\r\n         return res.status(422).json({ erro: 'DADOS_INVALIDOS', mensagem: 'titulo vai de 1 a 120 caracteres após trim.' });\r\n       }\r\n     }\r\n     if ('vagas' in corpo && (!Number.isInteger(corpo.vagas) || corpo.vagas < 1)) {\r\n       return res.status(422).json({ erro: 'DADOS_INVALIDOS', mensagem: 'vagas precisa ser inteiro de no mínimo 1.' });\r\n     }\r\n     if (atividade.cancelada) {\r\n       return res.status(422).json({ erro: 'ATIVIDADE_CANCELADA', mensagem: 'Atividade cancelada não pode ser alterada.' });\r\n     }\r\n     const naoEditavel = Object.keys(corpo).find((campo) => !['titulo', 'vagas'].includes(campo));\r\n     if (naoEditavel) {\r\n       return res.status(422).json({ erro: 'CAMPO_NAO_EDITAVEL', mensagem: 'Só titulo e vagas são editáveis.' });\r\n     }\r\n \r\n     if ('vagas' in corpo) {\r\n       const sala = salaExiste.get(atividade.salaId);\r\n       if (corpo.vagas > sala.capacidade) {\r\n         return res.status(422).json({\r\n           erro: 'VAGAS_ACIMA_DA_CAPACIDADE',\r\n           mensagem: `vagas não pode passar da capacidade da sala (${sala.capacidade}).`,\r\n         });\r\n       }\r\n       if (corpo.vagas < vagasOcupadas(atividade.id)) {\r\n         return res.status(409).json({\r\n           erro: 'VAGAS_ABAIXO_DOS_INSCRITOS',\r\n           mensagem: 'vagas não pode ficar abaixo dos inscritos atuais.',\r\n         });\r\n       }\r\n     }\r\n \r\n     banco\r\n       .prepare('UPDATE atividades SET titulo = ?, vagas = ? WHERE id = ?')\r\n       .run(\r\n         'titulo' in corpo ? corpo.titulo.trim() : atividade.titulo,\r\n         'vagas' in corpo ? corpo.vagas : atividade.vagas,\r\n         atividade.id,\r\n       );\r\n     if ('vagas' in corpo && corpo.vagas > atividade.vagas) {\r\n       atribuirVagasDisponiveis(atividade.id, agora().getTime());\r\n       processarFilaEExpiracoes(atividade.id);\r\n     }\r\n     const linha = banco\r\n       .prepare('SELECT id, titulo, tipo, salaId, vagas, cancelada FROM atividades WHERE id = ?')\r\n       .get(atividade.id);\r\n     res.status(200).json(serializarAtividade(linha));\r\n   });\r\n \r\n   app.post('/atividades/:id/cancelamento', exigirUsuario, exigirOrganizacao, (req, res) => {\r\n     const atividade = banco\r\n       .prepare('SELECT id, titulo, tipo, salaId, vagas, cancelada FROM atividades WHERE id = ?')\r\n       .get(req.params.id);\r\n     if (!atividade) {\r\n       return res.status(404).json({ erro: 'NAO_ENCONTRADO', mensagem: 'Atividade inexistente.' });\r\n     }\r\n     if (atividade.cancelada) {\r\n       return res.status(422).json({ erro: 'ATIVIDADE_CANCELADA', mensagem: 'Atividade já está cancelada.' });\r\n     }\r\n     const encontros = encontrosPorAtividade.all(atividade.id);\r\n     if (agora().getTime() >= Date.parse(encontros[0].inicio)) {\r\n       return res.status(422).json({\r\n         erro: 'ATIVIDADE_JA_INICIADA',\r\n         mensagem: 'Só é possível cancelar antes do início do 1º encontro.',\r\n       });\r\n     }\r\n     banco.prepare('UPDATE atividades SET cancelada = 1 WHERE id = ?').run(atividade.id);\r\n     banco.prepare('UPDATE inscricoes SET status = \\'cancelada\\', convocadaAte = NULL WHERE atividadeId = ? AND status IN (\\'confirmada\\', \\'em_espera\\', \\'convocada\\')').run(atividade.id);\r\n     const linha = banco\r\n       .prepare('SELECT id, titulo, tipo, salaId, vagas, cancelada FROM atividades WHERE id = ?')\r\n       .get(atividade.id);\r\n     res.status(200).json(serializarAtividade(linha));\r\n   });\r\n \r\n   function exigirParticipante(req, res, next) {\r\n     if (req.usuario.papel !== 'participante') {\r\n       return res.status(403).json({\r\n         erro: 'SOMENTE_PARTICIPANTE',\r\n         mensagem: 'Apenas participantes podem realizar inscrições.',\r\n       });\r\n     }\r\n     next();\r\n   }\r\n \r\n   function serializarInscricao(linha) {\r\n     let posicaoNaEspera = null;\r\n     if (linha.status === 'em_espera') {\r\n       const emEsperaList = banco.prepare(\r\n         'SELECT id FROM inscricoes WHERE atividadeId = ? AND status = ? ORDER BY rowid ASC'\r\n       ).all(linha.atividadeId, 'em_espera');\r\n       const index = emEsperaList.findIndex((i) => i.id === linha.id);\r\n       posicaoNaEspera = index >= 0 ? index + 1 : null;\r\n     }\r\n     return {\r\n       id: linha.id,\r\n       atividadeId: linha.atividadeId,\r\n       participanteId: linha.participanteId,\r\n       status: linha.status,\r\n       posicaoNaEspera,\r\n       convocadaAte: linha.convocadaAte || null,\r\n       criadaEm: linha.criadaEm,\r\n     };\r\n   }\r\n \r\n   app.post('/atividades/:id/inscricoes', exigirUsuario, exigirParticipante, (req, res) => {\r\n     const atividade = banco\r\n       .prepare('SELECT id, tipo, vagas, cancelada FROM atividades WHERE id = ?')\r\n       .get(req.params.id);\r\n     if (!atividade) {\r\n       return res.status(404).json({ erro: 'NAO_ENCONTRADO', mensagem: 'Atividade inexistente.' });\r\n     }\r\n     if (atividade.cancelada) {\r\n       return res.status(422).json({ erro: 'ATIVIDADE_CANCELADA', mensagem: 'Atividade cancelada.' });\r\n     }\r\n \r\n     const encontros = encontrosPorAtividade.all(atividade.id);\r\n     if (encontros.length > 0 && agora().getTime() >= Date.parse(encontros[0].inicio) - 30 * 60000) {\r\n       return res.status(422).json({ erro: 'INSCRICOES_ENCERRADAS', mensagem: 'Inscrições encerradas.' });\r\n     }\r\n \r\n     const inscricaoAtiva = banco\r\n       .prepare('SELECT id FROM inscricoes WHERE atividadeId = ? AND participanteId = ? AND status IN (\\'confirmada\\', \\'em_espera\\', \\'convocada\\')')\r\n       .get(atividade.id, req.usuario.id);\r\n     if (inscricaoAtiva) {\r\n       return res.status(409).json({ erro: 'JA_INSCRITO', mensagem: 'Participante já possui inscrição ativa nesta atividade.' });\r\n     }\r\n \r\n     const ocupadas = vagasOcupadas(atividade.id);\r\n     const vaiOcuparVaga = ocupadas < atividade.vagas;\r\n \r\n     if (vaiOcuparVaga) {\r\n       const inscricoesAtivas = banco.prepare(\r\n         'SELECT atividadeId FROM inscricoes WHERE participanteId = ? AND status IN (\\'confirmada\\', \\'convocada\\')'\r\n       ).all(req.usuario.id);\r\n \r\n       const novosEncontros = encontrosPorAtividade.all(atividade.id);\r\n \r\n       for (const ins of inscricoesAtivas) {\r\n         const exsEncontros = encontrosPorAtividade.all(ins.atividadeId);\r\n         for (const exs of exsEncontros) {\r\n           for (const novo of novosEncontros) {\r\n             const inicioExs = Date.parse(exs.inicio);\r\n             const fimExs = Date.parse(exs.fim);\r\n             const inicioNovo = Date.parse(novo.inicio);\r\n             const fimNovo = Date.parse(novo.fim);\r\n             const sobreposto = Math.max(inicioExs, inicioNovo) < Math.min(fimExs, fimNovo);\r\n             if (sobreposto) {\r\n               return res.status(409).json({ erro: 'CONFLITO_DE_HORARIO', mensagem: 'Conflito de horário.' });\r\n             }\r\n           }\r\n         }\r\n       }\r\n \r\n       if (atividade.tipo === 'minicurso') {\r\n         const minicursosOcupados = banco.prepare(`\r\n           SELECT COUNT(*) as count \r\n           FROM inscricoes i\r\n           JOIN atividades a ON a.id = i.atividadeId\r\n           WHERE i.participanteId = ? \r\n             AND i.status IN ('confirmada', 'convocada')\r\n             AND a.tipo = 'minicurso'\r\n         `).get(req.usuario.id);\r\n \r\n         if (minicursosOcupados && minicursosOcupados.count >= 3) {\r\n           return res.status(422).json({ erro: 'LIMITE_DE_MINICURSOS', mensagem: 'Limite de 3 minicursos atingido.' });\r\n         }\r\n       }\r\n     }\r\n \r\n     const status = vaiOcuparVaga ? 'confirmada' : 'em_espera';\r\n     const id = gerarId('ins_');\r\n     const criadaEm = agora().toISOString();\r\n \r\n     banco\r\n       .prepare('INSERT INTO inscricoes (id, atividadeId, participanteId, status, posicaoNaEspera, convocadaAte, criadaEm) VALUES (?, ?, ?, ?, NULL, NULL, ?)')\r\n       .run(id, atividade.id, req.usuario.id, status, criadaEm);\r\n \r\n     const linha = banco.prepare('SELECT id, atividadeId, participanteId, status, convocadaAte, criadaEm FROM inscricoes WHERE id = ?').get(id);\r\n     res.status(201).json(serializarInscricao(linha));\r\n   });\r\n \r\n   app.get('/inscricoes', exigirUsuario, (req, res) => {\r\n     const atividadeId = req.query.atividadeId;\r\n     const atividadesIds = banco.prepare('SELECT DISTINCT atividadeId FROM inscricoes').all();\r\n     for (const a of atividadesIds) {\r\n       processarFilaEExpiracoes(a.atividadeId);\r\n     }\r\n \r\n     let query = 'SELECT id, atividadeId, participanteId, status, convocadaAte, criadaEm FROM inscricoes';\r\n     const params = [];\r\n     const conditions = [];\r\n \r\n     if (req.usuario.papel === 'participante') {\r\n       conditions.push('participanteId = ?');\r\n       params.push(req.usuario.id);\r\n     }\r\n     if (atividadeId !== undefined) {\r\n       conditions.push('atividadeId = ?');\r\n       params.push(atividadeId);\r\n     }\r\n     if (conditions.length > 0) {\r\n       query += ' WHERE ' + conditions.join(' AND ');\r\n     }\r\n     query += ' ORDER BY criadaEm';\r\n \r\n     const linhas = banco.prepare(query).all(...params);\r\n     res.json(linhas.map(serializarInscricao));\r\n   });\r\n \r\n   app.get('/inscricoes/:id', exigirUsuario, (req, res) => {\r\n     let linha = banco\r\n       .prepare('SELECT id, atividadeId, participanteId, status, convocadaAte, criadaEm FROM inscricoes WHERE id = ?')\r\n       .get(req.params.id);\r\n     if (!linha) {\r\n       return res.status(404).json({ erro: 'NAO_ENCONTRADO', mensagem: 'Inscrição inexistente.' });\r\n     }\r\n     processarFilaEExpiracoes(linha.atividadeId);\r\n     linha = banco\r\n       .prepare('SELECT id, atividadeId, participanteId, status, convocadaAte, criadaEm FROM inscricoes WHERE id = ?')\r\n       .get(req.params.id);\r\n \r\n     if (req.usuario.papel === 'participante' && linha.participanteId !== req.usuario.id) {\r\n       return res.status(404).json({ erro: 'NAO_ENCONTRADO', mensagem: 'Inscrição inexistente.' });\r\n     }\r\n     res.json(serializarInscricao(linha));\r\n   });\r\n \r\n   app.post('/inscricoes/:id/cancelamento', exigirUsuario, exigirParticipante, (req, res) => {\r\n     const linha = banco\r\n       .prepare('SELECT id, atividadeId, participanteId, status, convocadaAte, criadaEm FROM inscricoes WHERE id = ?')\r\n       .get(req.params.id);\r\n     if (!linha) {\r\n       return res.status(404).json({ erro: 'NAO_ENCONTRADO', mensagem: 'Inscrição inexistente.' });\r\n     }\r\n     if (linha.participanteId !== req.usuario.id) {\r\n       return res.status(404).json({ erro: 'NAO_ENCONTRADO', mensagem: 'Inscrição inexistente.' });\r\n     }\r\n     if (linha.status === 'cancelada' || linha.status === 'expirada') {\r\n       return res.status(422).json({ erro: 'INSCRICAO_INATIVA', mensagem: 'Inscrição já está cancelada ou expirada.' });\r\n     }\r\n     const encontros = encontrosPorAtividade.all(linha.atividadeId);\r\n     if (encontros.length > 0 && agora().getTime() >= Date.parse(encontros[0].inicio)) {\r\n       return res.status(422).json({ erro: 'ATIVIDADE_JA_INICIADA', mensagem: 'Atividade já iniciada.' });\r\n     }\r\n \r\n     const statusAnterior = linha.status;\r\n     banco.prepare('UPDATE inscricoes SET status = \\'cancelada\\', convocadaAte = NULL WHERE id = ?').run(linha.id);\r\n     if (statusAnterior === 'confirmada' || statusAnterior === 'convocada') {\r\n       atribuirVagasDisponiveis(linha.atividadeId, agora().getTime());\r\n       processarFilaEExpiracoes(linha.atividadeId);\r\n     }\r\n     const atualizada = banco.prepare('SELECT id, atividadeId, participanteId, status, convocadaAte, criadaEm FROM inscricoes WHERE id = ?').get(linha.id);\r\n     res.status(200).json(serializarInscricao(atualizada));\r\n   });\r\n \r\n   app.post('/inscricoes/:id/confirmacao', exigirUsuario, exigirParticipante, (req, res) => {\r\n     let linha = banco\r\n       .prepare('SELECT id, atividadeId, participanteId, status, convocadaAte, criadaEm FROM inscricoes WHERE id = ?')\r\n       .get(req.params.id);\r\n     if (!linha || linha.participanteId !== req.usuario.id) {\r\n       return res.status(404).json({ erro: 'NAO_ENCONTRADO', mensagem: 'Inscrição inexistente.' });\r\n     }\r\n \r\n     if (linha.status === 'convocada' && linha.convocadaAte && agora().getTime() > Date.parse(linha.convocadaAte)) {\r\n       processarFilaEExpiracoes(linha.atividadeId);\r\n       return res.status(422).json({ erro: 'CONVOCACAO_EXPIRADA', mensagem: 'Convocação expirada.' });\r\n     }\r\n \r\n     processarFilaEExpiracoes(linha.atividadeId);\r\n     linha = banco\r\n       .prepare('SELECT id, atividadeId, participanteId, status, convocadaAte, criadaEm FROM inscricoes WHERE id = ?')\r\n       .get(req.params.id);\r\n \r\n     if (linha.status !== 'convocada') {\r\n       return res.status(422).json({ erro: 'SEM_CONVOCACAO', mensagem: 'Inscrição não está convocada.' });\r\n     }\r\n \r\n     const atividade = banco.prepare('SELECT tipo FROM atividades WHERE id = ?').get(linha.atividadeId);\r\n     const novosEncontros = encontrosPorAtividade.all(linha.atividadeId);\r\n     const inscricoesAtivas = banco.prepare(\r\n       'SELECT atividadeId FROM inscricoes WHERE participanteId = ? AND id != ? AND status IN (\\'confirmada\\', \\'convocada\\')'\r\n     ).all(req.usuario.id, linha.id);\r\n \r\n     for (const ins of inscricoesAtivas) {\r\n       const exsEncontros = encontrosPorAtividade.all(ins.atividadeId);\r\n       for (const exs of exsEncontros) {\r\n         for (const novo of novosEncontros) {\r\n           const inicioExs = Date.parse(exs.inicio);\r\n           const fimExs = Date.parse(exs.fim);\r\n           const inicioNovo = Date.parse(novo.inicio);\r\n           const fimNovo = Date.parse(novo.fim);\r\n           const sobreposto = Math.max(inicioExs, inicioNovo) < Math.min(fimExs, fimNovo);\r\n           if (sobreposto) {\r\n             return res.status(409).json({ erro: 'CONFLITO_DE_HORARIO', mensagem: 'Conflito de horário.' });\r\n           }\r\n         }\r\n       }\r\n     }\r\n \r\n     if (atividade.tipo === 'minicurso') {\r\n       const minicursosOcupados = banco.prepare(`\r\n         SELECT COUNT(*) as count \r\n         FROM inscricoes i\r\n         JOIN atividades a ON a.id = i.atividadeId\r\n         WHERE i.participanteId = ? \r\n           AND i.id != ?\r\n           AND i.status IN ('confirmada', 'convocada')\r\n           AND a.tipo = 'minicurso'\r\n       `).get(req.usuario.id, linha.id);\r\n \r\n       if (minicursosOcupados && minicursosOcupados.count >= 3) {\r\n         return res.status(422).json({ erro: 'LIMITE_DE_MINICURSOS', mensagem: 'Limite de 3 minicursos atingido.' });\r\n       }\r\n     }\r\n \r\n     banco.prepare('UPDATE inscricoes SET status = \\'confirmada\\', convocadaAte = NULL WHERE id = ?').run(linha.id);\r\n     const atualizada = banco.prepare('SELECT id, atividadeId, participanteId, status, convocadaAte, criadaEm FROM inscricoes WHERE id = ?').get(linha.id);\r\n     res.status(200).json(serializarInscricao(atualizada));\r\n   });\r\n \r\n   const encontroPorId = banco.prepare('SELECT id, atividadeId, inicio, fim FROM encontros WHERE id = ?');\r\n   const atividadeCancelada = banco.prepare('SELECT cancelada FROM atividades WHERE id = ?');\r\n   const inscricaoConfirmada = banco.prepare(\r\n     \"SELECT id FROM inscricoes WHERE atividadeId = ? AND participanteId = ? AND status = 'confirmada'\",\r\n   );\r\n   const presencaPorEncontroEParticipante = banco.prepare(\r\n     'SELECT id, encontroId, participanteId, origem, lidoEm, registradaEm, justificativa FROM presencas WHERE encontroId = ? AND participanteId = ?',\r\n   );\r\n   const inserirPresenca = banco.prepare(\r\n     'INSERT INTO presencas (id, encontroId, participanteId, origem, lidoEm, registradaEm, justificativa) VALUES (?, ?, ?, ?, ?, ?, ?)',\r\n   );\r\n \r\n   function serializarPresenca(linha) {\r\n     return {\r\n       id: linha.id,\r\n       encontroId: linha.encontroId,\r\n       participanteId: linha.participanteId,\r\n       origem: linha.origem,\r\n       lidoEm: linha.lidoEm,\r\n       registradaEm: linha.registradaEm,\r\n       justificativa: linha.justificativa,\r\n     };\r\n   }\r\n \r\n   function exigirEncontro(req, res, next) {\r\n     const encontro = encontroPorId.get(req.params.id);\r\n     if (!encontro) {\r\n       return res.status(404).json({ erro: 'NAO_ENCONTRADO', mensagem: 'Encontro inexistente.' });\r\n     }\r\n     req.encontro = encontro;\r\n     next();\r\n   }\r\n \r\n   app.get('/encontros/:id/codigo', exigirUsuario, exigirOrganizacao, exigirEncontro, (req, res) => {\r\n     const atividade = atividadeCancelada.get(req.encontro.atividadeId);\r\n     if (atividade && atividade.cancelada) {\r\n       return res.status(422).json({\r\n         erro: 'ATIVIDADE_CANCELADA',\r\n         mensagem: 'Atividade cancelada.',\r\n       });\r\n     }\r\n     const agoraMs = agora().getTime();\r\n     const inicioMs = Date.parse(req.encontro.inicio);\r\n     if (agoraMs < inicioMs - 15 * 60000 || agoraMs > inicioMs + 30 * 60000) {\r\n       return res.status(422).json({\r\n         erro: 'FORA_DA_JANELA',\r\n         mensagem: 'O código só pode ser obtido de 15 min antes a 30 min depois do início do encontro.',\r\n       });\r\n     }\r\n     const inicioMinutoMs = Math.floor(agoraMs / 60000) * 60000;\r\n     res.json({\r\n       encontroId: req.encontro.id,\r\n       codigo: codigoDoEncontro(req.encontro.id, inicioMinutoMs),\r\n       trocaEm: formatarIsoBrasilia(new Date(inicioMinutoMs + 60000)),\r\n       validoAte: formatarIsoBrasilia(new Date(inicioMinutoMs + 120000)),\r\n     });\r\n   });\r\n \r\n   app.post('/encontros/:id/presencas', exigirUsuario, exigirParticipante, exigirEncontro, (req, res) => {\r\n     const corpo = req.body || {};\r\n     if (typeof corpo.codigo !== 'string') {\r\n       return res.status(422).json({\r\n         erro: 'DADOS_INVALIDOS',\r\n         mensagem: 'codigo precisa ser uma string.',\r\n       });\r\n     }\r\n     if ('lidoEm' in corpo && (typeof corpo.lidoEm !== 'string' || Number.isNaN(Date.parse(corpo.lidoEm)))) {\r\n       return res.status(422).json({\r\n         erro: 'DADOS_INVALIDOS',\r\n         mensagem: 'lidoEm precisa ser uma data em ISO 8601.',\r\n       });\r\n     }\r\n \r\n     const presencaExistente = presencaPorEncontroEParticipante.get(req.encontro.id, req.usuario.id);\r\n     if (presencaExistente) {\r\n       return res.status(200).json(serializarPresenca(presencaExistente));\r\n     }\r\n \r\n     if (!inscricaoConfirmada.get(req.encontro.atividadeId, req.usuario.id)) {\r\n       return res.status(403).json({\r\n         erro: 'NAO_INSCRITO',\r\n         mensagem: 'Só quem tem inscrição confirmada registra presença.',\r\n       });\r\n     }\r\n \r\n     const agoraMs = agora().getTime();\r\n     const temLidoEm = 'lidoEm' in corpo;\r\n     if (temLidoEm && agoraMs > Date.parse(req.encontro.fim) + 2 * 3600 * 1000) {\r\n       return res.status(422).json({\r\n         erro: 'SINCRONIZACAO_TARDIA',\r\n         mensagem: 'A sincronização offline só vale até 2 horas depois do fim do encontro.',\r\n       });\r\n     }\r\n \r\n     const inicioMs = Date.parse(req.encontro.inicio);\r\n     const instanteQueVale = temLidoEm ? Math.min(Date.parse(corpo.lidoEm), agoraMs) : agoraMs;\r\n     if (instanteQueVale < inicioMs - 15 * 60000 || instanteQueVale > inicioMs + 30 * 60000) {\r\n       return res.status(422).json({\r\n         erro: 'FORA_DA_JANELA',\r\n         mensagem: 'A presença só pode ser registrada de 15 min antes a 30 min depois do início do encontro.',\r\n       });\r\n     }\r\n \r\n     const inicioMinutoMs = Math.floor(instanteQueVale / 60000) * 60000;\r\n     const codigoNormalizado = corpo.codigo.toUpperCase().replace(/\\s+/g, '');\r\n     const codigosAceitos = [\r\n       codigoDoEncontro(req.encontro.id, inicioMinutoMs),\r\n       codigoDoEncontro(req.encontro.id, inicioMinutoMs - 60000),\r\n     ];\r\n     if (!codigosAceitos.includes(codigoNormalizado)) {\r\n       return res.status(422).json({\r\n         erro: 'CODIGO_INVALIDO',\r\n         mensagem: 'Código inválido para este encontro.',\r\n       });\r\n     }\r\n \r\n     const registradaEm = formatarIsoBrasilia(agora());\r\n     const presenca = {\r\n       id: gerarId('pre_'),\r\n       encontroId: req.encontro.id,\r\n       participanteId: req.usuario.id,\r\n       origem: temLidoEm ? 'qr_offline' : 'qr',\r\n       lidoEm: formatarIsoBrasilia(new Date(instanteQueVale)),\r\n       registradaEm,\r\n       justificativa: null,\r\n     };\r\n     inserirPresenca.run(\r\n       presenca.id,\r\n       presenca.encontroId,\r\n       presenca.participanteId,\r\n       presenca.origem,\r\n       presenca.lidoEm,\r\n       presenca.registradaEm,\r\n       presenca.justificativa,\r\n     );\r\n     res.status(201).json(serializarPresenca(presenca));\r\n   });\r\n \r\n   app.post('/encontros/:id/presencas/manual', exigirUsuario, exigirOrganizacao, exigirEncontro, (req, res) => {\r\n     const corpo = req.body || {};\r\n     if (typeof corpo.participanteId !== 'string') {\r\n       return res.status(422).json({\r\n         erro: 'DADOS_INVALIDOS',\r\n         mensagem: 'participanteId precisa ser uma string.',\r\n       });\r\n     }\r\n     const justificativa = corpo.justificativa;\r\n     if (justificativa === undefined) {\r\n       return res.status(422).json({\r\n         erro: 'JUSTIFICATIVA_OBRIGATORIA',\r\n         mensagem: 'A justificativa da presenca manual e obrigatoria.',\r\n       });\r\n     }\r\n     if (typeof justificativa !== 'string') {\r\n       return res.status(422).json({\r\n         erro: 'DADOS_INVALIDOS',\r\n         mensagem: 'justificativa precisa ser uma string.',\r\n       });\r\n     }\r\n     if (justificativa.length < 10) {\r\n       return res.status(422).json({\r\n         erro: 'JUSTIFICATIVA_OBRIGATORIA',\r\n         mensagem: 'A justificativa da presenca manual precisa ter no minimo 10 caracteres.',\r\n       });\r\n     }\r\n \r\n     const presencaExistente = presencaPorEncontroEParticipante.get(req.encontro.id, corpo.participanteId);\r\n     if (presencaExistente) {\r\n       return res.status(200).json(serializarPresenca(presencaExistente));\r\n     }\r\n \r\n     if (!inscricaoConfirmada.get(req.encontro.atividadeId, corpo.participanteId)) {\r\n       return res.status(403).json({\r\n         erro: 'NAO_INSCRITO',\r\n         mensagem: 'So quem tem inscricao confirmada registra presenca.',\r\n       });\r\n     }\r\n \r\n     const inicioMs = Date.parse(req.encontro.inicio);\r\n     const fimMs = Date.parse(req.encontro.fim);\r\n     const agoraMs = agora().getTime();\r\n     if (agoraMs < inicioMs - 15 * 60000 || agoraMs > fimMs + 2 * 3600 * 1000) {\r\n       return res.status(422).json({\r\n         erro: 'FORA_DA_JANELA',\r\n         mensagem: 'A presenca manual vale de 15 min antes do inicio ate 2 horas depois do fim do encontro.',\r\n       });\r\n     }\r\n \r\n     const confirmadas = banco\r\n       .prepare(\"SELECT COUNT(*) AS total FROM inscricoes WHERE atividadeId = ? AND status = 'confirmada'\")\r\n       .get(req.encontro.atividadeId).total;\r\n     const teto = Math.ceil(confirmadas * 0.1);\r\n     const manuais = banco\r\n       .prepare('SELECT COUNT(*) AS total FROM presencas WHERE encontroId = ? AND origem = ?')\r\n       .get(req.encontro.id, 'manual').total;\r\n     if (manuais >= teto) {\r\n       return res.status(422).json({\r\n         erro: 'LIMITE_DE_MANUAIS',\r\n         mensagem: 'As presencas manuais desse encontro estao no limite de 10% das inscricoes confirmadas.',\r\n       });\r\n     }\r\n \r\n     const registradaEm = formatarIsoBrasilia(agora());\r\n     const presenca = {\r\n       id: gerarId('pre_'),\r\n       encontroId: req.encontro.id,\r\n       participanteId: corpo.participanteId,\r\n       origem: 'manual',\r\n       lidoEm: registradaEm,\r\n       registradaEm,\r\n       justificativa,\r\n     };\r\n     inserirPresenca.run(\r\n       presenca.id,\r\n       presenca.encontroId,\r\n       presenca.participanteId,\r\n       presenca.origem,\r\n       presenca.lidoEm,\r\n       presenca.registradaEm,\r\n       presenca.justificativa,\r\n     );\r\n     res.status(201).json(serializarPresenca(presenca));\r\n   });\r\n \r\n   const presencasPorEncontro = banco.prepare(`\r\n     SELECT p.id, p.encontroId, p.participanteId, p.origem, p.lidoEm, p.registradaEm, p.justificativa\r\n     FROM presencas p\r\n     JOIN usuarios u ON u.id = p.participanteId\r\n     WHERE p.encontroId = ?\r\n     ORDER BY u.nome COLLATE NOCASE, p.participanteId\r\n   `);\r\n \r\n   app.get('/encontros/:id/presencas', exigirUsuario, exigirOrganizacao, exigirEncontro, (req, res) => {\r\n     res.json(presencasPorEncontro.all(req.encontro.id).map(serializarPresenca));\r\n   });\r\n \r\n   const certificadoPorCodigo = banco.prepare(\r\n     'SELECT codigo, atividadeId, participanteId, cargaHorariaMinutos, presencas, encontros, emitidoEm FROM certificados WHERE codigo = ? COLLATE NOCASE',\r\n   );\r\n   const certificadosDoParticipante = banco.prepare(\r\n     'SELECT codigo, atividadeId, participanteId, cargaHorariaMinutos, presencas, encontros, emitidoEm FROM certificados WHERE participanteId = ? ORDER BY emitidoEm, codigo',\r\n   );\r\n   const atividadePorId = banco.prepare('SELECT id, cancelada FROM atividades WHERE id = ?');\r\n \r\n   function serializarCertificado(linha) {\r\n     return {\r\n       codigo: linha.codigo,\r\n       atividadeId: linha.atividadeId,\r\n       participanteId: linha.participanteId,\r\n       cargaHorariaMinutos: linha.cargaHorariaMinutos,\r\n       presencas: linha.presencas,\r\n       encontros: linha.encontros,\r\n       emitidoEm: linha.emitidoEm,\r\n     };\r\n   }\r\n \r\n   const certificadoPorAtividadeEParticipante = banco.prepare(\r\n     'SELECT codigo, atividadeId, participanteId, cargaHorariaMinutos, presencas, encontros, emitidoEm FROM certificados WHERE atividadeId = ? AND participanteId = ?',\r\n   );\r\n   const certificadoExistentePorCodigo = banco.prepare(\r\n     'SELECT codigo FROM certificados WHERE codigo = ?',\r\n   );\r\n   const inserirCertificado = banco.prepare(\r\n     'INSERT INTO certificados (codigo, atividadeId, participanteId, cargaHorariaMinutos, presencas, encontros, emitidoEm) VALUES (?, ?, ?, ?, ?, ?, ?)',\r\n   );\r\n   const contarPresencasCertificado = banco.prepare(\r\n     'SELECT COUNT(*) AS total FROM presencas p JOIN encontros e ON e.id = p.encontroId WHERE e.atividadeId = ? AND p.participanteId = ?',\r\n   );\r\n \r\n   function gerarCodigoCertificado() {\r\n     for (let tentativa = 0; tentativa < 100; tentativa += 1) {\r\n       let variavel = '';\r\n       for (let i = 0; i < 8; i += 1) {\r\n         variavel += ALFABETO_CODIGO[crypto.randomInt(ALFABETO_CODIGO.length)];\r\n       }\r\n       const codigo = `SA26-${variavel.slice(0, 4)}-${variavel.slice(4)}`;\r\n       if (!certificadoExistentePorCodigo.get(codigo)) {\r\n         return codigo;\r\n       }\r\n     }\r\n     throw new Error('Nao foi possivel gerar um codigo de certificado unico.');\r\n   }\r\n \r\n   app.post('/atividades/:id/certificado', exigirUsuario, exigirParticipante, (req, res) => {\r\n     const atividade = atividadePorId.get(req.params.id);\r\n     if (!atividade) {\r\n       return res.status(404).json({ erro: 'NAO_ENCONTRADO', mensagem: 'Atividade inexistente.' });\r\n     }\r\n     if (atividade.cancelada) {\r\n       return res.status(422).json({ erro: 'ATIVIDADE_CANCELADA', mensagem: 'Atividade cancelada.' });\r\n     }\r\n     const inscricao = banco.prepare(\r\n       \"SELECT id FROM inscricoes WHERE atividadeId = ? AND participanteId = ? AND status = 'confirmada'\",\r\n     ).get(atividade.id, req.usuario.id);\r\n     if (!inscricao) {\r\n       return res.status(403).json({ erro: 'NAO_INSCRITO', mensagem: 'Só quem tem inscrição confirmada emite certificado.' });\r\n     }\r\n     const encontrosDaAtividade = encontrosPorAtividade.all(atividade.id);\r\n     const fimUltimoEncontroMs = Date.parse(encontrosDaAtividade[encontrosDaAtividade.length - 1].fim);\r\n     if (agora().getTime() < fimUltimoEncontroMs) {\r\n       return res.status(422).json({ erro: 'ATIVIDADE_NAO_ENCERRADA', mensagem: 'Atividade ainda não encerrada.' });\r\n     }\r\n     const totalEncontros = encontrosDaAtividade.length;\r\n     const totalPresencas = contarPresencasCertificado.get(atividade.id, req.usuario.id).total;\r\n     if (totalPresencas * 4 < totalEncontros * 3) {\r\n       return res.status(422).json({ erro: 'PRESENCA_INSUFICIENTE', mensagem: 'Frequência abaixo do mínimo de 75%.' });\r\n     }\r\n     const existente = certificadoPorAtividadeEParticipante.get(atividade.id, req.usuario.id);\r\n     if (existente) {\r\n       return res.status(200).json(serializarCertificado(existente));\r\n     }\r\n     const cargaHorariaMinutos = Math.round(\r\n       encontrosDaAtividade.reduce(\r\n         (soma, e) => soma + (Date.parse(e.fim) - Date.parse(e.inicio)) / 60000,\r\n         0,\r\n       ),\r\n     );\r\n     const codigo = gerarCodigoCertificado();\r\n     const emitidoEm = agora().toISOString();\r\n     try {\r\n       inserirCertificado.run(codigo, atividade.id, req.usuario.id, cargaHorariaMinutos, totalPresencas, totalEncontros, emitidoEm);\r\n     } catch (erro) {\r\n       const ehConflito = erro && typeof erro.code === 'string' && erro.code.startsWith('SQLITE_CONSTRAINT');\r\n       if (ehConflito) {\r\n         const concorrente = certificadoPorAtividadeEParticipante.get(atividade.id, req.usuario.id);\r\n         if (concorrente) {\r\n           return res.status(200).json(serializarCertificado(concorrente));\r\n         }\r\n       }\r\n       throw erro;\r\n     }\r\n     return res.status(201).json({\r\n       codigo,\r\n       atividadeId: atividade.id,\r\n       participanteId: req.usuario.id,\r\n       cargaHorariaMinutos,\r\n       presencas: totalPresencas,\r\n       encontros: totalEncontros,\r\n       emitidoEm,\r\n     });\r\n   });\r\n \r\n   app.get('/certificados', exigirUsuario, exigirParticipante, (req, res) => {\r\n     res.json(certificadosDoParticipante.all(req.usuario.id).map(serializarCertificado));\r\n   });\r\n \r\n   // M5 — Painel da organização\r\n   const listaAtividadesPainel = banco.prepare(`\r\n     SELECT id, titulo, tipo, salaId, vagas, cancelada FROM atividades WHERE cancelada = 0 ORDER BY titulo COLLATE NOCASE\r\n   `);\r\n \r\n   function calcularOcupacaoPercentual(atividadeId) {\r\n     const atividade = banco.prepare('SELECT vagas FROM atividades WHERE id = ?').get(atividadeId);\r\n     if (!atividade) return 0;\r\n     const inscricoes = banco.prepare('SELECT status FROM inscricoes WHERE atividadeId = ?').all(atividadeId);\r\n     const ocupadas = contarVagasOcupadas(inscricoes);\r\n     if (atividade.vagas === 0) return 0;\r\n     return Math.round((ocupadas / atividade.vagas) * 1000) / 10;\r\n   }\r\n \r\n   function frequenciaPercentualAtividade(atividadeId) {\r\n     const encontros = encontrosPorAtividade.all(atividadeId);\r\n     const encontrosEncerados = encontros.filter((e) => {\r\n       const fimMs = Date.parse(e.fim);\r\n       return fimMs <= agora().getTime();\r\n     });\r\n     if (encontrosEncerados.length === 0) return null;\r\n     const totalMinutos = encontrosEncerados.reduce(\r\n       (soma, e) => soma + (Date.parse(e.fim) - Date.parse(e.inicio)) / 60000,\r\n       0,\r\n     );\r\n     const mediaMinutos = totalMinutos / encontrosEncerados.length;\r\n     return Math.round(mediaMinutos * 10) / 10;\r\n   }\r\n \r\n   function participantesSemChance(atividadeId) {\r\n     const confirmadas = banco.prepare(\r\n       \"SELECT id, participanteId FROM inscricoes WHERE atividadeId = ? AND status = 'confirmada'\",\r\n     ).all(atividadeId);\r\n     const resultado = [];\r\n \r\n     for (const insc of confirmadas) {\r\n       const participanteId = insc.participanteId;\r\n       const presencas = banco.prepare(\r\n         'SELECT p.id, p.encontroId, p.origem FROM presencas p LEFT JOIN inscricoes i ON i.participanteId = p.participanteId WHERE p.participanteId = ? AND p.encontroId IN (SELECT id FROM encontros WHERE atividadeId = ?)',\r\n       ).all(participanteId, atividadeId);\r\n \r\n       let faltasContadas = 0;\r\n       const encontros = banco.prepare('SELECT id, inicio, fim FROM encontros WHERE atividadeId = ? ORDER BY inicio').all(atividadeId);\r\n       const agoraMs = agora().getTime();\r\n \r\n       for (const enc of encontros) {\r\n         // Verifica se houve presença registrada para este encontro\r\n         const temPresenca = banco.prepare(\r\n           'SELECT id FROM presencas WHERE encontroId = ? AND participanteId = ?',\r\n         ).get(enc.id, participanteId);\r\n \r\n         if (!temPresenca) {\r\n           // Ausente - conta como falta\r\n           faltasContadas += 1;\r\n         } else {\r\n           // Verifica se o prazo de registro venceu (2h após fim do encontro)\r\n           const fimMs = Date.parse(enc.fim);\r\n           const prazoLimite = fimMs + 2 * 3600 * 1000;\r\n           if (agoraMs > prazoLimite) {\r\n             // Mesmo com presença registrada, se o prazo venceu, conta como falta\r\n             // (participante pode ter se inscrito mas não conseguiu registrar a presença a tempo)\r\n             faltasContadas += 1;\r\n           }\r\n         }\r\n       }\r\n       if (faltasContadas > 1) {\r\n         const usuario = usuarioPorId.get(participanteId);\r\n         if (usuario) {\r\n           resultado.push({\r\n             participanteId,\r\n             nome: usuario.nome,\r\n             faltas: faltasContadas,\r\n             faltasPermitidas: 1,\r\n           });\r\n         }\r\n       }\r\n     }\r\n     return resultado;\r\n   }\r\n \r\n   function gerarCSVFrecuencia(atividadeId) {\r\n     const atividade = banco.prepare('SELECT titulo FROM atividades WHERE id = ?').get(atividadeId);\r\n     if (!atividade) return '';\r\n \r\n     const confirmadas = banco.prepare(\r\n       \"SELECT participanteId FROM inscricoes WHERE atividadeId = ? AND status = 'confirmada' ORDER BY participanteId COLLATE NOCASE\",\r\n     ).all(atividadeId);\r\n \r\n     let csv = '\\uFEFF'; // UTF-8 with BOM\r\n     csv += 'nome';\r\n \r\n     // Colunas E1...En para cada encontro\r\n     const encontros = encontrosPorAtividade.all(atividadeId).sort((a, b) => Date.parse(a.inicio) - Date.parse(b.inicio));\r\n     for (let i = 0; i < encontros.length; i++) {\r\n       csv += `;E${i + 1}`;\r\n     }\r\n     csv += ';frequencia;certificado';\r\n \r\n     for (const insc of confirmadas) {\r\n       const participanteId = insc.participanteId;\r\n       const usuario = usuarioPorId.get(participanteId);\r\n       if (!usuario) continue;\r\n \r\n       const nome = usuario.nome;\r\n       let linha = nome;\r\n \r\n       // Para cada encontro, marcar P, F ou -\r\n       for (const encontro of encontros) {\r\n         const presenca = banco.prepare(\r\n           'SELECT origem, justificativa FROM presencas WHERE encontroId = ? AND participanteId = ?',\r\n           encontro.id,\r\n           participanteId,\r\n         ).get();\r\n         const fimMs = Date.parse(encontro.fim);\r\n         const prazoLimite = fimMs + 2 * 3600 * 1000;\r\n         const agoraMs = agora().getTime();\r\n \r\n         if (agoraMs > prazoLimite) {\r\n           // Prazo vencido\r\n           if (!presenca) {\r\n             linha += ';F'; // Falta prazo vencido sem presença\r\n           } else if (presenca.origem === 'manual') {\r\n             linha += ';P'; // Presença manual (contaria como presente)\r\n           } else {\r\n             linha += ';F'; // Prazo vencido sem presença registrada\r\n           }\r\n         } else {\r\n           // Prazo aberto (hífen)\r\n           linha += ';-';\r\n         }\r\n       }\r\n \r\n       // Frequência calculada\r\n       const freq = frequenciaPercentualAtividade(atividadeId);\r\n       linha += `;${freq !== null ? freq.toFixed(1) : '0,0'}`;\r\n \r\n       // Certificado\r\n       const temCertificado = banco.prepare(\r\n         'SELECT id FROM certificados WHERE atividadeId = ? AND participanteId = ?',\r\n         atividadeId,\r\n         participanteId,\r\n       ).get();\r\n       linha += `;${temCertificado ? 'SIM' : 'NÃO'}`;\r\n \r\n       csv += `\\n${linha}`;\r\n     }\r\n \r\n     return csv;\r\n   }\r\n \r\n   app.get('/painel/atividades', exigirUsuario, exigirOrganizacao, (req, res) => {\r\n     const linhas = listaAtividadesPainel.all();\r\n     const resultado = linhas.map((linha) => {\r\n       const ocupacaoPercentual = calcularOcupacaoPercentual(linha.id);\r\n       const frequenciaPercentual = frequenciaPercentualAtividade(linha.id);\r\n       return {\r\n         atividadeId: linha.id,\r\n         titulo: linha.titulo,\r\n         vagas: linha.vagas,\r\n         ocupadas: 0, // will be calculated below\r\n         emEspera: 0,\r\n         ocupacaoPercentual,\r\n         frequenciaPercentual,\r\n       };\r\n     });\r\n \r\n     // Recalcular ocupadas reais\r\n     for (const item of resultado) {\r\n       const inscricoes = banco.prepare('SELECT status FROM inscricoes WHERE atividadeId = ?').all(item.atividadeId);\r\n       item.ocupadas = contarVagasOcupadas(inscricoes);\r\n     }\r\n \r\n     res.json(resultado);\r\n   });\r\n \r\n   app.get('/painel/atividades/:id/sem-chance', exigirUsuario, exigirOrganizacao, (req, res) => {\r\n     const semChance = participantesSemChance(req.params.id);\r\n     res.json(semChance);\r\n   });\r\n \r\n   app.get('/painel/atividades/:id/frequencia.csv', exigirUsuario, exigirOrganizacao, (req, res) => {\r\n     const csv = gerarCSVFrecuencia(req.params.id);\r\n     const atividade = banco.prepare('SELECT titulo FROM atividades WHERE id = ?').get(req.params.id);\r\n     if (!atividade) {\r\n       return res.status(404).json({ erro: 'NAO_ENCONTRADO', mensagem: 'Atividade inexistente.' });\r\n     }\r\n     const mimeType = 'text/csv; charset=utf-8';\r\n     res.set('Content-Type', mimeType);\r\n     res.set('Content-Disposition', `attachment; filename=\"frequencia-${atividade.titulo}.csv\"`);\r\n     res.status(200).send(csv);\r\n   });\r\n \r\n app.get('/painel/bloqueios', exigirUsuario, exigirOrganizacao, (req, res) => {\r\n     const atividades = banco.prepare('SELECT id, cancelada FROM atividades WHERE cancelada = 0').all();\r\n     const bloqueios = [];\r\n     const participanteAtividadesZeroPresenca = {};\r\n \r\n     for (const atv of atividades) {\r\n       const confirmadas = banco.prepare(\r\n         \"SELECT participanteId FROM inscricoes WHERE atividadeId = ? AND status = 'confirmada' GROUP BY participanteId\",\r\n       ).all(atv.id);\r\n \r\n       for (const conf of confirmadas) {\r\n         const participanteId = conf.participanteId;\r\n \r\n         let hasNonManualPresenca = false;\r\n         const encs = encontrosPorAtividade.all(atv.id);\r\n         for (const enc of encs) {\r\n           const presenca = banco.prepare(\r\n             'SELECT id FROM presencas WHERE encontroId = ? AND participanteId = ? AND origem != ?',\r\n           ).get(enc.id, participanteId, 'manual');\r\n           if (presenca) {\r\n             hasNonManualPresenca = true;\r\n             break;\r\n           }\r\n         }\r\n \r\n         if (!hasNonManualPresenca) {\r\n           if (!participanteAtividadesZeroPresenca[participanteId]) {\r\n             participanteAtividadesZeroPresenca[participanteId] = { count: 0, atividades: [] };\r\n           }\r\n           participanteAtividadesZeroPresenca[participanteId].count += 1;\r\n           participanteAtividadesZeroPresenca[participanteId].atividades.push(atv.id);\r\n         }\r\n       }\r\n     }\r\n \r\n     for (const [participanteId, data] of Object.entries(participanteAtividadesZeroPresenca)) {\r\n       if (data.count >= 2) {\r\n         bloqueios.push({\r\n           participanteId,\r\n           nome: usuarioPorId.get(participanteId)?.nome || '',\r\n           atividades: data.atividades || [],\r\n           bloqueadoDesde: new Date(agora().getTime()).toISOString(),\r\n         });\r\n         try {\r\n           banco.prepare(\r\n             'INSERT OR REPLACE INTO bloqueios (participanteId, nome, atividades, bloqueadoDesde) VALUES (?, ?, ?, ?)',\r\n-          ).run(participanteId, usuarioPorId.get(participanteId)?.nome || '', JSON.stringify(data.atividades || []), new Date(agora().getTime()).toISOString());\r\n+          ).run(participanteId, usuarioPorId.get(participanteId)?.nome || participanteId || '', typeof data.atividades === 'string' ? data.atividades : JSON.stringify(data.atividades || []), new Date(agora().getTime()).toISOString());\r\n         } catch (erro) {\r\n           console.error(erro);\r\n         }\r\n       }\r\n     }\r\n res.json(bloqueios);\r\n   });\r\n \r\n app.delete('/painel/bloqueios/:participanteId', exigirUsuario, exigirOrganizacao, (req, res) => {\r\n     try {\r\n       const result = banco.prepare('DELETE FROM bloqueios WHERE participanteId = ?').run(req.params.participanteId);\r\n       if (result.changes === 0) {\r\n         return res.status(404).json({ erro: 'NAO_ENCONTRADO', mensagem: 'Bloqueio inexistente.' });\r\n       }\r\n     } catch (erro) {\r\n       console.error(erro);\r\n     }\r\n     res.status(204).end();\r\n   });\n \r\n   function abreviarNome(nomeCompleto) {\r\n     const particulas = new Set(['de', 'da', 'do', 'das', 'dos']);\r\n     const partes = nomeCompleto.trim().split(/\\s+/);\r\n     const primeiro = partes[0];\r\n     const resto = partes.slice(1).map((parte) => {\r\n       if (particulas.has(parte.toLowerCase())) {\r\n         return parte.toLowerCase();\r\n       }\r\n       return `${parte[0].toUpperCase()}.`;\r\n     });\r\n     return [primeiro, ...resto].join(' ');\r\n   }\r\n \r\n   app.get('/certificados/:codigo', (req, res) => {\r\n     const linha = certificadoPorCodigo.get(req.params.codigo);\r\n     if (!linha) {\r\n       return res.status(404).json({ erro: 'NAO_ENCONTRADO', mensagem: 'Certificado inexistente.' });\r\n     }\r\n     const usuario = usuarioPorId.get(linha.participanteId);\r\n     const atividade = banco.prepare('SELECT titulo FROM atividades WHERE id = ?').get(linha.atividadeId);\r\n     return res.json({\r\n       codigo: linha.codigo,\r\n       participante: abreviarNome(usuario.nome),\r\n       atividade: atividade.titulo,\r\n       cargaHorariaMinutos: linha.cargaHorariaMinutos,\r\n       emitidoEm: linha.emitidoEm,\r\n     });\r\n   });\r\n \r\n   app.get('/extrato', exigirUsuario, exigirParticipante, (req, res) => {\r\n     const participanteId = req.usuario.id;\r\n     const agoraMs = agora().getTime();\r\n     const atividades = banco.prepare('SELECT id, titulo, tipo, cancelada FROM atividades WHERE cancelada = 0').all();\r\n     const itens = [];\r\n     let palestrasMinutos = 0;\r\n     let minicursosMinutos = 0;\r\n     for (const atividade of atividades) {\r\n       const inscricao = banco.prepare(\"SELECT id FROM inscricoes WHERE atividadeId = ? AND participanteId = ? AND status = 'confirmada'\").get(atividade.id, participanteId);\r\n       if (!inscricao) continue;\r\n       const encontros = encontrosPorAtividade.all(atividade.id);\r\n       if (encontros.length === 0) continue;\r\n       if (agoraMs < Date.parse(encontros[encontros.length - 1].fim)) continue;\r\n       const totalPresencas = contarPresencasCertificado.get(atividade.id, participanteId).total;\r\n       if (totalPresencas * 4 < encontros.length * 3) continue;\r\n       const cargaHorariaMinutos = Math.round(encontros.reduce((soma, e) => soma + (Date.parse(e.fim) - Date.parse(e.inicio)) / 60000, 0));\r\n       if (atividade.tipo === 'palestra') palestrasMinutos += cargaHorariaMinutos;\r\n       else minicursosMinutos += cargaHorariaMinutos;\r\n       const certificado = certificadoPorAtividadeEParticipante.get(atividade.id, participanteId);\r\n       itens.push({ atividadeId: atividade.id, titulo: atividade.titulo, tipo: atividade.tipo, cargaHorariaMinutos, codigo: certificado ? certificado.codigo : null });\r\n     }\r\n     const totalMinutos = palestrasMinutos + minicursosMinutos;\r\n     const aproveitadoMinutos = Math.min(Math.min(palestrasMinutos, 240) + minicursosMinutos, 1200);\r\n     return res.json({ itens, palestrasMinutos, minicursosMinutos, totalMinutos, aproveitadoMinutos });\r\n   });\r\n \r\n   return app;\r\n }\n\\ No newline at end of file\n",
+       "additions": 1,
+       "deletions": 1,
+       "status": "modified"
+      }
+     ]
+    },
+    "id": "msg_0b6646d5d001HRy3UJAV6Sw4v0",
+    "sessionID": "ses_f499b92b9ffe1GQJUDoJHzMbys"
+   },
+   "parts": [
+    {
+     "type": "text",
+     "text": "Abra api/src/app.js e localize a rota /painel/bloqueios. Na instrução INSERT OR REPLACE INTO bloqueios (participanteId, nome, atividades, bloqueadoDesde) VALUES (?, ?, ?, ?), substitua a passagem de parâmetros para garantir o tratamento contra null/undefined em todos os campos:\n\n- participanteId: participanteId\n- nome: usuarioPorId.get(participanteId)?.nome || participanteId || ''\n- atividades: typeof data.atividades === 'string' ? data.atividades : JSON.stringify(data.atividades || [])\n- bloqueadoDesde: new Date(agora().getTime()).toISOString()\n\nCertifique-se de que nenhum desses 4 argumentos passe como null ou undefined. Não execute comandos no terminal. ",
+     "id": "prt_0b6646d5f001dn9ACpuW31g1As",
+     "sessionID": "ses_f499b92b9ffe1GQJUDoJHzMbys",
+     "messageID": "msg_0b6646d5d001HRy3UJAV6Sw4v0"
+    }
+   ]
+  },
+  {
+   "info": {
+    "parentID": "msg_0b6646d5d001HRy3UJAV6Sw4v0",
+    "role": "assistant",
+    "mode": "build",
+    "agent": "build",
+    "path": {
+     "cwd": "C:\\Users\\Vitor Cruz\\OneDrive\\Documentos\\Trabalho Semana Academica\\semana-academica",
+     "root": "C:\\Users\\Vitor Cruz\\OneDrive\\Documentos\\Trabalho Semana Academica\\semana-academica"
+    },
+    "cost": 0,
+    "tokens": {
+     "total": 10089,
+     "input": 1257,
+     "output": 44,
+     "reasoning": 84,
+     "cache": {
+      "write": 0,
+      "read": 8704
+     }
+    },
+    "modelID": "nemotron-3.5-lightning-free",
+    "providerID": "opencode",
+    "time": {
+     "created": 1789766430070,
+     "completed": 1789766434888
+    },
+    "finish": "tool-calls",
+    "id": "msg_0b6646d76001XsBsKzSWzN7cFW",
+    "sessionID": "ses_f499b92b9ffe1GQJUDoJHzMbys"
+   },
+   "parts": [
+    {
+     "snapshot": "ccc4605f79eacdfd163f9a79d128a7aa6cd86279",
+     "type": "step-start",
+     "id": "prt_0b66478d1001mL4zR95d2Xv6Lr",
+     "sessionID": "ses_f499b92b9ffe1GQJUDoJHzMbys",
+     "messageID": "msg_0b6646d76001XsBsKzSWzN7cFW"
+    },
+    {
+     "type": "reasoning",
+     "text": "The user wants me to edit the file `api/src/app.js` to modify a specific route `/painel/bloqueios`. I need to find the INSERT OR REPLACE statement and update the parameter passing to handle null/undefined values as specified.\n\nLet me first read the file to understand its structure and find the relevant route and INSERT statement.",
+     "time": {
+      "start": 1789766432982,
+      "end": 1789766434228
+     },
+     "id": "prt_0b66478d6001jdS2GyMXLK41OZ",
+     "sessionID": "ses_f499b92b9ffe1GQJUDoJHzMbys",
+     "messageID": "msg_0b6646d76001XsBsKzSWzN7cFW"
+    },
+    {
+     "type": "tool",
+     "tool": "read",
+     "callID": "call-83feb48e-c02b-43d9-b045-da407be8f5c4",
+     "state": {
+      "status": "completed",
+      "input": {
+       "filePath": "C:\\Users\\Vitor Cruz\\OneDrive\\Documentos\\Trabalho Semana Academica\\semana-academica\\api\\src\\app.js"
+      },
+      "output": "[58679 caracteres omitidos]",
+      "title": "api\\src\\app.js",
+      "time": {
+       "start": 1789766434256,
+       "end": 1789766434308
+      }
+     },
+     "id": "prt_0b6647dbc0010QraV6Nugl2TFv",
+     "sessionID": "ses_f499b92b9ffe1GQJUDoJHzMbys",
+     "messageID": "msg_0b6646d76001XsBsKzSWzN7cFW"
+    },
+    {
+     "reason": "tool-calls",
+     "snapshot": "ccc4605f79eacdfd163f9a79d128a7aa6cd86279",
+     "type": "step-finish",
+     "tokens": {
+      "total": 10089,
+      "input": 1257,
+      "output": 44,
+      "reasoning": 84,
+      "cache": {
+       "write": 0,
+       "read": 8704
+      }
+     },
+     "cost": 0,
+     "id": "prt_0b6647f330011YGNUeIcrKbwY5",
+     "sessionID": "ses_f499b92b9ffe1GQJUDoJHzMbys",
+     "messageID": "msg_0b6646d76001XsBsKzSWzN7cFW"
+    }
+   ]
+  },
+  {
+   "info": {
+    "parentID": "msg_0b6646d5d001HRy3UJAV6Sw4v0",
+    "role": "assistant",
+    "mode": "build",
+    "agent": "build",
+    "path": {
+     "cwd": "C:\\Users\\Vitor Cruz\\OneDrive\\Documentos\\Trabalho Semana Academica\\semana-academica",
+     "root": "C:\\Users\\Vitor Cruz\\OneDrive\\Documentos\\Trabalho Semana Academica\\semana-academica"
+    },
+    "cost": 0,
+    "tokens": {
+     "total": 30957,
+     "input": 22139,
+     "output": 88,
+     "reasoning": 26,
+     "cache": {
+      "write": 0,
+      "read": 8704
+     }
+    },
+    "modelID": "nemotron-3.5-lightning-free",
+    "providerID": "opencode",
+    "time": {
+     "created": 1789766434893,
+     "completed": 1789766440209
+    },
+    "finish": "tool-calls",
+    "id": "msg_0b664804c001GZqv8NScwJiEv9",
+    "sessionID": "ses_f499b92b9ffe1GQJUDoJHzMbys"
+   },
+   "parts": [
+    {
+     "snapshot": "ccc4605f79eacdfd163f9a79d128a7aa6cd86279",
+     "type": "step-start",
+     "id": "prt_0b66485d0001f15W0Oltj083or",
+     "sessionID": "ses_f499b92b9ffe1GQJUDoJHzMbys",
+     "messageID": "msg_0b664804c001GZqv8NScwJiEv9"
+    },
+    {
+     "type": "reasoning",
+     "text": "Let me continue reading the file to find the rota /painel/bloqueios and the INSERT OR REPLACE statement.",
+     "time": {
+      "start": 1789766436310,
+      "end": 1789766436846
+     },
+     "id": "prt_0b66485d6001ZecoumpFT1FeGE",
+     "sessionID": "ses_f499b92b9ffe1GQJUDoJHzMbys",
+     "messageID": "msg_0b664804c001GZqv8NScwJiEv9"
+    },
+    {
+     "type": "text",
+     "text": "Let me continue reading the file to find the `/painel/bloqueios` route.\n\n",
+     "time": {
+      "start": 1789766436850,
+      "end": 1789766439841
+     },
+     "id": "prt_0b66487f2001sSH3J87WI5B65O",
+     "sessionID": "ses_f499b92b9ffe1GQJUDoJHzMbys",
+     "messageID": "msg_0b664804c001GZqv8NScwJiEv9"
+    },
+    {
+     "type": "tool",
+     "tool": "read",
+     "callID": "call-de30a6fd-ffe0-4879-9760-9e08c7763c24",
+     "state": {
+      "status": "completed",
+      "input": {
+       "offset": 1266,
+       "filePath": "C:\\Users\\Vitor Cruz\\OneDrive\\Documentos\\Trabalho Semana Academica\\semana-academica\\api\\src\\app.js"
+      },
+      "output": "[7112 caracteres omitidos]",
+      "title": "api\\src\\app.js",
+      "time": {
+       "start": 1789766439744,
+       "end": 1789766439763
+      }
+     },
+     "id": "prt_0b664933a001SUhAg5nYZ94h9I",
+     "sessionID": "ses_f499b92b9ffe1GQJUDoJHzMbys",
+     "messageID": "msg_0b664804c001GZqv8NScwJiEv9"
+    },
+    {
+     "reason": "tool-calls",
+     "snapshot": "ccc4605f79eacdfd163f9a79d128a7aa6cd86279",
+     "type": "step-finish",
+     "tokens": {
+      "total": 30957,
+      "input": 22139,
+      "output": 88,
+      "reasoning": 26,
+      "cache": {
+       "write": 0,
+       "read": 8704
+      }
+     },
+     "cost": 0,
+     "id": "prt_0b664945c00131BXlfToH7JPYI",
+     "sessionID": "ses_f499b92b9ffe1GQJUDoJHzMbys",
+     "messageID": "msg_0b664804c001GZqv8NScwJiEv9"
+    }
+   ]
+  },
+  {
+   "info": {
+    "parentID": "msg_0b6646d5d001HRy3UJAV6Sw4v0",
+    "role": "assistant",
+    "mode": "build",
+    "agent": "build",
+    "path": {
+     "cwd": "C:\\Users\\Vitor Cruz\\OneDrive\\Documentos\\Trabalho Semana Academica\\semana-academica",
+     "root": "C:\\Users\\Vitor Cruz\\OneDrive\\Documentos\\Trabalho Semana Academica\\semana-academica"
+    },
+    "cost": 0,
+    "tokens": {
+     "total": 34305,
+     "input": 2931,
+     "output": 337,
+     "reasoning": 573,
+     "cache": {
+      "write": 0,
+      "read": 30464
+     }
+    },
+    "modelID": "nemotron-3.5-lightning-free",
+    "providerID": "opencode",
+    "time": {
+     "created": 1789766440213,
+     "completed": 1789766455161
+    },
+    "finish": "tool-calls",
+    "id": "msg_0b66495150012RgN7UbhoKTeQd",
+    "sessionID": "ses_f499b92b9ffe1GQJUDoJHzMbys"
+   },
+   "parts": [
+    {
+     "snapshot": "ccc4605f79eacdfd163f9a79d128a7aa6cd86279",
+     "type": "step-start",
+     "id": "prt_0b664987d0012AaAR03jxPfxrx",
+     "sessionID": "ses_f499b92b9ffe1GQJUDoJHzMbys",
+     "messageID": "msg_0b66495150012RgN7UbhoKTeQd"
+    },
+    {
+     "type": "reasoning",
+     "text": "Now I can see the route `/painel/bloqueios` at line 1278. I can see the INSERT OR REPLACE statement at line 1323-1324:\n\n```javascript\nbanco.prepare(\n  'INSERT OR REPLACE INTO bloqueios (participanteId, nome, atividades, bloqueadoDesde) VALUES (?, ?, ?, ?)',\n).run(participanteId, usuarioPorId.get(participanteId)?.nome || '', JSON.stringify(data.atividades || []), new Date(agora().getTime()).toISOString());\n```\n\nThe user wants me to change the parameters passed to this INSERT OR REPLACE to use the specific expressions:\n- participanteId: participanteId\n- nome: usuarioPorId.get(participanteId)?.nome || participanteId || ''\n- atividades: typeof data.atividades === 'string' ? data.atividades : JSON.stringify(data.atividades || [])\n- bloqueadoDesde: new Date(agora().getTime()).toISOString()\n\nAnd make sure none of these 4 arguments pass as null or undefined.\n\nLooking at the current code:\n```javascript\n).run(participanteId, usuarioPorId.get(participanteId)?.nome || '', JSON.stringify(data.atividades || []), new Date(agora().getTime()).toISOString());\n```\n\nThe current parameters are:\n1. `participanteId` - could potentially be undefined/null, but in this context it comes from Object.entries so it should be defined\n2. `usuarioPorId.get(participanteId)?.nome || ''` - this handles null/undefined from optional chaining, but the user wants `|| participanteId || ''` added\n3. `JSON.stringify(data.atividades || [])` - the user wants `typeof data.atividades === 'string' ? data.atividades : JSON.stringify(data.atividades || [])`\n4. `new Date(agora().getTime()).toISOString()` - the user wants `new Date(agora().getTime()).toISOString()` (same)\n\nWait, looking at the user's request more carefully:\n\nThe user wants:\n- participanteId: participanteId (this is already the first param)\n- nome: usuarioPorId.get(participanteId)?.nome || participanteId || '' (currently it's `usuarioPorId.get(participanteId)?.nome || ''`, need to add `|| participanteId || ''`)\n- atividades: typeof data.atividades === 'string' ? data.atividades : JSON.stringify(data.atividades || []) (currently it's `JSON.stringify(data.atividades || [])`, need to add the type check)\n- bloqueadoDesde: new Date(agora().getTime()).toISOString() (same as current)\n\nLet me make the edit.",
+     "time": {
+      "start": 1789766441088,
+      "end": 1789766447078
+     },
+     "id": "prt_0b664987f001U6WVtERIpXgDrM",
+     "sessionID": "ses_f499b92b9ffe1GQJUDoJHzMbys",
+     "messageID": "msg_0b66495150012RgN7UbhoKTeQd"
+    },
+    {
+     "type": "text",
+     "text": "Now I can see the route `/painel/bloqueios` at line 1278 and the INSERT OR REPLACE at lines 1322-1324. I need to update the parameters passed to `.run()` to add null/undefined protection as specified.\n\n",
+     "time": {
+      "start": 1789766447080,
+      "end": 1789766454507
+     },
+     "id": "prt_0b664afe8001RSajmdR0rOmF4W",
+     "sessionID": "ses_f499b92b9ffe1GQJUDoJHzMbys",
+     "messageID": "msg_0b66495150012RgN7UbhoKTeQd"
+    },
+    {
+     "type": "tool",
+     "tool": "edit",
+     "callID": "call-fc9e8363-2c18-4741-8849-7935f93d8a85",
+     "state": {
+      "status": "completed",
+      "input": {
+       "newString": "try {\n          banco.prepare(\n            'INSERT OR REPLACE INTO bloqueios (participanteId, nome, atividades, bloqueadoDesde) VALUES (?, ?, ?, ?)',\n          ).run(participanteId, usuarioPorId.get(participanteId)?.nome || participanteId || '', typeof data.atividades === 'string' ? data.atividades : JSON.stringify(data.atividades || []), new Date(agora().getTime()).toISOString());",
+       "filePath": "C:\\Users\\Vitor Cruz\\OneDrive\\Documentos\\Trabalho Semana Academica\\semana-academica\\api\\src\\app.js",
+       "oldString": "try {\n          banco.prepare(\n            'INSERT OR REPLACE INTO bloqueios (participanteId, nome, atividades, bloqueadoDesde) VALUES (?, ?, ?, ?)',\n          ).run(participanteId, usuarioPorId.get(participanteId)?.nome || '', JSON.stringify(data.atividades || []), new Date(agora().getTime()).toISOString());"
+      },
+      "output": "Edit applied successfully.",
+      "metadata": {
+       "diagnostics": {},
+       "diff": "Index: C:\\Users\\Vitor Cruz\\OneDrive\\Documentos\\Trabalho Semana Academica\\semana-academica\\api\\src\\app.js\n===================================================================\n--- C:\\Users\\Vitor Cruz\\OneDrive\\Documentos\\Trabalho Semana Academica\\semana-academica\\api\\src\\app.js\n+++ C:\\Users\\Vitor Cruz\\OneDrive\\Documentos\\Trabalho Semana Academica\\semana-academica\\api\\src\\app.js\n@@ -1320,9 +1320,9 @@\n   });\n   try {\n     banco.prepare(\n       'INSERT OR REPLACE INTO bloqueios (participanteId, nome, atividades, bloqueadoDesde) VALUES (?, ?, ?, ?)',\n-    ).run(participanteId, usuarioPorId.get(participanteId)?.nome || '', JSON.stringify(data.atividades || []), new Date(agora().getTime()).toISOString());\n+    ).run(participanteId, usuarioPorId.get(participanteId)?.nome || participanteId || '', typeof data.atividades === 'string' ? data.atividades : JSON.stringify(data.atividades || []), new Date(agora().getTime()).toISOString());\n   } catch (erro) {\n     console.error(erro);\n   }\n }\n",
+       "filediff": {
+        "file": "C:\\Users\\Vitor Cruz\\OneDrive\\Documentos\\Trabalho Semana Academica\\semana-academica\\api\\src\\app.js",
+        "patch": "Index: C:\\Users\\Vitor Cruz\\OneDrive\\Documentos\\Trabalho Semana Academica\\semana-academica\\api\\src\\app.js\n===================================================================\n--- C:\\Users\\Vitor Cruz\\OneDrive\\Documentos\\Trabalho Semana Academica\\semana-academica\\api\\src\\app.js\n+++ C:\\Users\\Vitor Cruz\\OneDrive\\Documentos\\Trabalho Semana Academica\\semana-academica\\api\\src\\app.js\n@@ -1320,9 +1320,9 @@\n   });\n   try {\n     banco.prepare(\n       'INSERT OR REPLACE INTO bloqueios (participanteId, nome, atividades, bloqueadoDesde) VALUES (?, ?, ?, ?)',\n-    ).run(participanteId, usuarioPorId.get(participanteId)?.nome || '', JSON.stringify(data.atividades || []), new Date(agora().getTime()).toISOString());\n+    ).run(participanteId, usuarioPorId.get(participanteId)?.nome || participanteId || '', typeof data.atividades === 'string' ? data.atividades : JSON.stringify(data.atividades || []), new Date(agora().getTime()).toISOString());\n   } catch (erro) {\n     console.error(erro);\n   }\n }\n",
+        "additions": 1,
+        "deletions": 1
+       },
+       "truncated": false
+      },
+      "title": "api\\src\\app.js",
+      "time": {
+       "start": 1789766454415,
+       "end": 1789766454437
+      }
+     },
+     "id": "prt_0b664cc86001Q9pgHZrhd77O5U",
+     "sessionID": "ses_f499b92b9ffe1GQJUDoJHzMbys",
+     "messageID": "msg_0b66495150012RgN7UbhoKTeQd"
+    },
+    {
+     "reason": "tool-calls",
+     "snapshot": "2ac1e1c41968a76f0590ab765cfb50aa8569b862",
+     "type": "step-finish",
+     "tokens": {
+      "total": 34305,
+      "input": 2931,
+      "output": 337,
+      "reasoning": 573,
+      "cache": {
+       "write": 0,
+       "read": 30464
+      }
+     },
+     "cost": 0,
+     "id": "prt_0b664ce73001B46H7y5vFHm4h7",
+     "sessionID": "ses_f499b92b9ffe1GQJUDoJHzMbys",
+     "messageID": "msg_0b66495150012RgN7UbhoKTeQd"
+    },
+    {
+     "type": "patch",
+     "hash": "ccc4605f79eacdfd163f9a79d128a7aa6cd86279",
+     "files": [
+      "C:/Users/Vitor Cruz/OneDrive/Documentos/Trabalho Semana Academica/semana-academica/api/src/app.js"
+     ],
+     "id": "prt_0b664cf75001YVDnXQk33L0GWm",
+     "sessionID": "ses_f499b92b9ffe1GQJUDoJHzMbys",
+     "messageID": "msg_0b66495150012RgN7UbhoKTeQd"
+    }
+   ]
+  },
+  {
+   "info": {
+    "parentID": "msg_0b6646d5d001HRy3UJAV6Sw4v0",
+    "role": "assistant",
+    "mode": "build",
+    "agent": "build",
+    "path": {
+     "cwd": "C:\\Users\\Vitor Cruz\\OneDrive\\Documentos\\Trabalho Semana Academica\\semana-academica",
+     "root": "C:\\Users\\Vitor Cruz\\OneDrive\\Documentos\\Trabalho Semana Academica\\semana-academica"
+    },
+    "cost": 0,
+    "tokens": {
+     "total": 34422,
+     "input": 1683,
+     "output": 76,
+     "reasoning": 23,
+     "cache": {
+      "write": 0,
+      "read": 32640
+     }
+    },
+    "modelID": "nemotron-3.5-lightning-free",
+    "providerID": "opencode",
+    "time": {
+     "created": 1789766455167,
+     "completed": 1789766459793
+    },
+    "finish": "tool-calls",
+    "id": "msg_0b664cf7f001lt263oPR7YQjzP",
+    "sessionID": "ses_f499b92b9ffe1GQJUDoJHzMbys"
+   },
+   "parts": [
+    {
+     "snapshot": "2ac1e1c41968a76f0590ab765cfb50aa8569b862",
+     "type": "step-start",
+     "id": "prt_0b664d79b001QUItZ2S3jJsWN7",
+     "sessionID": "ses_f499b92b9ffe1GQJUDoJHzMbys",
+     "messageID": "msg_0b664cf7f001lt263oPR7YQjzP"
+    },
+    {
+     "type": "reasoning",
+     "text": "The edit was applied successfully. Let me verify the change",
+     "time": {
+      "start": 1789766457248,
+      "end": 1789766459248
+     },
+     "id": "prt_0b664d7a00018DznXcoZihSjyJ",
+     "sessionID": "ses_f499b92b9ffe1GQJUDoJHzMbys",
+     "messageID": "msg_0b664cf7f001lt263oPR7YQjzP"
+    },
+    {
+     "type": "tool",
+     "tool": "read",
+     "callID": "call-5362ba86-8c82-420f-9fca-d46b09ea69ae",
+     "state": {
+      "status": "completed",
+      "input": {
+       "offset": 1313,
+       "limit": 20,
+       "filePath": "C:\\Users\\Vitor Cruz\\OneDrive\\Documentos\\Trabalho Semana Academica\\semana-academica\\api\\src\\app.js"
+      },
+      "output": "[1198 caracteres omitidos]",
+      "title": "api\\src\\app.js",
+      "time": {
+       "start": 1789766459256,
+       "end": 1789766459276
+      }
+     },
+     "id": "prt_0b664df73001sMQyaWuPHoEqbT",
+     "sessionID": "ses_f499b92b9ffe1GQJUDoJHzMbys",
+     "messageID": "msg_0b664cf7f001lt263oPR7YQjzP"
+    },
+    {
+     "reason": "tool-calls",
+     "snapshot": "2ac1e1c41968a76f0590ab765cfb50aa8569b862",
+     "type": "step-finish",
+     "tokens": {
+      "total": 34422,
+      "input": 1683,
+      "output": 76,
+      "reasoning": 23,
+      "cache": {
+       "write": 0,
+       "read": 32640
+      }
+     },
+     "cost": 0,
+     "id": "prt_0b664e0b40012gUrdKimeeCCCZ",
+     "sessionID": "ses_f499b92b9ffe1GQJUDoJHzMbys",
+     "messageID": "msg_0b664cf7f001lt263oPR7YQjzP"
+    }
+   ]
+  },
+  {
+   "info": {
+    "parentID": "msg_0b6646d5d001HRy3UJAV6Sw4v0",
+    "role": "assistant",
+    "mode": "build",
+    "agent": "build",
+    "path": {
+     "cwd": "C:\\Users\\Vitor Cruz\\OneDrive\\Documentos\\Trabalho Semana Academica\\semana-academica",
+     "root": "C:\\Users\\Vitor Cruz\\OneDrive\\Documentos\\Trabalho Semana Academica\\semana-academica"
+    },
+    "cost": 0,
+    "tokens": {
+     "total": 35129,
+     "input": 2195,
+     "output": 133,
+     "reasoning": 161,
+     "cache": {
+      "write": 0,
+      "read": 32640
+     }
+    },
+    "modelID": "nemotron-3.5-lightning-free",
+    "providerID": "opencode",
+    "time": {
+     "created": 1789766459797,
+     "completed": 1789766466583
+    },
+    "finish": "stop",
+    "id": "msg_0b664e1950019QTDWShfc9QcXn",
+    "sessionID": "ses_f499b92b9ffe1GQJUDoJHzMbys"
+   },
+   "parts": [
+    {
+     "snapshot": "2ac1e1c41968a76f0590ab765cfb50aa8569b862",
+     "type": "step-start",
+     "id": "prt_0b664e4fb001wvuLXYxXj5zElL",
+     "sessionID": "ses_f499b92b9ffe1GQJUDoJHzMbys",
+     "messageID": "msg_0b664e1950019QTDWShfc9QcXn"
+    },
+    {
+     "type": "reasoning",
+     "text": "The edit has been applied successfully. The parameters now are:\n\n1. `participanteId` - first parameter (unchanged)\n2. `usuarioPorId.get(participanteId)?.nome || participanteId || ''` - second parameter, now includes `|| participanteId || ''` to ensure it's never null/undefined\n3. `typeof data.atividades === 'string' ? data.atividades : JSON.stringify(data.atividades || [])` - third parameter, now checks if data.atividades is a string before JSON.stringify\n4. `new Date(agora().getTime()).toISOString()` - fourth parameter (unchanged)\n\nAll four arguments are now guaranteed to not be null or undefined based on the expressions used.",
+     "time": {
+      "start": 1789766460669,
+      "end": 1789766463613
+     },
+     "id": "prt_0b664e4fd001Kuhux3RTeWoNPd",
+     "sessionID": "ses_f499b92b9ffe1GQJUDoJHzMbys",
+     "messageID": "msg_0b664e1950019QTDWShfc9QcXn"
+    },
+    {
+     "type": "text",
+     "text": "Done. The INSERT OR REPLACE parameters at `api/src/app.js:1324` now use:\n\n1. `participanteId` — passed as-is\n2. `nome`: `usuarioPorId.get(participanteId)?.nome || participanteId || ''` — ensures fallback to `participanteId` then `''`\n3. `atividades`: `typeof data.atividades === 'string' ? data.atividades : JSON.stringify(data.atividades || [])` — handles string vs array\n4. `bloqueadoDesde`: `new Date(agora().getTime()).toISOString()` — unchanged",
+     "time": {
+      "start": 1789766463615,
+      "end": 1789766466178
+     },
+     "id": "prt_0b664f07f001sJhNJgwLeAGbkK",
+     "sessionID": "ses_f499b92b9ffe1GQJUDoJHzMbys",
+     "messageID": "msg_0b664e1950019QTDWShfc9QcXn"
+    },
+    {
+     "reason": "stop",
+     "snapshot": "2ac1e1c41968a76f0590ab765cfb50aa8569b862",
+     "type": "step-finish",
+     "tokens": {
+      "total": 35129,
+      "input": 2195,
+      "output": 133,
+      "reasoning": 161,
+      "cache": {
+       "write": 0,
+       "read": 32640
+      }
+     },
+     "cost": 0,
+     "id": "prt_0b664fb3f00145BNg0mBpegky3",
+     "sessionID": "ses_f499b92b9ffe1GQJUDoJHzMbys",
+     "messageID": "msg_0b664e1950019QTDWShfc9QcXn"
+    }
+   ]
+  }
+ ]
+}

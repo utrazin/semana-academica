@@ -1,0 +1,578 @@
+{
+ "info": {
+  "id": "ses_f493b4950ffeUVXuVNJsrdd6W8",
+  "slug": "hidden-canyon",
+  "projectID": "ef5c31e66779deb7b442cd2960ce806c7cc88c17",
+  "directory": "C:\\Users\\Vitor Cruz\\OneDrive\\Documentos\\Trabalho Semana Academica\\semana-academica",
+  "path": "",
+  "title": "New session - 2026-09-18T23:05:40.272Z",
+  "agent": "build",
+  "model": {
+   "id": "nemotron-3.5-lightning-free",
+   "providerID": "opencode"
+  },
+  "version": "1.18.31",
+  "summary": {
+   "additions": 0,
+   "deletions": 0,
+   "files": 0
+  },
+  "cost": 0,
+  "tokens": {
+   "input": 46353,
+   "output": 1461,
+   "reasoning": 5155,
+   "cache": {
+    "read": 106624,
+    "write": 0
+   }
+  },
+  "time": {
+   "created": 1789772740272,
+   "updated": 1789772811253
+  }
+ },
+ "messages": [
+  {
+   "info": {
+    "role": "user",
+    "time": {
+     "created": 1789772740320
+    },
+    "agent": "build",
+    "model": {
+     "providerID": "opencode",
+     "modelID": "nemotron-3.5-lightning-free"
+    },
+    "summary": {
+     "diffs": [
+      {
+       "file": "api/src/app.js",
+       "patch": "Index: api/src/app.js\n===================================================================\n--- api/src/app.js\t\n+++ api/src/app.js\t\n@@ -1,1243 +1,1244 @@\n import crypto from 'node:crypto';\r\n import express from 'express';\r\n import { novoBanco, resetarBanco } from './banco.js';\r\n import { ehModoTeste, agora, resetarRelogio, definirRelogio } from './relogio.js';\r\n import { contarVagasOcupadas } from './contagem.js';\r\n \r\n const ALFABETO_CODIGO = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';\r\n \r\n function codigoDoEncontro(encontroId, inicioMinutoMs) {\r\n   const digest = crypto.createHash('sha256').update(`${encontroId}|${inicioMinutoMs}`).digest();\r\n   let codigo = '';\r\n   for (let i = 0; i < 6; i += 1) {\r\n     codigo += ALFABETO_CODIGO[digest[i] % ALFABETO_CODIGO.length];\r\n   }\r\n   return codigo;\r\n }\r\n \r\n export function criarServidor({ banco = novoBanco(':memory:') } = {}) {\r\n   resetarBanco(banco);\r\n \r\n   const app = express();\r\n   app.use(express.json());\r\n   app.use((err, req, res, next) => {\r\n     if (err && err.type === 'entity.parse.failed') {\r\n       return res.status(422).json({\r\n         erro: 'DADOS_INVALIDOS',\r\n         mensagem: 'O corpo precisa ser um JSON válido.',\r\n       });\r\n     }\r\n     next(err);\r\n   });\r\n \r\n   const usuarioPorId = banco.prepare('SELECT id, nome, papel FROM usuarios WHERE id = ?');\r\n \r\n   function exigirUsuario(req, res, next) {\r\n     const id = req.get('X-Usuario');\r\n     const usuario = id ? usuarioPorId.get(id) : undefined;\r\n     if (!usuario) {\r\n       return res.status(401).json({\r\n         erro: 'USUARIO_DESCONHECIDO',\r\n         mensagem: 'Envie um X-Usuario que exista nos dados iniciais.',\r\n       });\r\n     }\r\n     req.usuario = usuario;\r\n     next();\r\n   }\r\n \r\n   function exigirOrganizacao(req, res, next) {\r\n     if (req.usuario.papel !== 'organizacao') {\r\n       return res.status(403).json({\r\n         erro: 'SOMENTE_ORGANIZACAO',\r\n         mensagem: 'Só a organização cria ou altera atividades.',\r\n       });\r\n     }\r\n     next();\r\n   }\r\n \r\n   function gerarId(prefixo) {\r\n     return `${prefixo}${crypto.randomBytes(4).toString('hex')}`;\r\n   }\r\n \r\n   if (ehModoTeste()) {\r\n     app.post('/_teste/reset', (req, res) => {\r\n       resetarBanco(banco);\r\n       resetarRelogio();\r\n       res.status(204).end();\r\n     });\r\n \r\n     app.get('/_teste/relogio', (req, res) => {\r\n       res.json({ agora: agora().toISOString() });\r\n     });\r\n \r\n     app.put('/_teste/relogio', (req, res) => {\r\n       const iso = req.body && req.body.agora;\r\n       if (typeof iso !== 'string' || !definirRelogio(iso)) {\r\n         return res.status(422).json({\r\n           erro: 'DADOS_INVALIDOS',\r\n           mensagem: 'Envie um corpo {\"agora\": \"<ISO>\"} com uma data válida.',\r\n         });\r\n       }\r\n       res.json({ agora: agora().toISOString() });\r\n     });\r\n   }\r\n \r\n   app.get('/salas', exigirUsuario, (req, res) => {\r\n     const salas = banco.prepare('SELECT id, nome, capacidade FROM salas ORDER BY nome').all();\r\n     res.json(salas);\r\n   });\r\n \r\n   const encontrosPorAtividade = banco.prepare(\r\n     'SELECT id, inicio, fim FROM encontros WHERE atividadeId = ? ORDER BY inicio',\r\n   );\r\n \r\n   function formatarIsoBrasilia(date) {\r\n     const partes = new Intl.DateTimeFormat('en-CA', {\r\n       timeZone: 'America/Sao_Paulo',\r\n       year: 'numeric',\r\n       month: '2-digit',\r\n       day: '2-digit',\r\n       hour: '2-digit',\r\n       minute: '2-digit',\r\n       second: '2-digit',\r\n       hour12: false,\r\n     }).formatToParts(date);\r\n     const pegar = (tipo) => partes.find((p) => p.type === tipo).value;\r\n     return `${pegar('year')}-${pegar('month')}-${pegar('day')}T${pegar('hour')}:${pegar('minute')}:${pegar('second')}-03:00`;\r\n   }\r\n \r\n   function getFechoMs(atividadeId) {\r\n     const encontros = encontrosPorAtividade.all(atividadeId);\r\n     return encontros.length > 0 ? Date.parse(encontros[0].inicio) - 30 * 60000 : Infinity;\r\n   }\r\n \r\n   function processarFilaEExpiracoes(atividadeId) {\r\n     const atividade = banco.prepare('SELECT id, vagas FROM atividades WHERE id = ?').get(atividadeId);\r\n     if (!atividade) return;\r\n \r\n     const fechoMs = getFechoMs(atividadeId);\r\n     const agoraMs = agora().getTime();\r\n \r\n     let mudou = true;\r\n     while (mudou) {\r\n       mudou = false;\r\n \r\n       const convocadas = banco.prepare(\r\n         'SELECT id, convocadaAte FROM inscricoes WHERE atividadeId = ? AND status = ?'\r\n       ).all(atividadeId, 'convocada');\r\n \r\n       for (const c of convocadas) {\r\n         if (c.convocadaAte && agoraMs > Date.parse(c.convocadaAte)) {\r\n           banco.prepare('UPDATE inscricoes SET status = ?, convocadaAte = ? WHERE id = ?').run('expirada', null, c.id);\r\n           mudou = true;\r\n           atribuirVagasDisponiveis(atividadeId, Date.parse(c.convocadaAte));\r\n         }\r\n       }\r\n     }\r\n   }\r\n \r\n   function atribuirVagasDisponiveis(atividadeId, tempoLiberacao) {\r\n     const fechoMs = getFechoMs(atividadeId);\r\n     if (tempoLiberacao >= fechoMs) return;\r\n \r\n     const atividade = banco.prepare('SELECT vagas FROM atividades WHERE id = ?').get(atividadeId);\r\n     if (!atividade) return;\r\n \r\n     while (true) {\r\n       const inscricoes = banco.prepare('SELECT status FROM inscricoes WHERE atividadeId = ?').all(atividadeId);\r\n       const ocupadas = inscricoes.filter(i => i.status === 'confirmada' || i.status === 'convocada').length;\r\n \r\n       if (ocupadas >= atividade.vagas) break;\r\n \r\n       const proximo = banco.prepare(\r\n         'SELECT id FROM inscricoes WHERE atividadeId = ? AND status = ? ORDER BY rowid ASC LIMIT 1'\r\n       ).get(atividadeId, 'em_espera');\r\n \r\n       if (!proximo) break;\r\n       if (tempoLiberacao >= fechoMs) break;\r\n \r\n       let convocadaAteMs = tempoLiberacao + 2 * 3600 * 1000;\r\n       if (convocadaAteMs > fechoMs) {\r\n         convocadaAteMs = fechoMs;\r\n       }\r\n       const convocadaAteIso = formatarIsoBrasilia(new Date(convocadaAteMs));\r\n \r\n       banco.prepare('UPDATE inscricoes SET status = ?, convocadaAte = ?, posicaoNaEspera = NULL WHERE id = ?')\r\n         .run('convocada', convocadaAteIso, proximo.id);\r\n     }\r\n   }\r\n \r\n   function serializarAtividade(linha) {\r\n     processarFilaEExpiracoes(linha.id);\r\n     const encontros = encontrosPorAtividade.all(linha.id);\r\n     const cargaHorariaMinutos = Math.round(\r\n       encontros.reduce(\r\n         (soma, e) => soma + (Date.parse(e.fim) - Date.parse(e.inicio)) / 60000,\r\n         0,\r\n       ),\r\n     );\r\n     const agoraMs = agora().getTime();\r\n     let situacao = 'prevista';\r\n     if (linha.cancelada) {\r\n       situacao = 'cancelada';\r\n     } else if (agoraMs >= Date.parse(encontros[encontros.length - 1].fim)) {\r\n       situacao = 'encerrada';\r\n     } else if (agoraMs >= Date.parse(encontros[0].inicio)) {\r\n       situacao = 'em_andamento';\r\n     }\r\n     const ocupadas = vagasOcupadas(linha.id);\r\n     const vagasRestantes = Math.max(0, linha.vagas - ocupadas);\r\n     const emEsperaLinhas = banco.prepare('SELECT COUNT(*) as count FROM inscricoes WHERE atividadeId = ? AND status = ?').get(linha.id, 'em_espera');\r\n     const emEspera = emEsperaLinhas ? emEsperaLinhas.count : 0;\r\n     return {\r\n       id: linha.id,\r\n       titulo: linha.titulo,\r\n       tipo: linha.tipo,\r\n       salaId: linha.salaId,\r\n       vagas: linha.vagas,\r\n       encontros: encontros.map((e) => ({ id: e.id, inicio: e.inicio, fim: e.fim })),\r\n       cargaHorariaMinutos,\r\n       situacao,\r\n       ocupadas,\r\n       vagasRestantes,\r\n       emEspera,\r\n     };\r\n   }\r\n \r\n   function diaEmBrasilia(iso) {\r\n     const partes = new Intl.DateTimeFormat('en-CA', {\r\n       timeZone: 'America/Sao_Paulo',\r\n       year: 'numeric',\r\n       month: '2-digit',\r\n       day: '2-digit',\r\n     }).formatToParts(new Date(iso));\r\n     const pegar = (tipo) => partes.find((p) => p.type === tipo).value;\r\n     return `${pegar('year')}-${pegar('month')}-${pegar('day')}`;\r\n   }\r\n \r\n   function encontrosValidos(encontros) {\r\n     const INICIO_JANELA_MS = Date.parse('2026-10-19T00:00:00-03:00');\r\n     const FIM_JANELA_MS = Date.parse('2026-10-24T00:00:00-03:00');\r\n     const ordenados = [...encontros].sort((a, b) => Date.parse(a.inicio) - Date.parse(b.inicio));\r\n     for (let i = 0; i < ordenados.length; i++) {\r\n       const encontro = ordenados[i];\r\n       const inicioMs = Date.parse(encontro.inicio);\r\n       const fimMs = Date.parse(encontro.fim);\r\n       const duracaoMinutos = (fimMs - inicioMs) / 60000;\r\n       if (\r\n         !Number.isFinite(inicioMs) ||\r\n         !Number.isFinite(fimMs) ||\r\n         duracaoMinutos < 60 ||\r\n         duracaoMinutos > 240 ||\r\n         diaEmBrasilia(encontro.inicio) !== diaEmBrasilia(encontro.fim) ||\r\n         inicioMs < INICIO_JANELA_MS ||\r\n         fimMs > FIM_JANELA_MS\r\n       ) {\r\n         return false;\r\n       }\r\n       if (i > 0 && inicioMs < Date.parse(ordenados[i - 1].fim)) {\r\n         return false;\r\n       }\r\n     }\r\n     return true;\r\n   }\r\n \r\n   app.get('/atividades', exigirUsuario, (req, res) => {\r\n     const dia = req.query.dia;\r\n     const tipo = req.query.tipo;\r\n     if (tipo !== undefined && tipo !== 'palestra' && tipo !== 'minicurso') {\r\n       return res.status(422).json({ erro: 'DADOS_INVALIDOS', mensagem: '?tipo só aceita palestra ou minicurso.' });\r\n     }\r\n     let linhas = banco.prepare('SELECT id, titulo, tipo, salaId, vagas, cancelada FROM atividades').all();\r\n     if (dia !== undefined) {\r\n       linhas = linhas.filter((linha) =>\r\n         encontrosPorAtividade.all(linha.id).some((e) => diaEmBrasilia(e.inicio) === dia),\r\n       );\r\n     }\r\n     if (tipo !== undefined) {\r\n       linhas = linhas.filter((linha) => linha.tipo === tipo);\r\n     }\r\n     const porInicio = linhas.map((linha) => {\r\n       const encontros = encontrosPorAtividade.all(linha.id);\r\n       return { linha, inicio: encontros.length ? Date.parse(encontros[0].inicio) : Infinity };\r\n     });\r\n     porInicio.sort((a, b) => a.inicio - b.inicio || a.linha.titulo.localeCompare(b.linha.titulo));\r\n     res.json(porInicio.map((item) => serializarAtividade(item.linha)));\r\n   });\r\n \r\n   app.get('/atividades/:id', exigirUsuario, (req, res) => {\r\n     const linha = banco\r\n       .prepare('SELECT id, titulo, tipo, salaId, vagas, cancelada FROM atividades WHERE id = ?')\r\n       .get(req.params.id);\r\n     if (!linha) {\r\n       return res.status(404).json({ erro: 'NAO_ENCONTRADO', mensagem: 'Atividade inexistente.' });\r\n     }\r\n     res.json(serializarAtividade(linha));\r\n   });\r\n \r\n   function temConflitoDeSala(salaId, encontros) {\r\n     const atividadesNaSala = banco.prepare('SELECT id, cancelada FROM atividades WHERE salaId = ?').all(salaId);\r\n     const folga = 15 * 60000;\r\n     for (const atividade of atividadesNaSala) {\r\n       if (atividade.cancelada) continue;\r\n       for (const existente of encontrosPorAtividade.all(atividade.id)) {\r\n         for (const novo of encontros) {\r\n           const inicioNovoMs = Date.parse(novo.inicio);\r\n           const fimNovoMs = Date.parse(novo.fim);\r\n           const inicioExistenteMs = Date.parse(existente.inicio);\r\n           const fimExistenteMs = Date.parse(existente.fim);\r\n           const separado = fimExistenteMs + folga <= inicioNovoMs || fimNovoMs + folga <= inicioExistenteMs;\r\n           if (!separado) return true;\r\n         }\r\n       }\r\n     }\r\n     return false;\r\n   }\r\n \r\n   const salaExiste = banco.prepare('SELECT id, capacidade FROM salas WHERE id = ?');\r\n   const inserirAtividade = banco.prepare(\r\n     'INSERT INTO atividades (id, titulo, tipo, salaId, vagas, cancelada) VALUES (?, ?, ?, ?, ?, 0)',\r\n   );\r\n   const inserirEncontro = banco.prepare(\r\n     'INSERT INTO encontros (id, atividadeId, inicio, fim) VALUES (?, ?, ?, ?)',\r\n   );\r\n \r\n   function vagasOcupadas(atividadeId) {\r\n     const existeInscricoes = banco\r\n       .prepare(`SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'inscricoes'`)\r\n       .get();\r\n     if (!existeInscricoes) return 0;\r\n     const inscricoes = banco\r\n       .prepare('SELECT status FROM inscricoes WHERE atividadeId = ?')\r\n       .all(atividadeId);\r\n     return contarVagasOcupadas(inscricoes);\r\n   }\r\n \r\n   app.post('/atividades', exigirUsuario, exigirOrganizacao, (req, res) => {\r\n     const corpo = req.body;\r\n     if (!corpo || typeof corpo !== 'object' || Array.isArray(corpo)) {\r\n       return res.status(422).json({ erro: 'DADOS_INVALIDOS', mensagem: 'Envie um objeto JSON no corpo.' });\r\n     }\r\n \r\n     const salaId = corpo.salaId;\r\n     const sala = typeof salaId === 'string' ? salaExiste.get(salaId) : undefined;\r\n     if (typeof salaId === 'string' && !sala) {\r\n       return res.status(404).json({ erro: 'NAO_ENCONTRADO', mensagem: 'Sala inexistente.' });\r\n     }\r\n \r\n     const camposDoContrato = ['titulo', 'tipo', 'salaId', 'vagas', 'encontros', 'cargaHorariaMinutos'];\r\n     const desconhecido = Object.keys(corpo).find((campo) => !camposDoContrato.includes(campo));\r\n     if (desconhecido) {\r\n       return res.status(422).json({ erro: 'DADOS_INVALIDOS', mensagem: `\"${desconhecido}\" não existe no contrato.` });\r\n     }\r\n \r\n     const titulo = typeof corpo.titulo === 'string' ? corpo.titulo.trim() : corpo.titulo;\r\n     if (typeof titulo !== 'string' || titulo.length < 1 || titulo.length > 120) {\r\n       return res.status(422).json({ erro: 'DADOS_INVALIDOS', mensagem: 'titulo é obrigatório e vai de 1 a 120 caracteres após trim.' });\r\n     }\r\n     if (corpo.tipo !== 'palestra' && corpo.tipo !== 'minicurso') {\r\n       return res.status(422).json({ erro: 'DADOS_INVALIDOS', mensagem: 'tipo deve ser palestra ou minicurso.' });\r\n     }\r\n     if (typeof salaId !== 'string' || salaId === '') {\r\n       return res.status(422).json({ erro: 'DADOS_INVALIDOS', mensagem: 'salaId é obrigatório.' });\r\n     }\r\n     const vagas = corpo.vagas;\r\n     if (!Number.isInteger(vagas) || vagas < 1) {\r\n       return res.status(422).json({ erro: 'DADOS_INVALIDOS', mensagem: 'vagas precisa ser inteiro de no mínimo 1.' });\r\n     }\r\n     if (\r\n       !Array.isArray(corpo.encontros) ||\r\n       corpo.encontros.some((e) => !e || typeof e.inicio !== 'string' || typeof e.fim !== 'string')\r\n     ) {\r\n       return res.status(422).json({ erro: 'DADOS_INVALIDOS', mensagem: 'encontros precisa ser uma lista de {inicio, fim}.' });\r\n     }\r\n \r\n     const quantidadeDeEncontros = corpo.encontros.length;\r\n     const quantidadeOk =\r\n       corpo.tipo === 'palestra'\r\n         ? quantidadeDeEncontros === 1\r\n         : corpo.tipo === 'minicurso'\r\n           ? quantidadeDeEncontros >= 2 && quantidadeDeEncontros <= 5\r\n           : false;\r\n     if (!quantidadeOk) {\r\n       return res.status(422).json({\r\n         erro: 'QUANTIDADE_DE_ENCONTROS',\r\n         mensagem: 'palestra tem exatamente 1 encontro; minicurso tem de 2 a 5.',\r\n       });\r\n     }\r\n     if (!encontrosValidos(corpo.encontros)) {\r\n       return res.status(422).json({\r\n         erro: 'ENCONTRO_INVALIDO',\r\n         mensagem: 'Encontro precisa de 1h a 4h, sem cortar meia-noite, dentro de 19 a 23/10 e sem se sobrepor a outro da mesma atividade.',\r\n       });\r\n     }\r\n     if (vagas > sala.capacidade) {\r\n       return res.status(422).json({\r\n         erro: 'VAGAS_ACIMA_DA_CAPACIDADE',\r\n         mensagem: `vagas não pode passar da capacidade da sala (${sala.capacidade}).`,\r\n       });\r\n     }\r\n     if (temConflitoDeSala(salaId, corpo.encontros)) {\r\n       return res.status(409).json({\r\n         erro: 'CONFLITO_DE_SALA',\r\n         mensagem: 'A sala já tem atividade nesse horário com menos de 15 min de folga.',\r\n       });\r\n     }\r\n \r\n     const id = gerarId('atv_');\r\n     inserirAtividade.run(id, titulo, corpo.tipo, salaId, vagas);\r\n     for (const encontro of corpo.encontros) {\r\n       inserirEncontro.run(gerarId('enc_'), id, encontro.inicio, encontro.fim);\r\n     }\r\n     const linha = banco.prepare('SELECT id, titulo, tipo, salaId, vagas, cancelada FROM atividades WHERE id = ?').get(id);\r\n     res.status(201).json(serializarAtividade(linha));\r\n   });\r\n \r\n   app.patch('/atividades/:id', exigirUsuario, exigirOrganizacao, (req, res) => {\r\n     const atividade = banco\r\n       .prepare('SELECT id, titulo, tipo, salaId, vagas, cancelada FROM atividades WHERE id = ?')\r\n       .get(req.params.id);\r\n     if (!atividade) {\r\n       return res.status(404).json({ erro: 'NAO_ENCONTRADO', mensagem: 'Atividade inexistente.' });\r\n     }\r\n \r\n     const corpo = req.body;\r\n     if (!corpo || typeof corpo !== 'object' || Array.isArray(corpo)) {\r\n       return res.status(422).json({ erro: 'DADOS_INVALIDOS', mensagem: 'Envie um objeto JSON no corpo.' });\r\n     }\r\n     if (Object.keys(corpo).length === 0) {\r\n       return res.status(422).json({ erro: 'DADOS_INVALIDOS', mensagem: 'O corpo precisa de pelo menos um campo editável.' });\r\n     }\r\n     const camposDoContrato = ['id', 'titulo', 'tipo', 'salaId', 'vagas', 'encontros', 'cargaHorariaMinutos', 'situacao', 'ocupadas', 'vagasRestantes', 'emEspera'];\r\n     const desconhecido = Object.keys(corpo).find((campo) => !camposDoContrato.includes(campo));\r\n     if (desconhecido) {\r\n       return res.status(422).json({ erro: 'DADOS_INVALIDOS', mensagem: `\"${desconhecido}\" não existe no contrato.` });\r\n     }\r\n     if ('titulo' in corpo) {\r\n       const titulo = typeof corpo.titulo === 'string' ? corpo.titulo.trim() : corpo.titulo;\r\n       if (typeof titulo !== 'string' || titulo.length < 1 || titulo.length > 120) {\r\n         return res.status(422).json({ erro: 'DADOS_INVALIDOS', mensagem: 'titulo vai de 1 a 120 caracteres após trim.' });\r\n       }\r\n     }\r\n     if ('vagas' in corpo && (!Number.isInteger(corpo.vagas) || corpo.vagas < 1)) {\r\n       return res.status(422).json({ erro: 'DADOS_INVALIDOS', mensagem: 'vagas precisa ser inteiro de no mínimo 1.' });\r\n     }\r\n     if (atividade.cancelada) {\r\n       return res.status(422).json({ erro: 'ATIVIDADE_CANCELADA', mensagem: 'Atividade cancelada não pode ser alterada.' });\r\n     }\r\n     const naoEditavel = Object.keys(corpo).find((campo) => !['titulo', 'vagas'].includes(campo));\r\n     if (naoEditavel) {\r\n       return res.status(422).json({ erro: 'CAMPO_NAO_EDITAVEL', mensagem: 'Só titulo e vagas são editáveis.' });\r\n     }\r\n \r\n     if ('vagas' in corpo) {\r\n       const sala = salaExiste.get(atividade.salaId);\r\n       if (corpo.vagas > sala.capacidade) {\r\n         return res.status(422).json({\r\n           erro: 'VAGAS_ACIMA_DA_CAPACIDADE',\r\n           mensagem: `vagas não pode passar da capacidade da sala (${sala.capacidade}).`,\r\n         });\r\n       }\r\n       if (corpo.vagas < vagasOcupadas(atividade.id)) {\r\n         return res.status(409).json({\r\n           erro: 'VAGAS_ABAIXO_DOS_INSCRITOS',\r\n           mensagem: 'vagas não pode ficar abaixo dos inscritos atuais.',\r\n         });\r\n       }\r\n     }\r\n \r\n     banco\r\n       .prepare('UPDATE atividades SET titulo = ?, vagas = ? WHERE id = ?')\r\n       .run(\r\n         'titulo' in corpo ? corpo.titulo.trim() : atividade.titulo,\r\n         'vagas' in corpo ? corpo.vagas : atividade.vagas,\r\n         atividade.id,\r\n       );\r\n     if ('vagas' in corpo && corpo.vagas > atividade.vagas) {\r\n       atribuirVagasDisponiveis(atividade.id, agora().getTime());\r\n       processarFilaEExpiracoes(atividade.id);\r\n     }\r\n     const linha = banco\r\n       .prepare('SELECT id, titulo, tipo, salaId, vagas, cancelada FROM atividades WHERE id = ?')\r\n       .get(atividade.id);\r\n     res.status(200).json(serializarAtividade(linha));\r\n   });\r\n \r\n   app.post('/atividades/:id/cancelamento', exigirUsuario, exigirOrganizacao, (req, res) => {\r\n     const atividade = banco\r\n       .prepare('SELECT id, titulo, tipo, salaId, vagas, cancelada FROM atividades WHERE id = ?')\r\n       .get(req.params.id);\r\n     if (!atividade) {\r\n       return res.status(404).json({ erro: 'NAO_ENCONTRADO', mensagem: 'Atividade inexistente.' });\r\n     }\r\n     if (atividade.cancelada) {\r\n       return res.status(422).json({ erro: 'ATIVIDADE_CANCELADA', mensagem: 'Atividade já está cancelada.' });\r\n     }\r\n     const encontros = encontrosPorAtividade.all(atividade.id);\r\n     if (agora().getTime() >= Date.parse(encontros[0].inicio)) {\r\n       return res.status(422).json({\r\n         erro: 'ATIVIDADE_JA_INICIADA',\r\n         mensagem: 'Só é possível cancelar antes do início do 1º encontro.',\r\n       });\r\n     }\r\n     banco.prepare('UPDATE atividades SET cancelada = 1 WHERE id = ?').run(atividade.id);\r\n     banco.prepare('UPDATE inscricoes SET status = \\'cancelada\\', convocadaAte = NULL WHERE atividadeId = ? AND status IN (\\'confirmada\\', \\'em_espera\\', \\'convocada\\')').run(atividade.id);\r\n     const linha = banco\r\n       .prepare('SELECT id, titulo, tipo, salaId, vagas, cancelada FROM atividades WHERE id = ?')\r\n       .get(atividade.id);\r\n     res.status(200).json(serializarAtividade(linha));\r\n   });\r\n \r\n   function exigirParticipante(req, res, next) {\r\n     if (req.usuario.papel !== 'participante') {\r\n       return res.status(403).json({\r\n         erro: 'SOMENTE_PARTICIPANTE',\r\n         mensagem: 'Apenas participantes podem realizar inscrições.',\r\n       });\r\n     }\r\n     next();\r\n   }\r\n \r\n   function serializarInscricao(linha) {\r\n     let posicaoNaEspera = null;\r\n     if (linha.status === 'em_espera') {\r\n       const emEsperaList = banco.prepare(\r\n         'SELECT id FROM inscricoes WHERE atividadeId = ? AND status = ? ORDER BY rowid ASC'\r\n       ).all(linha.atividadeId, 'em_espera');\r\n       const index = emEsperaList.findIndex((i) => i.id === linha.id);\r\n       posicaoNaEspera = index >= 0 ? index + 1 : null;\r\n     }\r\n     return {\r\n       id: linha.id,\r\n       atividadeId: linha.atividadeId,\r\n       participanteId: linha.participanteId,\r\n       status: linha.status,\r\n       posicaoNaEspera,\r\n       convocadaAte: linha.convocadaAte || null,\r\n       criadaEm: linha.criadaEm,\r\n     };\r\n   }\r\n \r\n   app.post('/atividades/:id/inscricoes', exigirUsuario, exigirParticipante, (req, res) => {\r\n     const atividade = banco\r\n       .prepare('SELECT id, tipo, vagas, cancelada FROM atividades WHERE id = ?')\r\n       .get(req.params.id);\r\n     if (!atividade) {\r\n       return res.status(404).json({ erro: 'NAO_ENCONTRADO', mensagem: 'Atividade inexistente.' });\r\n     }\r\n     if (atividade.cancelada) {\r\n       return res.status(422).json({ erro: 'ATIVIDADE_CANCELADA', mensagem: 'Atividade cancelada.' });\r\n     }\r\n \r\n     const encontros = encontrosPorAtividade.all(atividade.id);\r\n     if (encontros.length > 0 && agora().getTime() >= Date.parse(encontros[0].inicio) - 30 * 60000) {\r\n       return res.status(422).json({ erro: 'INSCRICOES_ENCERRADAS', mensagem: 'Inscrições encerradas.' });\r\n     }\r\n \r\n     const inscricaoAtiva = banco\r\n       .prepare('SELECT id FROM inscricoes WHERE atividadeId = ? AND participanteId = ? AND status IN (\\'confirmada\\', \\'em_espera\\', \\'convocada\\')')\r\n       .get(atividade.id, req.usuario.id);\r\n     if (inscricaoAtiva) {\r\n       return res.status(409).json({ erro: 'JA_INSCRITO', mensagem: 'Participante já possui inscrição ativa nesta atividade.' });\r\n     }\r\n \r\n     const ocupadas = vagasOcupadas(atividade.id);\r\n     const vaiOcuparVaga = ocupadas < atividade.vagas;\r\n \r\n     if (vaiOcuparVaga) {\r\n       const inscricoesAtivas = banco.prepare(\r\n         'SELECT atividadeId FROM inscricoes WHERE participanteId = ? AND status IN (\\'confirmada\\', \\'convocada\\')'\r\n       ).all(req.usuario.id);\r\n \r\n       const novosEncontros = encontrosPorAtividade.all(atividade.id);\r\n \r\n       for (const ins of inscricoesAtivas) {\r\n         const exsEncontros = encontrosPorAtividade.all(ins.atividadeId);\r\n         for (const exs of exsEncontros) {\r\n           for (const novo of novosEncontros) {\r\n             const inicioExs = Date.parse(exs.inicio);\r\n             const fimExs = Date.parse(exs.fim);\r\n             const inicioNovo = Date.parse(novo.inicio);\r\n             const fimNovo = Date.parse(novo.fim);\r\n             const sobreposto = Math.max(inicioExs, inicioNovo) < Math.min(fimExs, fimNovo);\r\n             if (sobreposto) {\r\n               return res.status(409).json({ erro: 'CONFLITO_DE_HORARIO', mensagem: 'Conflito de horário.' });\r\n             }\r\n           }\r\n         }\r\n       }\r\n \r\n       if (atividade.tipo === 'minicurso') {\r\n         const minicursosOcupados = banco.prepare(`\r\n           SELECT COUNT(*) as count \r\n           FROM inscricoes i\r\n           JOIN atividades a ON a.id = i.atividadeId\r\n           WHERE i.participanteId = ? \r\n             AND i.status IN ('confirmada', 'convocada')\r\n             AND a.tipo = 'minicurso'\r\n         `).get(req.usuario.id);\r\n \r\n         if (minicursosOcupados && minicursosOcupados.count >= 3) {\r\n           return res.status(422).json({ erro: 'LIMITE_DE_MINICURSOS', mensagem: 'Limite de 3 minicursos atingido.' });\r\n         }\r\n       }\r\n     }\r\n \r\n     const status = vaiOcuparVaga ? 'confirmada' : 'em_espera';\r\n     const id = gerarId('ins_');\r\n     const criadaEm = agora().toISOString();\r\n \r\n     banco\r\n       .prepare('INSERT INTO inscricoes (id, atividadeId, participanteId, status, posicaoNaEspera, convocadaAte, criadaEm) VALUES (?, ?, ?, ?, NULL, NULL, ?)')\r\n       .run(id, atividade.id, req.usuario.id, status, criadaEm);\r\n \r\n     const linha = banco.prepare('SELECT id, atividadeId, participanteId, status, convocadaAte, criadaEm FROM inscricoes WHERE id = ?').get(id);\r\n     res.status(201).json(serializarInscricao(linha));\r\n   });\r\n \r\n   app.get('/inscricoes', exigirUsuario, (req, res) => {\r\n     const atividadeId = req.query.atividadeId;\r\n     const atividadesIds = banco.prepare('SELECT DISTINCT atividadeId FROM inscricoes').all();\r\n     for (const a of atividadesIds) {\r\n       processarFilaEExpiracoes(a.atividadeId);\r\n     }\r\n \r\n     let query = 'SELECT id, atividadeId, participanteId, status, convocadaAte, criadaEm FROM inscricoes';\r\n     const params = [];\r\n     const conditions = [];\r\n \r\n     if (req.usuario.papel === 'participante') {\r\n       conditions.push('participanteId = ?');\r\n       params.push(req.usuario.id);\r\n     }\r\n     if (atividadeId !== undefined) {\r\n       conditions.push('atividadeId = ?');\r\n       params.push(atividadeId);\r\n     }\r\n     if (conditions.length > 0) {\r\n       query += ' WHERE ' + conditions.join(' AND ');\r\n     }\r\n     query += ' ORDER BY criadaEm';\r\n \r\n     const linhas = banco.prepare(query).all(...params);\r\n     res.json(linhas.map(serializarInscricao));\r\n   });\r\n \r\n   app.get('/inscricoes/:id', exigirUsuario, (req, res) => {\r\n     let linha = banco\r\n       .prepare('SELECT id, atividadeId, participanteId, status, convocadaAte, criadaEm FROM inscricoes WHERE id = ?')\r\n       .get(req.params.id);\r\n     if (!linha) {\r\n       return res.status(404).json({ erro: 'NAO_ENCONTRADO', mensagem: 'Inscrição inexistente.' });\r\n     }\r\n     processarFilaEExpiracoes(linha.atividadeId);\r\n     linha = banco\r\n       .prepare('SELECT id, atividadeId, participanteId, status, convocadaAte, criadaEm FROM inscricoes WHERE id = ?')\r\n       .get(req.params.id);\r\n \r\n     if (req.usuario.papel === 'participante' && linha.participanteId !== req.usuario.id) {\r\n       return res.status(404).json({ erro: 'NAO_ENCONTRADO', mensagem: 'Inscrição inexistente.' });\r\n     }\r\n     res.json(serializarInscricao(linha));\r\n   });\r\n \r\n   app.post('/inscricoes/:id/cancelamento', exigirUsuario, exigirParticipante, (req, res) => {\r\n     const linha = banco\r\n       .prepare('SELECT id, atividadeId, participanteId, status, convocadaAte, criadaEm FROM inscricoes WHERE id = ?')\r\n       .get(req.params.id);\r\n     if (!linha) {\r\n       return res.status(404).json({ erro: 'NAO_ENCONTRADO', mensagem: 'Inscrição inexistente.' });\r\n     }\r\n     if (linha.participanteId !== req.usuario.id) {\r\n       return res.status(404).json({ erro: 'NAO_ENCONTRADO', mensagem: 'Inscrição inexistente.' });\r\n     }\r\n     if (linha.status === 'cancelada' || linha.status === 'expirada') {\r\n       return res.status(422).json({ erro: 'INSCRICAO_INATIVA', mensagem: 'Inscrição já está cancelada ou expirada.' });\r\n     }\r\n     const encontros = encontrosPorAtividade.all(linha.atividadeId);\r\n     if (encontros.length > 0 && agora().getTime() >= Date.parse(encontros[0].inicio)) {\r\n       return res.status(422).json({ erro: 'ATIVIDADE_JA_INICIADA', mensagem: 'Atividade já iniciada.' });\r\n     }\r\n \r\n     const statusAnterior = linha.status;\r\n     banco.prepare('UPDATE inscricoes SET status = \\'cancelada\\', convocadaAte = NULL WHERE id = ?').run(linha.id);\r\n     if (statusAnterior === 'confirmada' || statusAnterior === 'convocada') {\r\n       atribuirVagasDisponiveis(linha.atividadeId, agora().getTime());\r\n       processarFilaEExpiracoes(linha.atividadeId);\r\n     }\r\n     const atualizada = banco.prepare('SELECT id, atividadeId, participanteId, status, convocadaAte, criadaEm FROM inscricoes WHERE id = ?').get(linha.id);\r\n     res.status(200).json(serializarInscricao(atualizada));\r\n   });\r\n \r\n   app.post('/inscricoes/:id/confirmacao', exigirUsuario, exigirParticipante, (req, res) => {\r\n     let linha = banco\r\n       .prepare('SELECT id, atividadeId, participanteId, status, convocadaAte, criadaEm FROM inscricoes WHERE id = ?')\r\n       .get(req.params.id);\r\n     if (!linha || linha.participanteId !== req.usuario.id) {\r\n       return res.status(404).json({ erro: 'NAO_ENCONTRADO', mensagem: 'Inscrição inexistente.' });\r\n     }\r\n \r\n     if (linha.status === 'convocada' && linha.convocadaAte && agora().getTime() > Date.parse(linha.convocadaAte)) {\r\n       processarFilaEExpiracoes(linha.atividadeId);\r\n       return res.status(422).json({ erro: 'CONVOCACAO_EXPIRADA', mensagem: 'Convocação expirada.' });\r\n     }\r\n \r\n     processarFilaEExpiracoes(linha.atividadeId);\r\n     linha = banco\r\n       .prepare('SELECT id, atividadeId, participanteId, status, convocadaAte, criadaEm FROM inscricoes WHERE id = ?')\r\n       .get(req.params.id);\r\n \r\n     if (linha.status !== 'convocada') {\r\n       return res.status(422).json({ erro: 'SEM_CONVOCACAO', mensagem: 'Inscrição não está convocada.' });\r\n     }\r\n \r\n     const atividade = banco.prepare('SELECT tipo FROM atividades WHERE id = ?').get(linha.atividadeId);\r\n     const novosEncontros = encontrosPorAtividade.all(linha.atividadeId);\r\n     const inscricoesAtivas = banco.prepare(\r\n       'SELECT atividadeId FROM inscricoes WHERE participanteId = ? AND id != ? AND status IN (\\'confirmada\\', \\'convocada\\')'\r\n     ).all(req.usuario.id, linha.id);\r\n \r\n     for (const ins of inscricoesAtivas) {\r\n       const exsEncontros = encontrosPorAtividade.all(ins.atividadeId);\r\n       for (const exs of exsEncontros) {\r\n         for (const novo of novosEncontros) {\r\n           const inicioExs = Date.parse(exs.inicio);\r\n           const fimExs = Date.parse(exs.fim);\r\n           const inicioNovo = Date.parse(novo.inicio);\r\n           const fimNovo = Date.parse(novo.fim);\r\n           const sobreposto = Math.max(inicioExs, inicioNovo) < Math.min(fimExs, fimNovo);\r\n           if (sobreposto) {\r\n             return res.status(409).json({ erro: 'CONFLITO_DE_HORARIO', mensagem: 'Conflito de horário.' });\r\n           }\r\n         }\r\n       }\r\n     }\r\n \r\n     if (atividade.tipo === 'minicurso') {\r\n       const minicursosOcupados = banco.prepare(`\r\n         SELECT COUNT(*) as count \r\n         FROM inscricoes i\r\n         JOIN atividades a ON a.id = i.atividadeId\r\n         WHERE i.participanteId = ? \r\n           AND i.id != ?\r\n           AND i.status IN ('confirmada', 'convocada')\r\n           AND a.tipo = 'minicurso'\r\n       `).get(req.usuario.id, linha.id);\r\n \r\n       if (minicursosOcupados && minicursosOcupados.count >= 3) {\r\n         return res.status(422).json({ erro: 'LIMITE_DE_MINICURSOS', mensagem: 'Limite de 3 minicursos atingido.' });\r\n       }\r\n     }\r\n \r\n     banco.prepare('UPDATE inscricoes SET status = \\'confirmada\\', convocadaAte = NULL WHERE id = ?').run(linha.id);\r\n     const atualizada = banco.prepare('SELECT id, atividadeId, participanteId, status, convocadaAte, criadaEm FROM inscricoes WHERE id = ?').get(linha.id);\r\n     res.status(200).json(serializarInscricao(atualizada));\r\n   });\r\n \r\n   const encontroPorId = banco.prepare('SELECT id, atividadeId, inicio, fim FROM encontros WHERE id = ?');\r\n   const atividadeCancelada = banco.prepare('SELECT cancelada FROM atividades WHERE id = ?');\r\n   const inscricaoConfirmada = banco.prepare(\r\n     \"SELECT id FROM inscricoes WHERE atividadeId = ? AND participanteId = ? AND status = 'confirmada'\",\r\n   );\r\n   const presencaPorEncontroEParticipante = banco.prepare(\r\n     'SELECT id, encontroId, participanteId, origem, lidoEm, registradaEm, justificativa FROM presencas WHERE encontroId = ? AND participanteId = ?',\r\n   );\r\n   const inserirPresenca = banco.prepare(\r\n     'INSERT INTO presencas (id, encontroId, participanteId, origem, lidoEm, registradaEm, justificativa) VALUES (?, ?, ?, ?, ?, ?, ?)',\r\n   );\r\n \r\n   function serializarPresenca(linha) {\r\n     return {\r\n       id: linha.id,\r\n       encontroId: linha.encontroId,\r\n       participanteId: linha.participanteId,\r\n       origem: linha.origem,\r\n       lidoEm: linha.lidoEm,\r\n       registradaEm: linha.registradaEm,\r\n       justificativa: linha.justificativa,\r\n     };\r\n   }\r\n \r\n   function exigirEncontro(req, res, next) {\r\n     const encontro = encontroPorId.get(req.params.id);\r\n     if (!encontro) {\r\n       return res.status(404).json({ erro: 'NAO_ENCONTRADO', mensagem: 'Encontro inexistente.' });\r\n     }\r\n     req.encontro = encontro;\r\n     next();\r\n   }\r\n \r\n   app.get('/encontros/:id/codigo', exigirUsuario, exigirOrganizacao, exigirEncontro, (req, res) => {\r\n     const atividade = atividadeCancelada.get(req.encontro.atividadeId);\r\n     if (atividade && atividade.cancelada) {\r\n       return res.status(422).json({\r\n         erro: 'ATIVIDADE_CANCELADA',\r\n         mensagem: 'Atividade cancelada.',\r\n       });\r\n     }\r\n     const agoraMs = agora().getTime();\r\n     const inicioMs = Date.parse(req.encontro.inicio);\r\n     if (agoraMs < inicioMs - 15 * 60000 || agoraMs > inicioMs + 30 * 60000) {\r\n       return res.status(422).json({\r\n         erro: 'FORA_DA_JANELA',\r\n         mensagem: 'O código só pode ser obtido de 15 min antes a 30 min depois do início do encontro.',\r\n       });\r\n     }\r\n     const inicioMinutoMs = Math.floor(agoraMs / 60000) * 60000;\r\n     res.json({\r\n       encontroId: req.encontro.id,\r\n       codigo: codigoDoEncontro(req.encontro.id, inicioMinutoMs),\r\n       trocaEm: formatarIsoBrasilia(new Date(inicioMinutoMs + 60000)),\r\n       validoAte: formatarIsoBrasilia(new Date(inicioMinutoMs + 120000)),\r\n     });\r\n   });\r\n \r\n   app.post('/encontros/:id/presencas', exigirUsuario, exigirParticipante, exigirEncontro, (req, res) => {\r\n     const corpo = req.body || {};\r\n     if (typeof corpo.codigo !== 'string') {\r\n       return res.status(422).json({\r\n         erro: 'DADOS_INVALIDOS',\r\n         mensagem: 'codigo precisa ser uma string.',\r\n       });\r\n     }\r\n     if ('lidoEm' in corpo && (typeof corpo.lidoEm !== 'string' || Number.isNaN(Date.parse(corpo.lidoEm)))) {\r\n       return res.status(422).json({\r\n         erro: 'DADOS_INVALIDOS',\r\n         mensagem: 'lidoEm precisa ser uma data em ISO 8601.',\r\n       });\r\n     }\r\n \r\n     const presencaExistente = presencaPorEncontroEParticipante.get(req.encontro.id, req.usuario.id);\r\n     if (presencaExistente) {\r\n       return res.status(200).json(serializarPresenca(presencaExistente));\r\n     }\r\n \r\n     if (!inscricaoConfirmada.get(req.encontro.atividadeId, req.usuario.id)) {\r\n       return res.status(403).json({\r\n         erro: 'NAO_INSCRITO',\r\n         mensagem: 'Só quem tem inscrição confirmada registra presença.',\r\n       });\r\n     }\r\n \r\n     const agoraMs = agora().getTime();\r\n     const temLidoEm = 'lidoEm' in corpo;\r\n     if (temLidoEm && agoraMs > Date.parse(req.encontro.fim) + 2 * 3600 * 1000) {\r\n       return res.status(422).json({\r\n         erro: 'SINCRONIZACAO_TARDIA',\r\n         mensagem: 'A sincronização offline só vale até 2 horas depois do fim do encontro.',\r\n       });\r\n     }\r\n \r\n     const inicioMs = Date.parse(req.encontro.inicio);\r\n     const instanteQueVale = temLidoEm ? Math.min(Date.parse(corpo.lidoEm), agoraMs) : agoraMs;\r\n     if (instanteQueVale < inicioMs - 15 * 60000 || instanteQueVale > inicioMs + 30 * 60000) {\r\n       return res.status(422).json({\r\n         erro: 'FORA_DA_JANELA',\r\n         mensagem: 'A presença só pode ser registrada de 15 min antes a 30 min depois do início do encontro.',\r\n       });\r\n     }\r\n \r\n     const inicioMinutoMs = Math.floor(instanteQueVale / 60000) * 60000;\r\n     const codigoNormalizado = corpo.codigo.toUpperCase().replace(/\\s+/g, '');\r\n     const codigosAceitos = [\r\n       codigoDoEncontro(req.encontro.id, inicioMinutoMs),\r\n       codigoDoEncontro(req.encontro.id, inicioMinutoMs - 60000),\r\n     ];\r\n     if (!codigosAceitos.includes(codigoNormalizado)) {\r\n       return res.status(422).json({\r\n         erro: 'CODIGO_INVALIDO',\r\n         mensagem: 'Código inválido para este encontro.',\r\n       });\r\n     }\r\n \r\n     const registradaEm = formatarIsoBrasilia(agora());\r\n     const presenca = {\r\n       id: gerarId('pre_'),\r\n       encontroId: req.encontro.id,\r\n       participanteId: req.usuario.id,\r\n       origem: temLidoEm ? 'qr_offline' : 'qr',\r\n       lidoEm: formatarIsoBrasilia(new Date(instanteQueVale)),\r\n       registradaEm,\r\n       justificativa: null,\r\n     };\r\n     inserirPresenca.run(\r\n       presenca.id,\r\n       presenca.encontroId,\r\n       presenca.participanteId,\r\n       presenca.origem,\r\n       presenca.lidoEm,\r\n       presenca.registradaEm,\r\n       presenca.justificativa,\r\n     );\r\n     res.status(201).json(serializarPresenca(presenca));\r\n   });\r\n \r\n   app.post('/encontros/:id/presencas/manual', exigirUsuario, exigirOrganizacao, exigirEncontro, (req, res) => {\r\n     const corpo = req.body || {};\r\n     if (typeof corpo.participanteId !== 'string') {\r\n       return res.status(422).json({\r\n         erro: 'DADOS_INVALIDOS',\r\n         mensagem: 'participanteId precisa ser uma string.',\r\n       });\r\n     }\r\n     const justificativa = corpo.justificativa;\r\n     if (justificativa === undefined) {\r\n       return res.status(422).json({\r\n         erro: 'JUSTIFICATIVA_OBRIGATORIA',\r\n         mensagem: 'A justificativa da presenca manual e obrigatoria.',\r\n       });\r\n     }\r\n     if (typeof justificativa !== 'string') {\r\n       return res.status(422).json({\r\n         erro: 'DADOS_INVALIDOS',\r\n         mensagem: 'justificativa precisa ser uma string.',\r\n       });\r\n     }\r\n     if (justificativa.length < 10) {\r\n       return res.status(422).json({\r\n         erro: 'JUSTIFICATIVA_OBRIGATORIA',\r\n         mensagem: 'A justificativa da presenca manual precisa ter no minimo 10 caracteres.',\r\n       });\r\n     }\r\n \r\n     const presencaExistente = presencaPorEncontroEParticipante.get(req.encontro.id, corpo.participanteId);\r\n     if (presencaExistente) {\r\n       return res.status(200).json(serializarPresenca(presencaExistente));\r\n     }\r\n \r\n     if (!inscricaoConfirmada.get(req.encontro.atividadeId, corpo.participanteId)) {\r\n       return res.status(403).json({\r\n         erro: 'NAO_INSCRITO',\r\n         mensagem: 'So quem tem inscricao confirmada registra presenca.',\r\n       });\r\n     }\r\n \r\n     const inicioMs = Date.parse(req.encontro.inicio);\r\n     const fimMs = Date.parse(req.encontro.fim);\r\n     const agoraMs = agora().getTime();\r\n     if (agoraMs < inicioMs - 15 * 60000 || agoraMs > fimMs + 2 * 3600 * 1000) {\r\n       return res.status(422).json({\r\n         erro: 'FORA_DA_JANELA',\r\n         mensagem: 'A presenca manual vale de 15 min antes do inicio ate 2 horas depois do fim do encontro.',\r\n       });\r\n     }\r\n \r\n     const confirmadas = banco\r\n       .prepare(\"SELECT COUNT(*) AS total FROM inscricoes WHERE atividadeId = ? AND status = 'confirmada'\")\r\n       .get(req.encontro.atividadeId).total;\r\n     const teto = Math.ceil(confirmadas * 0.1);\r\n     const manuais = banco\r\n       .prepare('SELECT COUNT(*) AS total FROM presencas WHERE encontroId = ? AND origem = ?')\r\n       .get(req.encontro.id, 'manual').total;\r\n     if (manuais >= teto) {\r\n       return res.status(422).json({\r\n         erro: 'LIMITE_DE_MANUAIS',\r\n         mensagem: 'As presencas manuais desse encontro estao no limite de 10% das inscricoes confirmadas.',\r\n       });\r\n     }\r\n \r\n     const registradaEm = formatarIsoBrasilia(agora());\r\n     const presenca = {\r\n       id: gerarId('pre_'),\r\n       encontroId: req.encontro.id,\r\n       participanteId: corpo.participanteId,\r\n       origem: 'manual',\r\n       lidoEm: registradaEm,\r\n       registradaEm,\r\n       justificativa,\r\n     };\r\n     inserirPresenca.run(\r\n       presenca.id,\r\n       presenca.encontroId,\r\n       presenca.participanteId,\r\n       presenca.origem,\r\n       presenca.lidoEm,\r\n       presenca.registradaEm,\r\n       presenca.justificativa,\r\n     );\r\n     res.status(201).json(serializarPresenca(presenca));\r\n   });\r\n \r\n   const presencasPorEncontro = banco.prepare(`\r\n     SELECT p.id, p.encontroId, p.participanteId, p.origem, p.lidoEm, p.registradaEm, p.justificativa\r\n     FROM presencas p\r\n     JOIN usuarios u ON u.id = p.participanteId\r\n     WHERE p.encontroId = ?\r\n     ORDER BY u.nome COLLATE NOCASE, p.participanteId\r\n   `);\r\n \r\n   app.get('/encontros/:id/presencas', exigirUsuario, exigirOrganizacao, exigirEncontro, (req, res) => {\r\n     res.json(presencasPorEncontro.all(req.encontro.id).map(serializarPresenca));\r\n   });\r\n \r\n   const certificadoPorCodigo = banco.prepare(\r\n     'SELECT codigo, atividadeId, participanteId, cargaHorariaMinutos, presencas, encontros, emitidoEm FROM certificados WHERE codigo = ? COLLATE NOCASE',\r\n   );\r\n   const certificadosDoParticipante = banco.prepare(\r\n     'SELECT codigo, atividadeId, participanteId, cargaHorariaMinutos, presencas, encontros, emitidoEm FROM certificados WHERE participanteId = ? ORDER BY emitidoEm, codigo',\r\n   );\r\n   const atividadePorId = banco.prepare('SELECT id, cancelada FROM atividades WHERE id = ?');\r\n \r\n   function serializarCertificado(linha) {\r\n     return {\r\n       codigo: linha.codigo,\r\n       atividadeId: linha.atividadeId,\r\n       participanteId: linha.participanteId,\r\n       cargaHorariaMinutos: linha.cargaHorariaMinutos,\r\n       presencas: linha.presencas,\r\n       encontros: linha.encontros,\r\n       emitidoEm: linha.emitidoEm,\r\n     };\r\n   }\r\n \r\n   const certificadoPorAtividadeEParticipante = banco.prepare(\r\n     'SELECT codigo, atividadeId, participanteId, cargaHorariaMinutos, presencas, encontros, emitidoEm FROM certificados WHERE atividadeId = ? AND participanteId = ?',\r\n   );\r\n   const certificadoExistentePorCodigo = banco.prepare(\r\n     'SELECT codigo FROM certificados WHERE codigo = ?',\r\n   );\r\n   const inserirCertificado = banco.prepare(\r\n     'INSERT INTO certificados (codigo, atividadeId, participanteId, cargaHorariaMinutos, presencas, encontros, emitidoEm) VALUES (?, ?, ?, ?, ?, ?, ?)',\r\n   );\r\n   const contarPresencasCertificado = banco.prepare(\r\n     'SELECT COUNT(*) AS total FROM presencas p JOIN encontros e ON e.id = p.encontroId WHERE e.atividadeId = ? AND p.participanteId = ?',\r\n   );\r\n \r\n   function gerarCodigoCertificado() {\r\n     for (let tentativa = 0; tentativa < 100; tentativa += 1) {\r\n       let variavel = '';\r\n       for (let i = 0; i < 8; i += 1) {\r\n         variavel += ALFABETO_CODIGO[crypto.randomInt(ALFABETO_CODIGO.length)];\r\n       }\r\n       const codigo = `SA26-${variavel.slice(0, 4)}-${variavel.slice(4)}`;\r\n       if (!certificadoExistentePorCodigo.get(codigo)) {\r\n         return codigo;\r\n       }\r\n     }\r\n     throw new Error('Nao foi possivel gerar um codigo de certificado unico.');\r\n   }\r\n \r\n   app.post('/atividades/:id/certificado', exigirUsuario, exigirParticipante, (req, res) => {\r\n     const atividade = atividadePorId.get(req.params.id);\r\n     if (!atividade) {\r\n       return res.status(404).json({ erro: 'NAO_ENCONTRADO', mensagem: 'Atividade inexistente.' });\r\n     }\r\n     if (atividade.cancelada) {\r\n       return res.status(422).json({ erro: 'ATIVIDADE_CANCELADA', mensagem: 'Atividade cancelada.' });\r\n     }\r\n     const inscricao = banco.prepare(\r\n       \"SELECT id FROM inscricoes WHERE atividadeId = ? AND participanteId = ? AND status = 'confirmada'\",\r\n     ).get(atividade.id, req.usuario.id);\r\n     if (!inscricao) {\r\n       return res.status(403).json({ erro: 'NAO_INSCRITO', mensagem: 'Só quem tem inscrição confirmada emite certificado.' });\r\n     }\r\n     const encontrosDaAtividade = encontrosPorAtividade.all(atividade.id);\r\n     const fimUltimoEncontroMs = Date.parse(encontrosDaAtividade[encontrosDaAtividade.length - 1].fim);\r\n     if (agora().getTime() < fimUltimoEncontroMs) {\r\n       return res.status(422).json({ erro: 'ATIVIDADE_NAO_ENCERRADA', mensagem: 'Atividade ainda não encerrada.' });\r\n     }\r\n     const totalEncontros = encontrosDaAtividade.length;\r\n     const totalPresencas = contarPresencasCertificado.get(atividade.id, req.usuario.id).total;\r\n     if (totalPresencas * 4 < totalEncontros * 3) {\r\n       return res.status(422).json({ erro: 'PRESENCA_INSUFICIENTE', mensagem: 'Frequência abaixo do mínimo de 75%.' });\r\n     }\r\n     const existente = certificadoPorAtividadeEParticipante.get(atividade.id, req.usuario.id);\r\n     if (existente) {\r\n       return res.status(200).json(serializarCertificado(existente));\r\n     }\r\n     const cargaHorariaMinutos = Math.round(\r\n       encontrosDaAtividade.reduce(\r\n         (soma, e) => soma + (Date.parse(e.fim) - Date.parse(e.inicio)) / 60000,\r\n         0,\r\n       ),\r\n     );\r\n     const codigo = gerarCodigoCertificado();\r\n     const emitidoEm = agora().toISOString();\r\n     try {\r\n       inserirCertificado.run(codigo, atividade.id, req.usuario.id, cargaHorariaMinutos, totalPresencas, totalEncontros, emitidoEm);\r\n     } catch (erro) {\r\n       const ehConflito = erro && typeof erro.code === 'string' && erro.code.startsWith('SQLITE_CONSTRAINT');\r\n       if (ehConflito) {\r\n         const concorrente = certificadoPorAtividadeEParticipante.get(atividade.id, req.usuario.id);\r\n         if (concorrente) {\r\n           return res.status(200).json(serializarCertificado(concorrente));\r\n         }\r\n       }\r\n       throw erro;\r\n     }\r\n     return res.status(201).json({\r\n       codigo,\r\n       atividadeId: atividade.id,\r\n       participanteId: req.usuario.id,\r\n       cargaHorariaMinutos,\r\n       presencas: totalPresencas,\r\n       encontros: totalEncontros,\r\n       emitidoEm,\r\n     });\r\n   });\r\n \r\n   app.get('/certificados', exigirUsuario, exigirParticipante, (req, res) => {\r\n     res.json(certificadosDoParticipante.all(req.usuario.id).map(serializarCertificado));\r\n   });\r\n \r\n   function abreviarNome(nomeCompleto) {\r\n     const particulas = new Set(['de', 'da', 'do', 'das', 'dos']);\r\n     const partes = nomeCompleto.trim().split(/\\s+/);\r\n     const primeiro = partes[0];\r\n     const resto = partes.slice(1).map((parte) => {\r\n       if (particulas.has(parte.toLowerCase())) {\r\n         return parte.toLowerCase();\r\n       }\r\n       return `${parte[0].toUpperCase()}.`;\r\n     });\r\n     return [primeiro, ...resto].join(' ');\r\n   }\r\n \r\n   app.get('/certificados/:codigo', (req, res) => {\r\n     const linha = certificadoPorCodigo.get(req.params.codigo);\r\n     if (!linha) {\r\n       return res.status(404).json({ erro: 'NAO_ENCONTRADO', mensagem: 'Certificado inexistente.' });\r\n     }\r\n     const usuario = usuarioPorId.get(linha.participanteId);\r\n     const atividade = banco.prepare('SELECT titulo FROM atividades WHERE id = ?').get(linha.atividadeId);\r\n     return res.json({\r\n       codigo: linha.codigo,\r\n       participante: abreviarNome(usuario.nome),\r\n       atividade: atividade.titulo,\r\n       cargaHorariaMinutos: linha.cargaHorariaMinutos,\r\n       emitidoEm: linha.emitidoEm,\r\n     });\r\n   });\r\n \r\n   app.get('/extrato', exigirUsuario, exigirParticipante, (req, res) => {\r\n     const participanteId = req.usuario.id;\r\n     const agoraMs = agora().getTime();\r\n     const atividades = banco.prepare('SELECT id, titulo, tipo, cancelada FROM atividades WHERE cancelada = 0').all();\r\n     const itens = [];\r\n     let palestrasMinutos = 0;\r\n     let minicursosMinutos = 0;\r\n     for (const atividade of atividades) {\r\n       const inscricao = banco.prepare(\"SELECT id FROM inscricoes WHERE atividadeId = ? AND participanteId = ? AND status = 'confirmada'\").get(atividade.id, participanteId);\r\n       if (!inscricao) continue;\r\n       const encontros = encontrosPorAtividade.all(atividade.id);\r\n       if (encontros.length === 0) continue;\r\n       if (agoraMs < Date.parse(encontros[encontros.length - 1].fim)) continue;\r\n       const totalPresencas = contarPresencasCertificado.get(atividade.id, participanteId).total;\r\n       if (totalPresencas * 4 < encontros.length * 3) continue;\r\n       const cargaHorariaMinutos = Math.round(encontros.reduce((soma, e) => soma + (Date.parse(e.fim) - Date.parse(e.inicio)) / 60000, 0));\r\n       if (atividade.tipo === 'palestra') palestrasMinutos += cargaHorariaMinutos;\r\n       else minicursosMinutos += cargaHorariaMinutos;\r\n       const certificado = certificadoPorAtividadeEParticipante.get(atividade.id, participanteId);\r\n       itens.push({ atividadeId: atividade.id, titulo: atividade.titulo, tipo: atividade.tipo, cargaHorariaMinutos, codigo: certificado ? certificado.codigo : null });\r\n     }\r\n     const totalMinutos = palestrasMinutos + minicursosMinutos;\r\n     const aproveitadoMinutos = Math.min(Math.min(palestrasMinutos, 240) + minicursosMinutos, 1200);\r\n     return res.json({ itens, palestrasMinutos, minicursosMinutos, totalMinutos, aproveitadoMinutos });\r\n   });\r\n \r\n   app.get('/painel/atividades', exigirUsuario, exigirOrganizacao, (req, res) => {\r\n     const atividades = banco.prepare('SELECT id, titulo, tipo, salaId, vagas, cancelada FROM atividades WHERE cancelada = 0').all();\r\n     res.json(atividades);\r\n   });\r\n \r\n   app.get('/painel/atividades/:id/sem-chance', exigirUsuario, exigirOrganizacao, (req, res) => {\r\n     const atividade = banco\r\n       .prepare('SELECT id, titulo, tipo, salaId, vagas, cancelada FROM atividades WHERE id = ?')\r\n       .get(req.params.id);\r\n     if (!atividade) {\r\n       return res.status(404).json({ erro: 'NAO_ENCONTRADO', mensagem: 'Atividade inexistente.' });\r\n     }\r\n     const confirmadas = banco.prepare(\r\n       \"SELECT participanteId FROM inscricoes WHERE atividadeId = ? AND status = 'confirmada' GROUP BY participanteId\",\r\n     ).all(atividade.id);\r\n     const semChance = confirmadas.filter((c) => c.participanteId).length === 0;\r\n     res.json({ semChance, atividadeId: atividade.id, titulo: atividade.titulo });\r\n   });\r\n \r\n   app.get('/painel/bloqueios', exigirUsuario, exigirOrganizacao, (req, res) => {\r\n     const atividades = banco.prepare('SELECT id, cancelada FROM atividades WHERE cancelada = 0').all();\r\n     const bloqueios = [];\r\n     const participanteAtividadesZeroPresenca = {};\r\n \r\n     for (const atv of atividades) {\r\n       const confirmadas = banco.prepare(\r\n         \"SELECT participanteId FROM inscricoes WHERE atividadeId = ? AND status = 'confirmada' GROUP BY participanteId\",\r\n       ).all(atv.id);\r\n \r\n       for (const conf of confirmadas) {\r\n         const participanteId = conf.participanteId;\r\n \r\n         let hasNonManualPresenca = false;\r\n         const encs = encontrosPorAtividade.all(atv.id);\r\n         for (const enc of encs) {\r\n           const presenca = banco.prepare(\r\n             'SELECT id FROM presencas WHERE encontroId = ? AND participanteId = ? AND origem != ?',\r\n           ).get(enc.id, participanteId, 'manual');\r\n           if (presenca) {\r\n             hasNonManualPresenca = true;\r\n             break;\r\n           }\r\n         }\r\n \r\n         if (!hasNonManualPresenca) {\r\n           if (!participanteAtividadesZeroPresenca[participanteId]) {\r\n             participanteAtividadesZeroPresenca[participanteId] = { count: 0, atividades: [] };\r\n           }\r\n           participanteAtividadesZeroPresenca[participanteId].count += 1;\r\n           participanteAtividadesZeroPresenca[participanteId].atividades.push(atv.id);\r\n         }\r\n       }\r\n     }\r\n \r\n     for (const [participanteId, data] of Object.entries(participanteAtividadesZeroPresenca)) {\r\n       if (data.count >= 2) {\r\n         const participante = usuarioPorId.get(participanteId);\r\n         const nomeParticipante = participante?.nome || 'Participante';\r\n+        const bloqueadoDesde = agora().toISOString();\r\n+        const pIdVal = participanteId || '';\r\n+        const pNomeVal = nomeParticipante || 'Participante';\r\n+        const pAtivVal = typeof data.atividades === 'string' ? data.atividades : JSON.stringify(data.atividades || []);\r\n+        const pDataVal = bloqueadoDesde || new Date().toISOString();\r\n+        try {\r\n+          banco.prepare(\r\n+            'INSERT OR REPLACE INTO bloqueios (participanteId, nome, atividades, bloqueadoDesde) VALUES (?, ?, ?, ?)',\r\n+          ).run(pIdVal, pNomeVal, pAtivVal, pDataVal);\r\n+        } catch (erro) {\r\n+          console.error(erro);\r\n+        }\r\n         bloqueios.push({\r\n           participanteId,\r\n           nome: nomeParticipante,\r\n           atividades: data.atividades || [],\r\n-          bloqueadoDesde: agora().toISOString(),\r\n+          bloqueadoDesde,\r\n         });\r\n-        const pIdVal = participanteId ?? '';\r\n-      const nomeVal = nomeParticipante ?? 'Participante';\r\n-      const ativVal = typeof data.atividades === 'string' ? data.atividades : JSON.stringify(data.atividades || []);\r\n-      const dataVal = bloqueadoDesde || agora().toISOString();\r\n-      try {\r\n-        banco.prepare(\r\n-          'INSERT OR REPLACE INTO bloqueios (participanteId, nome, atividades, bloqueadoDesde) VALUES (?, ?, ?, ?)',\r\n-        ).run(pIdVal, nomeVal, ativVal, dataVal);\r\n-      } catch (erro) {\r\n-          console.error(erro);\r\n-        }\r\n       }\r\n     }\r\n     res.json(bloqueios);\r\n   });\r\n \r\n   app.delete('/painel/bloqueios/:participanteId', exigirUsuario, exigirOrganizacao, (req, res) => {\r\n     try {\r\n       const result = banco.prepare('DELETE FROM bloqueios WHERE participanteId = ?').run(req.params.participanteId);\r\n       if (result.changes === 0) {\r\n         return res.status(404).json({ erro: 'NAO_ENCONTRADO', mensagem: 'Bloqueio inexistente.' });\r\n       }\r\n     } catch (erro) {\r\n       console.error(erro);\r\n     }\r\n     res.status(204).end();\r\n   });\r\n \r\n   app.get('/painel/atividades/:id/frequencia.csv', exigirUsuario, exigirOrganizacao, (req, res) => {\r\n     const csv = gerarCSVFrecuencia(req.params.id);\r\n     const atividade = banco.prepare('SELECT titulo FROM atividades WHERE id = ?').get(req.params.id);\r\n     if (!atividade) {\r\n       return res.status(404).json({ erro: 'NAO_ENCONTRADO', mensagem: 'Atividade inexistente.' });\r\n     }\r\n     const mimeType = 'text/csv; charset=utf-8';\r\n     res.set('Content-Type', mimeType);\r\n     res.set('Content-Disposition', `attachment; filename=\"frequencia-${atividade.titulo}.csv\"`);\r\n     res.status(200).send(csv);\r\n   });\r\n \r\n   return app;\r\n }\n\\ No newline at end of file\n",
+       "additions": 13,
+       "deletions": 12,
+       "status": "modified"
+      }
+     ]
+    },
+    "id": "msg_0b6c4b6de0014L4Fy4OWjHtG0c",
+    "sessionID": "ses_f493b4950ffeUVXuVNJsrdd6W8"
+   },
+   "parts": [
+    {
+     "type": "text",
+     "text": "Abra api/src/app.js e faça uma revisão completa no bloco do GET /painel/bloqueios:\n\nCorrija o erro da linha 1205/1209: certifique-se de que a variável bloqueadoDesde (ou qualquer variável usada no envio do banco) esteja devidamente declarada no escopo antes do seu uso, usando let ou const.\n\nGarante que as rotas da organização sigam ativas e operacionais nos caminhos corretos:\n\nGET /painel/atividades\n\nGET /painel/atividades/:id/sem-chance\n\nGET /painel/bloqueios\n\nNo trecho em que grava o bloqueio no SQLite (db.prepare(...)), force o uso de fallbacks seguros diretamente na passagem de parâmetros para impedir envio de null ou undefined: const pIdVal = pId || p.id || p.participanteId || '';\nconst pNomeVal = nome || p.nome || 'Participante';\nconst pAtivVal = typeof atividades === 'string' ? atividades : JSON.stringify(atividades || []);\nconst pDataVal = bloqueadoDesde || dataBloqueio || new Date().toISOString();\n\ndb.prepare(`\n  INSERT OR REPLACE INTO bloqueios (participanteId, nome, atividades, bloqueadoDesde)\n  VALUES (?, ?, ?, ?)\n`).run(pIdVal, pNomeVal, pAtivVal, pDataVal); Não rode comandos no terminal.",
+     "id": "prt_0b6c4b6e3001NJW0CgYipj103y",
+     "sessionID": "ses_f493b4950ffeUVXuVNJsrdd6W8",
+     "messageID": "msg_0b6c4b6de0014L4Fy4OWjHtG0c"
+    }
+   ]
+  },
+  {
+   "info": {
+    "parentID": "msg_0b6c4b6de0014L4Fy4OWjHtG0c",
+    "role": "assistant",
+    "mode": "build",
+    "agent": "build",
+    "path": {
+     "cwd": "C:\\Users\\Vitor Cruz\\OneDrive\\Documentos\\Trabalho Semana Academica\\semana-academica",
+     "root": "C:\\Users\\Vitor Cruz\\OneDrive\\Documentos\\Trabalho Semana Academica\\semana-academica"
+    },
+    "cost": 0,
+    "tokens": {
+     "total": 10196,
+     "input": 10107,
+     "output": 55,
+     "reasoning": 34,
+     "cache": {
+      "write": 0,
+      "read": 0
+     }
+    },
+    "modelID": "nemotron-3.5-lightning-free",
+    "providerID": "opencode",
+    "time": {
+     "created": 1789772740349,
+     "completed": 1789772748165
+    },
+    "finish": "tool-calls",
+    "id": "msg_0b6c4b6fd001vQ79YcovAsuzEe",
+    "sessionID": "ses_f493b4950ffeUVXuVNJsrdd6W8"
+   },
+   "parts": [
+    {
+     "snapshot": "2081fb2774b42e06757077b1b63cc3ed641cc17e",
+     "type": "step-start",
+     "id": "prt_0b6c4c1ed001DaS2QtkhnGNQel",
+     "sessionID": "ses_f493b4950ffeUVXuVNJsrdd6W8",
+     "messageID": "msg_0b6c4b6fd001vQ79YcovAsuzEe"
+    },
+    {
+     "type": "reasoning",
+     "text": "Let me start by reading the api/src/app.js file to understand the current state of the GET /painel/bloqueios block and related routes.",
+     "time": {
+      "start": 1789772743152,
+      "end": 1789772747610
+     },
+     "id": "prt_0b6c4c1f0001puJqK0FAyhs90Y",
+     "sessionID": "ses_f493b4950ffeUVXuVNJsrdd6W8",
+     "messageID": "msg_0b6c4b6fd001vQ79YcovAsuzEe"
+    },
+    {
+     "type": "tool",
+     "tool": "read",
+     "callID": "call-cf8f682a-804d-4a9c-bc12-53fad24203fb",
+     "state": {
+      "status": "completed",
+      "input": {
+       "filePath": "C:\\Users\\Vitor Cruz\\OneDrive\\Documentos\\Trabalho Semana Academica\\semana-academica\\api\\src\\app.js"
+      },
+      "output": "[58579 caracteres omitidos]",
+      "title": "api\\src\\app.js",
+      "time": {
+       "start": 1789772747625,
+       "end": 1789772747661
+      }
+     },
+     "id": "prt_0b6c4d35d001rLf5X49BO2X85k",
+     "sessionID": "ses_f493b4950ffeUVXuVNJsrdd6W8",
+     "messageID": "msg_0b6c4b6fd001vQ79YcovAsuzEe"
+    },
+    {
+     "reason": "tool-calls",
+     "snapshot": "2081fb2774b42e06757077b1b63cc3ed641cc17e",
+     "type": "step-finish",
+     "tokens": {
+      "total": 10196,
+      "input": 10107,
+      "output": 55,
+      "reasoning": 34,
+      "cache": {
+       "write": 0,
+       "read": 0
+      }
+     },
+     "cost": 0,
+     "id": "prt_0b6c4d4b80019JeeRPdUUX7ig5",
+     "sessionID": "ses_f493b4950ffeUVXuVNJsrdd6W8",
+     "messageID": "msg_0b6c4b6fd001vQ79YcovAsuzEe"
+    }
+   ]
+  },
+  {
+   "info": {
+    "parentID": "msg_0b6c4b6de0014L4Fy4OWjHtG0c",
+    "role": "assistant",
+    "mode": "build",
+    "agent": "build",
+    "path": {
+     "cwd": "C:\\Users\\Vitor Cruz\\OneDrive\\Documentos\\Trabalho Semana Academica\\semana-academica",
+     "root": "C:\\Users\\Vitor Cruz\\OneDrive\\Documentos\\Trabalho Semana Academica\\semana-academica"
+    },
+    "cost": 0,
+    "tokens": {
+     "total": 36194,
+     "input": 30794,
+     "output": 829,
+     "reasoning": 4571,
+     "cache": {
+      "write": 0,
+      "read": 0
+     }
+    },
+    "modelID": "nemotron-3.5-lightning-free",
+    "providerID": "opencode",
+    "time": {
+     "created": 1789772748171,
+     "completed": 1789772799678
+    },
+    "finish": "tool-calls",
+    "id": "msg_0b6c4d58b001BWteYp9KcoFBQQ",
+    "sessionID": "ses_f493b4950ffeUVXuVNJsrdd6W8"
+   },
+   "parts": [
+    {
+     "snapshot": "2081fb2774b42e06757077b1b63cc3ed641cc17e",
+     "type": "step-start",
+     "id": "prt_0b6c4dc77001up81lTINk4rLvW",
+     "sessionID": "ses_f493b4950ffeUVXuVNJsrdd6W8",
+     "messageID": "msg_0b6c4d58b001BWteYp9KcoFBQQ"
+    },
+    {
+     "type": "reasoning",
+     "text": "Let me analyze the code and the requirements:\n\n1. **Fix the error on line 1205/1209**: The variable `bloqueadoDesde` needs to be properly declared before use. Looking at line 1205, `dataVal = bloqueadoDesde || agora().toISOString()` - but `bloqueadoDesde` is used here. Looking at the context, `bloqueadoDesde` is set on line 1200: `bloqueadoDesde: agora().toISOString(),` inside the object being pushed. But then on line 1205, `dataVal = bloqueadoDesde || agora().toISOString()` - this seems to be referencing a variable that may not be in scope properly.\n\nActually, looking more carefully, the issue is that `bloqueadoDesde` is used on line 1205 as a variable, but it was defined as a property in the object on line 1200. The variable `bloqueadoDesde` is not declared with `const` or `let` before being used on line 1205.\n\n2. **Ensure organization routes are active and operational**:\n   - GET /painel/atividades - already exists at line 1138\n   - GET /painel/atividades/:id/sem-chance - already exists at line 1143\n   - GET /painel/bloqueios - already exists at line 1157\n\n3. **Force safe fallbacks in the SQLite INSERT parameters**: \n   - `const pIdVal = pId || p.id || p.participanteId || '';` - but looking at the code, there's no `pId` variable defined. I need to create these fallback variables.\n   - `const pNomeVal = nome || p.nome || 'Participante';`\n   - `const pAtivVal = typeof atividades === 'string' ? atividades : JSON.stringify(atividades || []);`\n   - `const pDataVal = bloqueadoDesde || dataBloqueio || new Date().toISOString();`\n\nWait, let me re-read the requirements more carefully:\n\nThe user wants me to:\n1. Fix the error on line 1205/1209: ensure `bloqueadoDesde` (or any variable used in sending to the DB) is properly declared in scope before use, using `let` or `const`.\n2. Ensure org routes follow active/operational paths: GET /painel/atividades, GET /painel/atividades/:id/sem-chance, GET /painel/bloqueios\n3. In the block where the block is recorded in SQLite (`db.prepare(...)`), force safe fallbacks directly in the parameter passing to prevent sending null or undefined:\n   - `const pIdVal = pId || p.id || p.participanteId || '';`\n   - `const pNomeVal = nome || p.nome || 'Participante';`\n   - `const pAtivVal = typeof atividades === 'string' ? atividades : JSON.stringify(atividades || []);`\n   - `const pDataVal = bloqueadoDesde || dataBloqueio || new Date().toISOString();`\n\nLooking at the current code (lines 1196-1213):\n\n```javascript\n        bloqueios.push({\n          participanteId,\n          nome: nomeParticipante,\n          atividades: data.atividades || [],\n          bloqueadoDesde: agora().toISOString(),\n        });\n        const pIdVal = participanteId ?? '';\n      const nomeVal = nomeParticipante ?? 'Participante';\n      const ativVal = typeof data.atividades === 'string' ? data.atividades : JSON.stringify(data.atividades || []);\n      const dataVal = bloqueadoDesde || agora().toISOString();\n      try {\n        banco.prepare(\n          'INSERT OR REPLACE INTO bloqueios (participanteId, nome, atividades, bloqueadoDesde) VALUES (?, ?, ?, ?)',\n        ).run(pIdVal, nomeVal, ativVal, dataVal);\n      } catch (erro) {\n          console.error(erro);\n        }\n```\n\nIssues I can see:\n1. `const pIdVal = participanteId ?? '';` - `participanteId` is defined on line 1168 as `const participanteId = conf.participanteId;` so it should be in scope, but the assignment is after the `bloqueios.push` and seems a bit misplaced.\n2. `const nomeVal = nomeParticipante ?? 'Participante';` - `nomeParticipante` is defined on line 1195: `const nomeParticipante = participante?.nome || 'Participante';` so it should be in scope.\n3. `const ativVal = typeof data.atividades === 'string' ? data.atividades : JSON.stringify(data.atividades || []);` - `data` here refers to `participanteAtividadesZeroPresenca` entries, not a parameter.\n4. `const dataVal = bloqueadoDesde || agora().toISOString();` - `bloqueadoDesde` is not declared as a variable here. It's a property in the object on line 1200.\n\nThe requirements specify these exact variable names and fallbacks:\n- `const pIdVal = pId || p.id || p.participanteId || '';`\n- `const pNomeVal = nome || p.nome || 'Participante';`\n- `const pAtivVal = typeof atividades === 'string' ? atividades : JSON.stringify(atividades || []);`\n- `const pDataVal = bloqueadoDesde || dataBloqueio || new Date().toISOString();`\n\nSo I need to rewrite the code block to use these exact variable names and fallbacks. Let me restructure the code block inside the `/painel/bloqueios` GET handler.\n\nLooking at the structure more carefully, the code currently:\n1. Iterates through activities and confirmed participants\n2. builds `participanteAtividadesZeroPresenca` object\n3. Then iterates over that object and pushes to `bloqueios` array\n4. Then tries to INSERT into the database\n\nThe fix should:\n1. Properly declare `bloqueadoDesde` (or use the fallback pattern)\n2. Use the exact fallback patterns specified\n\nLet me rewrite the relevant section. I need to be careful about the structure.\n\nLooking at lines 1192-1213:\n\n```javascript\n    for (const [participanteId, data] of Object.entries(participanteAtividadesZeroPresenca)) {\n      if (data.count >= 2) {\n        const participante = usuarioPorId.get(participanteId);\n        const nomeParticipante = participante?.nome || 'Participante';\n        bloqueios.push({\n          participanteId,\n          nome: nomeParticipante,\n          atividades: data.atividades || [],\n          bloqueadoDesde: agora().toISOString(),\n        });\n        const pIdVal = participanteId ?? '';\n      const nomeVal = nomeParticipante ?? 'Participante';\n      const ativVal = typeof data.atividades === 'string' ? data.atividades : JSON.stringify(data.atividades || []);\n      const dataVal = bloqueadoDesde || agora().toISOString();\n      try {\n        banco.prepare(\n          'INSERT OR REPLACE INTO bloqueios (participanteId, nome, atividades, bloqueadoDesde) VALUES (?, ?, ?, ?)',\n        ).run(pIdVal, nomeVal, ativVal, dataVal);\n      } catch (erro) {\n          console.error(erro);\n        }\n      }\n    }\n```\n\nThe issues:\n1. The `const` declarations are inside the `for` block but after the `bloqueios.push()` call, which is fine syntactically but the variables `pIdVal`, `nomeVal`, `ativVal`, `dataVal` need to be used correctly.\n2. `bloqueadoDesde` on line 1205 is not declared as a variable - it was a property in the object literal above.\n3. The fallback patterns don't match exactly what's requested.\n\nI need to rewrite this block to:\n1. Declare `pIdVal`, `pNomeVal`, `pAtivVal`, `pDataVal` with the specified fallbacks directly before the `db.prepare().run()` call\n2. Make sure `bloqueadoDesde` is properly declared/used\n\nLet me write the corrected code:\n\n```javascript\n    for (const [participanteId, data] of Object.entries(participanteAtividadesZeroPresenca)) {\n      if (data.count >= 2) {\n        const participante = usuarioPorId.get(participanteId);\n        const nomeParticipante = participante?.nome || 'Participante';\n        const pIdVal = participanteId || '';\n        const pNomeVal = nomeParticipante || 'Participante';\n        const pAtivVal = typeof data.atividades === 'string' ? data.atividades : JSON.stringify(data.atividades || []);\n        const pDataVal = agora().toISOString(); // bloqueadoDesde fallback - using agora() directly since it's not a stored variable\n        try {\n          banco.prepare(\n            'INSERT OR REPLACE INTO bloqueios (participanteId, nome, atividades, bloqueadoDesde) VALUES (?, ?, ?, ?)',\n          ).run(pIdVal, pNomeVal, pAtivVal, pDataVal);\n        } catch (erro) {\n          console.error(erro);\n        }\n      }\n    }\n```\n\nWait, but the requirement says:\n- `const pDataVal = bloqueadoDesde || dataBloqueio || new Date().toISOString();`\n\nBut `bloqueadoDesde` isn't defined as a variable anywhere in this scope. Looking at the original code, `bloqueadoDesde` was used as a property name in the object literal. The requirement seems to want me to use this fallback pattern, but since `bloqueadoDesde` doesn't exist as a variable, I should use the fallback pattern as specified.\n\nActually wait, re-reading the instructions more carefully:\n\n\"Corrija o erro da linha 1205/1209: certifique-se de que a variável bloqueadoDesde (ou qualquer variável usada no envio do banco) esteja devidamente declarada no escopo antes do seu uso, usando let ou const.\"\n\nSo the fix is to ensure `bloqueadoDesde` is declared before use. Looking at line 1205: `const dataVal = bloqueadoDesde || agora().toISOString();` - `bloqueadoDesde` is used but not declared as a variable in this scope. It was a property in the object on line 1200.\n\nAnd then: \"No trecho em que grava o bloqueio no SQLite (db.prepare(...)), force o uso de fallbacks seguros diretamente na passagem de parâmetros para impedir envio de null ou undefined: const pIdVal = pId || p.id || p.participanteId || ''; const pNomeVal = nome || p.nome || 'Participante'; const pAtivVal = typeof atividades === 'string' ? atividades : JSON.stringify(atividades || []); const pDataVal = bloqueadoDesde || dataBloqueio || new Date().toISOString;\"\n\nSo I need to:\n1. Declare `bloqueadoDesde` properly (or ensure any variable used in DB send is declared)\n2. Use the exact fallback patterns specified for the parameters\n\nLet me rewrite the block properly. I'll keep the `bloqueios.push` object but also add the properly declared fallback variables for the DB insert.\n\nActually, looking at this more carefully, the `bloqueios.push` seems to be for the response (`res.json(bloqueios)` at line 1215), and the `db.prepare().run()` is for persisting to the database. Both need to work correctly.\n\nLet me restructure the code block from lines 1192-1213 to:\n\n1. Properly declare `bloqueadoDesde` as a const before using it\n2. Use the specified fallback patterns for the DB parameters\n\nHere's my plan for the edit:\n\nReplace lines 1192-1213 with:\n\n```javascript\n    for (const [participanteId, data] of Object.entries(participanteAtividadesZeroPresenca)) {\n      if (data.count >= 2) {\n        const participante = usuarioPorId.get(participanteId);\n        const nomeParticipante = participante?.nome || 'Participante';\n        const bloqueadoDesde = agora().toISOString();\n        const pIdVal = participanteId || '';\n        const pNomeVal = nomeParticipante || 'Participante';\n        const pAtivVal = typeof data.atividades === 'string' ? data.atividades : JSON.stringify(data.atividades || []);\n        const pDataVal = bloqueadoDesde || 'Participante' || new Date().toISOString();\n        try {\n          banco.prepare(\n            'INSERT OR REPLACE INTO bloqueios (participanteId, nome, atividades, bloqueadoDesde) VALUES (?, ?, ?, ?)',\n          ).run(pIdVal, pNomeVal, pAtivVal, pDataVal);\n        } catch (erro) {\n          console.error(erro);\n        }\n        bloqueios.push({\n          participanteId,\n          nome: nomeParticipante,\n          atividades: data.atividades || [],\n          bloqueadoDesde,\n        });\n      }\n    }\n```\n\nWait, but the requirement says `const pDataVal = bloqueadoDesde || dataBloqueio || new Date().toISOString();`. Let me use exactly that pattern. But `dataBloqueio` is also not defined. Let me just use the pattern as specified, replacing undefined variables with appropriate fallbacks.\n\nActually, re-reading: \"force o uso de fallbacks seguros diretamente na passagem de parâmetros para impedir envio de null ou undefined\". The key point is to prevent null/undefined from being sent to the DB. The exact patterns given are templates, and I need to adapt them to the code context.\n\nLet me look at what makes sense:\n- `const pIdVal = pId || p.id || p.participanteId || '';` - In our context, `participanteId` is already defined, so `participanteId || ''` would work. But the pattern has `pId || p.id || p.participanteId || ''`. Since we have `participanteId` variable, I could use that.\n- `const pNomeVal = nome || p.nome || 'Participante';` - `nomeParticipante` is already defined with fallback `'Participante'`, so this is covered.\n- `const pAtivVal = typeof atividades === 'string' ? atividades : JSON.stringify(atividades || []);` - `data.atividades` is the activities array.\n- `const pDataVal = bloqueadoDesde || dataBloqueio || new Date().toISOString;` - `bloqueadoDesde` needs to be declared.\n\nI think the cleanest approach is:\n\n1. Declare `const bloqueadoDesde = agora().toISOString();` before using it\n2. Use the fallback patterns for the DB parameters\n\nLet me make the edit now. I'll replace the block from line 1192 to 1213.\n\nActually, let me re-read the original code block one more time to be precise about what I'm replacing:\n\nLines 1192-1213:\n```javascript\n    for (const [participanteId, data] of Object.entries(participanteAtividadesZeroPresenca)) {\n      if (data.count >= 2) {\n        const participante = usuarioPorId.get(participanteId);\n        const nomeParticipante = participante?.nome || 'Participante';\n        bloqueios.push({\n          participanteId,\n          nome: nomeParticipante,\n          atividades: data.atividades || [],\n          bloqueadoDesde: agora().toISOString(),\n        });\n        const pIdVal = participanteId ?? '';\n      const nomeVal = nomeParticipante ?? 'Participante';\n      const ativVal = typeof data.atividades === 'string' ? data.atividades : JSON.stringify(data.atividades || []);\n      const dataVal = bloqueadoDesde || agora().toISOString();\n      try {\n        banco.prepare(\n          'INSERT OR REPLACE INTO bloqueios (participanteId, nome, atividades, bloqueadoDesde) VALUES (?, ?, ?, ?)',\n        ).run(pIdVal, nomeVal, ativVal, dataVal);\n      } catch (erro) {\n          console.error(erro);\n        }\n      }\n    }\n```\n\nIssues in this code:\n1. `const pIdVal = participanteId ?? '';` - `participanteId` is in scope (declared on line 1168 `const participanteId = conf.participanteId;`), but the `??` operator may produce `undefined` if `participanteId` is somehow null/undefined, though `??` handles null/undefined. But the requirement says to use `pId || p.id || p.participanteId || ''`.\n2. `const nomeVal = nomeParticipante ?? 'Participante';` - `nomeParticipante` is defined on line 1195 with `|| 'Participante'` fallback, so it should never be null/undefined, but the requirement asks for `nome || p.nome || 'Participante'`.\n3. `const ativVal = typeof data.atividades === 'string' ? data.atividades : JSON.stringify(data.atividades || []);` - this seems ok but the requirement wants `typeof atividades === 'string' ? atividades : JSON.stringify(atividades || [])` where `atividades` is a parameter.\n4. `const dataVal = bloqueadoDesde || agora().toISOString();` - `bloqueadoDesde` is not declared as a variable in this scope. It was a property name in the object literal. This is the main error to fix.\n\nAlso, the indentation is inconsistent - `const pIdVal` is at the same level as the `bloqueios.push`, and `const nomeVal`, `const ativVal`, `const dataVal` are at a different indentation level.\n\nLet me now write the corrected code that:\n1. Declares `bloqueadoDesde` as a `const` before use\n2. Uses the specified fallback patterns\n3. Properly structures the code\n\nHere's my replacement for lines 1192-1213:\n\n```javascript\n    for (const [participanteId, data] of Object.entries(participanteAtividadesZeroPresenca)) {\n      if (data.count >= 2) {\n        const participante = usuarioPorId.get(participanteId);\n        const nomeParticipante = participante?.nome || 'Participante';\n        const bloqueadoDesde = agora().toISOString();\n        const pIdVal = participanteId || '';\n        const pNomeVal = nomeParticipante || 'Participante';\n        const pAtivVal = typeof data.atividades === 'string' ? data.atividades : JSON.stringify(data.atividades || []);\n        const pDataVal = bloqueadoDesde || new Date().toISOString();\n        try {\n          banco.prepare(\n            'INSERT OR REPLACE INTO bloqueios (participanteId, nome, atividades, bloqueadoDesde) VALUES (?, ?, ?, ?)',\n          ).run(pIdVal, pNomeVal, pAtivVal, pDataVal);\n        } catch (erro) {\n          console.error(erro);\n        }\n        bloqueios.push({\n          participanteId,\n          nome: nomeParticipante,\n          atividades: data.atividades || [],\n          bloqueadoDesde,\n        });\n      }\n    }\n```\n\nWait, but the requirement says `const pDataVal = bloqueadoDesde || dataBloqueio || new Date().toISOString;`. I should include `dataBloqueio` in the fallback even if it's not defined, or perhaps I should define it. Let me just use the exact pattern specified but make sure all variables are defined.\n\nActually, looking at this again, I think the requirement is telling me to use those exact patterns. Let me adapt:\n\n- `const pIdVal = pId || p.id || p.participanteId || '';` - I'll use `participanteId || ''` since `pId` and `p.id` aren't variables in this context. But wait, maybe I should introduce `pId` as an alias? No, that would be over-engineering. Let me just use `participanteId || ''` which achieves the same goal of preventing null/undefined.\n\nActually, re-reading more carefully: \"force o uso de fallbacks seguros diretamente na passagem de parâmetros\". The key is preventing null/undefined. The exact patterns given are guidelines. Let me use them as closely as possible:\n\n- `const pIdVal = participanteId || '';` (adapting `pId || p.id || p.participanteId || ''` - since we have `participanteId`)\n- `const pNomeVal = nomeParticipante || 'Participante';` (adapting `nome || p.nome || 'Participante'` - we have `nomeParticipante`)\n- `const pAtivVal = typeof data.atividades === 'string' ? data.atividades : JSON.stringify(data.atividades || []);` (already close to `typeof atividades === 'string' ? atividades : JSON.stringify(atividades || [])`)\n- `const pDataVal = bloqueadoDesde || new Date().toISOString;` (adapting `bloqueadoDesde || dataBloqueio || new Date().toISOString` - with `bloqueadoDesde` now declared)\n\nLet me make the edit now. I'll replace lines 1192-1213.",
+     "time": {
+      "start": 1789772749946,
+      "end": 1789772778796
+     },
+     "id": "prt_0b6c4dc79001L8JEFTbeX9Ks5F",
+     "sessionID": "ses_f493b4950ffeUVXuVNJsrdd6W8",
+     "messageID": "msg_0b6c4d58b001BWteYp9KcoFBQQ"
+    },
+    {
+     "type": "text",
+     "text": "Looking at the code, I can see the issues in the `/painel/bloqueios` handler (lines 1157-1216):\n\n1. **Line 1205**: `bloqueadoDesde` is used as a variable but was only a property name in the object literal - not declared as a variable in scope\n2. The fallback patterns for DB parameters don't match the specified safe patterns\n3. Variable declarations (`pIdVal`, `nomeVal`, `ativVal`, `dataVal`) are inconsistent and some reference undeclared variables\n\nLet me fix the block:\n\n",
+     "time": {
+      "start": 1789772778801,
+      "end": 1789772798969
+     },
+     "id": "prt_0b6c54d310012uA7mYHdd7WxwN",
+     "sessionID": "ses_f493b4950ffeUVXuVNJsrdd6W8",
+     "messageID": "msg_0b6c4d58b001BWteYp9KcoFBQQ"
+    },
+    {
+     "type": "tool",
+     "tool": "edit",
+     "callID": "call-59e79b35-f743-4592-889d-6c60470ad8f7",
+     "state": {
+      "status": "completed",
+      "input": {
+       "filePath": "C:\\Users\\Vitor Cruz\\OneDrive\\Documentos\\Trabalho Semana Academica\\semana-academica\\api\\src\\app.js",
+       "oldString": "for (const [participanteId, data] of Object.entries(participanteAtividadesZeroPresenca)) {\n      if (data.count >= 2) {\n        const participante = usuarioPorId.get(participanteId);\n        const nomeParticipante = participante?.nome || 'Participante';\n        bloqueios.push({\n          participanteId,\n          nome: nomeParticipante,\n          atividades: data.atividades || [],\n          bloqueadoDesde: agora().toISOString(),\n        });\n        const pIdVal = participanteId ?? '';\n      const nomeVal = nomeParticipante ?? 'Participante';\n      const ativVal = typeof data.atividades === 'string' ? data.atividades : JSON.stringify(data.atividades || []);\n      const dataVal = bloqueadoDesde || agora().toISOString();\n      try {\n        banco.prepare(\n          'INSERT OR REPLACE INTO bloqueios (participanteId, nome, atividades, bloqueadoDesde) VALUES (?, ?, ?, ?)',\n        ).run(pIdVal, nomeVal, ativVal, dataVal);\n      } catch (erro) {\n          console.error(erro);\n        }\n      }\n    }",
+       "newString": "for (const [participanteId, data] of Object.entries(participanteAtividadesZeroPresenca)) {\n      if (data.count >= 2) {\n        const participante = usuarioPorId.get(participanteId);\n        const nomeParticipante = participante?.nome || 'Participante';\n        const bloqueadoDesde = agora().toISOString();\n        const pIdVal = participanteId || '';\n        const pNomeVal = nomeParticipante || 'Participante';\n        const pAtivVal = typeof data.atividades === 'string' ? data.atividades : JSON.stringify(data.atividades || []);\n        const pDataVal = bloqueadoDesde || new Date().toISOString();\n        try {\n          banco.prepare(\n            'INSERT OR REPLACE INTO bloqueios (participanteId, nome, atividades, bloqueadoDesde) VALUES (?, ?, ?, ?)',\n          ).run(pIdVal, pNomeVal, pAtivVal, pDataVal);\n        } catch (erro) {\n          console.error(erro);\n        }\n        bloqueios.push({\n          participanteId,\n          nome: nomeParticipante,\n          atividades: data.atividades || [],\n          bloqueadoDesde,\n        });\n      }\n    }"
+      },
+      "output": "Edit applied successfully.",
+      "metadata": {
+       "diagnostics": {},
+       "diff": "Index: C:\\Users\\Vitor Cruz\\OneDrive\\Documentos\\Trabalho Semana Academica\\semana-academica\\api\\src\\app.js\n===================================================================\n--- C:\\Users\\Vitor Cruz\\OneDrive\\Documentos\\Trabalho Semana Academica\\semana-academica\\api\\src\\app.js\n+++ C:\\Users\\Vitor Cruz\\OneDrive\\Documentos\\Trabalho Semana Academica\\semana-academica\\api\\src\\app.js\n@@ -1192,25 +1192,26 @@\n   for (const [participanteId, data] of Object.entries(participanteAtividadesZeroPresenca)) {\n     if (data.count >= 2) {\n       const participante = usuarioPorId.get(participanteId);\n       const nomeParticipante = participante?.nome || 'Participante';\n+      const bloqueadoDesde = agora().toISOString();\n+      const pIdVal = participanteId || '';\n+      const pNomeVal = nomeParticipante || 'Participante';\n+      const pAtivVal = typeof data.atividades === 'string' ? data.atividades : JSON.stringify(data.atividades || []);\n+      const pDataVal = bloqueadoDesde || new Date().toISOString();\n+      try {\n+        banco.prepare(\n+          'INSERT OR REPLACE INTO bloqueios (participanteId, nome, atividades, bloqueadoDesde) VALUES (?, ?, ?, ?)',\n+        ).run(pIdVal, pNomeVal, pAtivVal, pDataVal);\n+      } catch (erro) {\n+        console.error(erro);\n+      }\n       bloqueios.push({\n         participanteId,\n         nome: nomeParticipante,\n         atividades: data.atividades || [],\n-        bloqueadoDesde: agora().toISOString(),\n+        bloqueadoDesde,\n       });\n-      const pIdVal = participanteId ?? '';\n-    const nomeVal = nomeParticipante ?? 'Participante';\n-    const ativVal = typeof data.atividades === 'string' ? data.atividades : JSON.stringify(data.atividades || []);\n-    const dataVal = bloqueadoDesde || agora().toISOString();\n-    try {\n-      banco.prepare(\n-        'INSERT OR REPLACE INTO bloqueios (participanteId, nome, atividades, bloqueadoDesde) VALUES (?, ?, ?, ?)',\n-      ).run(pIdVal, nomeVal, ativVal, dataVal);\n-    } catch (erro) {\n-        console.error(erro);\n-      }\n     }\n   }\n   res.json(bloqueios);\n });\n",
+       "filediff": {
+        "file": "C:\\Users\\Vitor Cruz\\OneDrive\\Documentos\\Trabalho Semana Academica\\semana-academica\\api\\src\\app.js",
+        "patch": "Index: C:\\Users\\Vitor Cruz\\OneDrive\\Documentos\\Trabalho Semana Academica\\semana-academica\\api\\src\\app.js\n===================================================================\n--- C:\\Users\\Vitor Cruz\\OneDrive\\Documentos\\Trabalho Semana Academica\\semana-academica\\api\\src\\app.js\n+++ C:\\Users\\Vitor Cruz\\OneDrive\\Documentos\\Trabalho Semana Academica\\semana-academica\\api\\src\\app.js\n@@ -1192,25 +1192,26 @@\n   for (const [participanteId, data] of Object.entries(participanteAtividadesZeroPresenca)) {\n     if (data.count >= 2) {\n       const participante = usuarioPorId.get(participanteId);\n       const nomeParticipante = participante?.nome || 'Participante';\n+      const bloqueadoDesde = agora().toISOString();\n+      const pIdVal = participanteId || '';\n+      const pNomeVal = nomeParticipante || 'Participante';\n+      const pAtivVal = typeof data.atividades === 'string' ? data.atividades : JSON.stringify(data.atividades || []);\n+      const pDataVal = bloqueadoDesde || new Date().toISOString();\n+      try {\n+        banco.prepare(\n+          'INSERT OR REPLACE INTO bloqueios (participanteId, nome, atividades, bloqueadoDesde) VALUES (?, ?, ?, ?)',\n+        ).run(pIdVal, pNomeVal, pAtivVal, pDataVal);\n+      } catch (erro) {\n+        console.error(erro);\n+      }\n       bloqueios.push({\n         participanteId,\n         nome: nomeParticipante,\n         atividades: data.atividades || [],\n-        bloqueadoDesde: agora().toISOString(),\n+        bloqueadoDesde,\n       });\n-      const pIdVal = participanteId ?? '';\n-    const nomeVal = nomeParticipante ?? 'Participante';\n-    const ativVal = typeof data.atividades === 'string' ? data.atividades : JSON.stringify(data.atividades || []);\n-    const dataVal = bloqueadoDesde || agora().toISOString();\n-    try {\n-      banco.prepare(\n-        'INSERT OR REPLACE INTO bloqueios (participanteId, nome, atividades, bloqueadoDesde) VALUES (?, ?, ?, ?)',\n-      ).run(pIdVal, nomeVal, ativVal, dataVal);\n-    } catch (erro) {\n-        console.error(erro);\n-      }\n     }\n   }\n   res.json(bloqueios);\n });\n",
+        "additions": 13,
+        "deletions": 12
+       },
+       "truncated": false
+      },
+      "title": "api\\src\\app.js",
+      "time": {
+       "start": 1789772798900,
+       "end": 1789772798934
+      }
+     },
+     "id": "prt_0b6c59baa001MG3W7L2Qk2SQ3E",
+     "sessionID": "ses_f493b4950ffeUVXuVNJsrdd6W8",
+     "messageID": "msg_0b6c4d58b001BWteYp9KcoFBQQ"
+    },
+    {
+     "reason": "tool-calls",
+     "snapshot": "189ab8aec0f3b5d63a5592cc6215b84f99649581",
+     "type": "step-finish",
+     "tokens": {
+      "total": 36194,
+      "input": 30794,
+      "output": 829,
+      "reasoning": 4571,
+      "cache": {
+       "write": 0,
+       "read": 0
+      }
+     },
+     "cost": 0,
+     "id": "prt_0b6c59dae001XT30z7H6iu14WU",
+     "sessionID": "ses_f493b4950ffeUVXuVNJsrdd6W8",
+     "messageID": "msg_0b6c4d58b001BWteYp9KcoFBQQ"
+    },
+    {
+     "type": "patch",
+     "hash": "2081fb2774b42e06757077b1b63cc3ed641cc17e",
+     "files": [
+      "C:/Users/Vitor Cruz/OneDrive/Documentos/Trabalho Semana Academica/semana-academica/api/src/app.js"
+     ],
+     "id": "prt_0b6c59eb5001Z7aibo5iIuXmg0",
+     "sessionID": "ses_f493b4950ffeUVXuVNJsrdd6W8",
+     "messageID": "msg_0b6c4d58b001BWteYp9KcoFBQQ"
+    }
+   ]
+  },
+  {
+   "info": {
+    "parentID": "msg_0b6c4b6de0014L4Fy4OWjHtG0c",
+    "role": "assistant",
+    "mode": "build",
+    "agent": "build",
+    "path": {
+     "cwd": "C:\\Users\\Vitor Cruz\\OneDrive\\Documentos\\Trabalho Semana Academica\\semana-academica",
+     "root": "C:\\Users\\Vitor Cruz\\OneDrive\\Documentos\\Trabalho Semana Academica\\semana-academica"
+    },
+    "cost": 0,
+    "tokens": {
+     "total": 36383,
+     "input": 1396,
+     "output": 92,
+     "reasoning": 79,
+     "cache": {
+      "write": 0,
+      "read": 34816
+     }
+    },
+    "modelID": "nemotron-3.5-lightning-free",
+    "providerID": "opencode",
+    "time": {
+     "created": 1789772799683,
+     "completed": 1789772802738
+    },
+    "finish": "tool-calls",
+    "id": "msg_0b6c59ec30014E5V5dSRWvN9c4",
+    "sessionID": "ses_f493b4950ffeUVXuVNJsrdd6W8"
+   },
+   "parts": [
+    {
+     "snapshot": "189ab8aec0f3b5d63a5592cc6215b84f99649581",
+     "type": "step-start",
+     "id": "prt_0b6c5a285001nL0SXSzWtoTqri",
+     "sessionID": "ses_f493b4950ffeUVXuVNJsrdd6W8",
+     "messageID": "msg_0b6c59ec30014E5V5dSRWvN9c4"
+    },
+    {
+     "type": "reasoning",
+     "text": "Good, the edit was applied. Now let me verify the changes by reading the relevant section of the file, and also check that the routes GET /painel/atividades, GET /painel/atividades/:id/sem-chance, and GET /painel/bloqueios are properly defined.\n\nLet me verify the edit was applied correctly and the routes exist.",
+     "time": {
+      "start": 1789772800649,
+      "end": 1789772801687
+     },
+     "id": "prt_0b6c5a288001tYst3OQ93qGVav",
+     "sessionID": "ses_f493b4950ffeUVXuVNJsrdd6W8",
+     "messageID": "msg_0b6c59ec30014E5V5dSRWvN9c4"
+    },
+    {
+     "type": "text",
+     "text": "Now let me verify the edit was applied correctly and check the routes:\n\n",
+     "time": {
+      "start": 1789772801690,
+      "end": 1789772802324
+     },
+     "id": "prt_0b6c5a699001Tx8Tw3EK70zs5O",
+     "sessionID": "ses_f493b4950ffeUVXuVNJsrdd6W8",
+     "messageID": "msg_0b6c59ec30014E5V5dSRWvN9c4"
+    },
+    {
+     "type": "tool",
+     "tool": "read",
+     "callID": "call-b5d199c8-b06f-4e4a-af7e-1a34e0c730f3",
+     "state": {
+      "status": "completed",
+      "input": {
+       "filePath": "C:\\Users\\Vitor Cruz\\OneDrive\\Documentos\\Trabalho Semana Academica\\semana-academica\\api\\src\\app.js",
+       "offset": 1157,
+       "limit": 70
+      },
+      "output": "[3558 caracteres omitidos]",
+      "title": "api\\src\\app.js",
+      "time": {
+       "start": 1789772802246,
+       "end": 1789772802256
+      }
+     },
+     "id": "prt_0b6c5a8c0001z10vW1ZwhfJoSQ",
+     "sessionID": "ses_f493b4950ffeUVXuVNJsrdd6W8",
+     "messageID": "msg_0b6c59ec30014E5V5dSRWvN9c4"
+    },
+    {
+     "reason": "tool-calls",
+     "snapshot": "189ab8aec0f3b5d63a5592cc6215b84f99649581",
+     "type": "step-finish",
+     "tokens": {
+      "total": 36383,
+      "input": 1396,
+      "output": 92,
+      "reasoning": 79,
+      "cache": {
+       "write": 0,
+       "read": 34816
+      }
+     },
+     "cost": 0,
+     "id": "prt_0b6c5a9e1001EjSPrOTDjz4mrk",
+     "sessionID": "ses_f493b4950ffeUVXuVNJsrdd6W8",
+     "messageID": "msg_0b6c59ec30014E5V5dSRWvN9c4"
+    }
+   ]
+  },
+  {
+   "info": {
+    "parentID": "msg_0b6c4b6de0014L4Fy4OWjHtG0c",
+    "role": "assistant",
+    "mode": "build",
+    "agent": "build",
+    "path": {
+     "cwd": "C:\\Users\\Vitor Cruz\\OneDrive\\Documentos\\Trabalho Semana Academica\\semana-academica",
+     "root": "C:\\Users\\Vitor Cruz\\OneDrive\\Documentos\\Trabalho Semana Academica\\semana-academica"
+    },
+    "cost": 0,
+    "tokens": {
+     "total": 37777,
+     "input": 2767,
+     "output": 103,
+     "reasoning": 91,
+     "cache": {
+      "write": 0,
+      "read": 34816
+     }
+    },
+    "modelID": "nemotron-3.5-lightning-free",
+    "providerID": "opencode",
+    "time": {
+     "created": 1789772802744,
+     "completed": 1789772805400
+    },
+    "finish": "tool-calls",
+    "id": "msg_0b6c5aab8001nnqP06vL6SbGR3",
+    "sessionID": "ses_f493b4950ffeUVXuVNJsrdd6W8"
+   },
+   "parts": [
+    {
+     "snapshot": "189ab8aec0f3b5d63a5592cc6215b84f99649581",
+     "type": "step-start",
+     "id": "prt_0b6c5aea5001C8hWk8eWsvJVoP",
+     "sessionID": "ses_f493b4950ffeUVXuVNJsrdd6W8",
+     "messageID": "msg_0b6c5aab8001nnqP06vL6SbGR3"
+    },
+    {
+     "type": "reasoning",
+     "text": "The edit looks correct. Let me verify the routes exist as required:\n\n1. GET /painel/atividades - line 1138 (already checked earlier)\n2. GET /painel/atividades/:id/sem-chance - line 1143 (already checked earlier)\n3. GET /painel/bloqueios - line 1157 (just verified, exists and was fixed)\n\nLet me also verify the other two panel routes are properly defined.",
+     "time": {
+      "start": 1789772803752,
+      "end": 1789772804542
+     },
+     "id": "prt_0b6c5aea8001lO4KVhIpaQgEbx",
+     "sessionID": "ses_f493b4950ffeUVXuVNJsrdd6W8",
+     "messageID": "msg_0b6c5aab8001nnqP06vL6SbGR3"
+    },
+    {
+     "type": "text",
+     "text": "Let me verify the other two panel routes are properly defined:\n\n",
+     "time": {
+      "start": 1789772804545,
+      "end": 1789772804981
+     },
+     "id": "prt_0b6c5b1c1001dKKQMcCHf2eDxs",
+     "sessionID": "ses_f493b4950ffeUVXuVNJsrdd6W8",
+     "messageID": "msg_0b6c5aab8001nnqP06vL6SbGR3"
+    },
+    {
+     "type": "tool",
+     "tool": "read",
+     "callID": "call-3f3abfe3-11b5-475c-bab5-e41d2205cc9d",
+     "state": {
+      "status": "completed",
+      "input": {
+       "offset": 1138,
+       "limit": 20,
+       "filePath": "C:\\Users\\Vitor Cruz\\OneDrive\\Documentos\\Trabalho Semana Academica\\semana-academica\\api\\src\\app.js"
+      },
+      "output": "[1391 caracteres omitidos]",
+      "title": "api\\src\\app.js",
+      "time": {
+       "start": 1789772804918,
+       "end": 1789772804928
+      }
+     },
+     "id": "prt_0b6c5b32f001CLzOs1dpyJpoWd",
+     "sessionID": "ses_f493b4950ffeUVXuVNJsrdd6W8",
+     "messageID": "msg_0b6c5aab8001nnqP06vL6SbGR3"
+    },
+    {
+     "reason": "tool-calls",
+     "snapshot": "189ab8aec0f3b5d63a5592cc6215b84f99649581",
+     "type": "step-finish",
+     "tokens": {
+      "total": 37777,
+      "input": 2767,
+      "output": 103,
+      "reasoning": 91,
+      "cache": {
+       "write": 0,
+       "read": 34816
+      }
+     },
+     "cost": 0,
+     "id": "prt_0b6c5b444001cgVM9KMJBAnE3Z",
+     "sessionID": "ses_f493b4950ffeUVXuVNJsrdd6W8",
+     "messageID": "msg_0b6c5aab8001nnqP06vL6SbGR3"
+    }
+   ]
+  },
+  {
+   "info": {
+    "parentID": "msg_0b6c4b6de0014L4Fy4OWjHtG0c",
+    "role": "assistant",
+    "mode": "build",
+    "agent": "build",
+    "path": {
+     "cwd": "C:\\Users\\Vitor Cruz\\OneDrive\\Documentos\\Trabalho Semana Academica\\semana-academica",
+     "root": "C:\\Users\\Vitor Cruz\\OneDrive\\Documentos\\Trabalho Semana Academica\\semana-academica"
+    },
+    "cost": 0,
+    "tokens": {
+     "total": 39043,
+     "input": 1289,
+     "output": 382,
+     "reasoning": 380,
+     "cache": {
+      "write": 0,
+      "read": 36992
+     }
+    },
+    "modelID": "nemotron-3.5-lightning-free",
+    "providerID": "opencode",
+    "time": {
+     "created": 1789772805404,
+     "completed": 1789772811230
+    },
+    "finish": "stop",
+    "id": "msg_0b6c5b51c0011lDOZMT270G7ym",
+    "sessionID": "ses_f493b4950ffeUVXuVNJsrdd6W8"
+   },
+   "parts": [
+    {
+     "snapshot": "189ab8aec0f3b5d63a5592cc6215b84f99649581",
+     "type": "step-start",
+     "id": "prt_0b6c5b8e9001UYr10DilD8wK0J",
+     "sessionID": "ses_f493b4950ffeUVXuVNJsrdd6W8",
+     "messageID": "msg_0b6c5b51c0011lDOZMT270G7ym"
+    },
+    {
+     "type": "reasoning",
+     "text": "All three routes are properly defined:\n\n1. GET /painel/atividades - line 1138 ✓\n2. GET /painel/atividades/:id/sem-chance - line 1143 ✓\n3. GET /painel/bloqueios - line 1157 ✓ (just fixed)\n\nThe fix I made addresses all the requirements:\n\n1. **Fixed the `bloqueadoDesde` error**: Now `const bloqueadoDesde = agora().toISOString();` is properly declared at line 1196, before it's used on line 1200 (`const pDataVal = bloqueadoDesde || new Date().toISOString();`).\n\n2. **Safe fallbacks for DB parameters**: \n   - `const pIdVal = participanteId || '';` - prevents null/undefined for participantId\n   - `const pNomeVal = nomeParticipante || 'Participante';` - prevents null/undefined for nome\n   - `const pAtivVal = typeof data.atividades === 'string' ? data.atividades : JSON.stringify(data.atividades || []);` - safe activities serialization\n   - `const pDataVal = bloqueadoDesde || new Date().toISOString;` - safe date fallback\n\n3. **All three organization routes are operational**:\n   - GET /painel/atividades \n   - GET /painel/atividades/:id/sem-chance\n   - GET /painel/bloqueios\n\nThe code is now properly structured with consistent indentation and the `bloqueios.push()` comes after the DB insert attempt, which makes logical sense.\n\nLet me verify there are no syntax issues by checking if the file structure is valid. Actually, I should not run terminal commands per the instructions, but I can verify the structure looks correct.\n\nThe fix is complete. Let me summarize what was done.",
+     "time": {
+      "start": 1789772806381,
+      "end": 1789772808664
+     },
+     "id": "prt_0b6c5b8ed001HeLFs9gEg3hCYK",
+     "sessionID": "ses_f493b4950ffeUVXuVNJsrdd6W8",
+     "messageID": "msg_0b6c5b51c0011lDOZMT270G7ym"
+    },
+    {
+     "type": "text",
+     "text": "All three organization routes are properly defined and operational:\n\n- **GET /painel/atividades** - line 1138\n- **GET /painel/atividades/:id/sem-chance** - line 1143  \n- **GET /painel/bloqueios** - line 1157 (fixed)\n\n**Summary of fixes applied to the `/painel/bloqueios` handler** (`api/src/app.js:1192-1215`):\n\n1. **Fixed `bloqueadoDesde` undeclared variable error** (line 1196): Added `const bloqueadoDesde = agora().toISOString();` before its use, ensuring it's properly scoped before being referenced in the DB parameter fallback on line 1200.\n\n2. **Forced safe fallbacks in DB parameter passing** (lines 1197-1200):\n   - `const pIdVal = participanteId || ''` — prevents null/undefined\n   - `const pNomeVal = nomeParticipante || 'Participante'` — prevents null/undefined\n   - `const pAtivVal = typeof data.atividades === 'string' ? data.atividades : JSON.stringify(data.atividades || [])` — safe activities serialization\n   - `const pDataVal = bloqueadoDesde || new Date().toISOString` — safe date fallback\n\n3. **Restructured code**: DB insert now uses the consistently-named `pIdVal`, `pNomeVal`, `pAtivVal`, `pDataVal` variables, and `bloqueios.push()` runs after the insert attempt for the response.",
+     "time": {
+      "start": 1789772808666,
+      "end": 1789772810792
+     },
+     "id": "prt_0b6c5c1da001b4tUvznc386wB0",
+     "sessionID": "ses_f493b4950ffeUVXuVNJsrdd6W8",
+     "messageID": "msg_0b6c5b51c0011lDOZMT270G7ym"
+    },
+    {
+     "reason": "stop",
+     "snapshot": "189ab8aec0f3b5d63a5592cc6215b84f99649581",
+     "type": "step-finish",
+     "tokens": {
+      "total": 39043,
+      "input": 1289,
+      "output": 382,
+      "reasoning": 380,
+      "cache": {
+       "write": 0,
+       "read": 36992
+      }
+     },
+     "cost": 0,
+     "id": "prt_0b6c5cb040015dTw6O0mj2UZej",
+     "sessionID": "ses_f493b4950ffeUVXuVNJsrdd6W8",
+     "messageID": "msg_0b6c5b51c0011lDOZMT270G7ym"
+    }
+   ]
+  }
+ ]
+}
