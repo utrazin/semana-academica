@@ -59,11 +59,16 @@ export function novoBanco(caminho) {
       encontroId TEXT NOT NULL,
       participanteId TEXT NOT NULL,
       origem TEXT NOT NULL,
-      lidoEm TEXT NOT NULL,
-      registradaEm TEXT NOT NULL,
-      justificativa TEXT,
-      FOREIGN KEY (encontroId) REFERENCES encontros(id),
-      FOREIGN KEY (participanteId) REFERENCES usuarios(id)
+      lidoEm TEXT,
+      registradaEm TEXT,
+      justificativa TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS bloqueios (
+      participanteId TEXT PRIMARY KEY,
+      nome TEXT,
+      atividades TEXT,
+      bloqueadoDesde TEXT
     );
   `);
   banco.exec(`
@@ -81,6 +86,8 @@ export function carregarDadosIniciais(banco) {
 }
 
 export function resetarBanco(banco) {
-  banco.exec('DELETE FROM certificados; DELETE FROM presencas; DELETE FROM inscricoes; DELETE FROM encontros; DELETE FROM atividades; DELETE FROM salas; DELETE FROM usuarios;');
+  banco.exec('DELETE FROM certificados; DELETE FROM presencas; DELETE FROM inscricoes; DELETE FROM encontros; DELETE FROM atividades; DELETE FROM salas; DELETE FROM usuarios; DELETE FROM bloqueios;');
   carregarDadosIniciais(banco);
+  banco.prepare('CREATE TABLE IF NOT EXISTS bloqueios (participanteId TEXT PRIMARY KEY, nome TEXT, atividades TEXT, bloqueadoDesde TEXT)').run();
+  banco.prepare('CREATE UNIQUE INDEX IF NOT EXISTS idx_bloqueios_participante ON bloqueios (participanteId)').run();
 }

@@ -31,6 +31,7 @@ export function criarServidor({ banco = novoBanco(':memory:') } = {}) {
   });
 
   const usuarioPorId = banco.prepare('SELECT id, nome, papel FROM usuarios WHERE id = ?');
+  const datasDesbloqueio = new Map();
 
   function exigirUsuario(req, res, next) {
     const id = req.get('X-Usuario');
@@ -1133,6 +1134,179 @@ export function criarServidor({ banco = novoBanco(':memory:') } = {}) {
     const totalMinutos = palestrasMinutos + minicursosMinutos;
     const aproveitadoMinutos = Math.min(Math.min(palestrasMinutos, 240) + minicursosMinutos, 1200);
     return res.json({ itens, palestrasMinutos, minicursosMinutos, totalMinutos, aproveitadoMinutos });
+  });
+
+  app.get('/painel/atividades', exigirUsuario, exigirOrganizacao, (req, res) => {
+    const agoraMs = agora().getTime();
+    const atividades = banco.prepare('SELECT id, titulo, tipo, salaId, vagas, cancelada FROM atividades WHERE cancelada = 0').all();
+    const resultado = atividades.map((atv) => {
+      const inscritos = banco.prepare(
+        "SELECT COUNT(*) as total FROM inscricoes WHERE atividadeId = ? AND status = 'confirmada'"
+      ).get(atv.id);
+      const ocupacaoPercentual = atv.vagas > 0 ? (inscritos.total / atv.vagas) * 100 : 0;
+
+      const encontros = encontrosPorAtividade.all(atv.id);
+      const encontrosEncerrados = encontros.filter((e) => Date.parse(e.fim) < agoraMs);
+
+      let frequenciaPercentual = null;
+      if (encontrosEncerrados.length > 0) {
+        const confirmados = banco.prepare(
+          "SELECT participanteId FROM inscricoes WHERE atividadeId = ? AND status = 'confirmada'"
+        ).all(atv.id);
+        const totalEsperado = confirmados.length * encontrosEncerrados.length;
+        if (totalEsperado > 0) {
+          let totalPresencas = 0;
+          for (const enc of encontrosEncerrados) {
+            const presentes = banco.prepare(
+              "SELECT COUNT(*) as total FROM presencas WHERE encontroId = ? AND origem != 'manual'"
+            ).get(enc.id);
+            totalPresencas += presentes.total;
+          }
+          frequenciaPercentual = (totalPresencas / totalEsperado) * 100;
+        }
+      }
+
+      return {
+        atividadeId: atv.id,
+        titulo: atv.titulo,
+        tipo: atv.tipo,
+        salaId: atv.salaId,
+        vagas: atv.vagas,
+        ocupacaoPercentual,
+        frequenciaPercentual,
+      };
+    });
+    res.json(resultado);
+  });
+
+  app.get('/painel/atividades/:id/sem-chance', exigirUsuario, exigirOrganizacao, (req, res) => {
+    const agoraMs = agora().getTime();
+    const atividade = banco
+      .prepare('SELECT id, titulo, tipo, salaId, vagas, cancelada FROM atividades WHERE id = ?')
+      .get(req.params.id);
+    if (!atividade) {
+      return res.status(404).json({ erro: 'NAO_ENCONTRADO', mensagem: 'Atividade inexistente.' });
+    }
+
+    const encontros = encontrosPorAtividade.all(atividade.id);
+    const totalEncontros = encontros.length;
+    const faltasPermitidas = Math.ceil(totalEncontros * 0.25);
+
+    const confirmadas = banco.prepare(
+      "SELECT participanteId FROM inscricoes WHERE atividadeId = ? AND status = 'confirmada'"
+    ).all(atividade.id);
+
+    const semChance = [];
+    for (const conf of confirmadas) {
+      const participanteId = conf.participanteId;
+      let faltas = 0;
+      for (const enc of encontros) {
+        const presenca = banco.prepare(
+          "SELECT id FROM presencas WHERE encontroId = ? AND participanteId = ? AND origem != 'manual'"
+        ).get(enc.id, participanteId);
+        if (!presenca) faltas += 1;
+      }
+      if (faltas > faltasPermitidas) {
+        semChance.push({ participanteId, faltas, faltasPermitidas });
+      }
+    }
+
+    res.json(semChance);
+  });
+
+  app.get('/painel/bloqueios', exigirUsuario, exigirOrganizacao, (req, res) => {
+    const agoraMs = agora().getTime();
+    const todasAtividades = banco.prepare('SELECT id FROM atividades WHERE cancelada = 0').all();
+    const bloqueiosArray = [];
+    const participanteFaltas = {};
+
+    for (const atv of todasAtividades) {
+      const encontros = encontrosPorAtividade.all(atv.id);
+      if (encontros.length === 0) continue;
+
+      const confirmadas = banco.prepare(
+        "SELECT participanteId FROM inscricoes WHERE atividadeId = ? AND status = 'confirmada'"
+      ).all(atv.id);
+
+      for (const conf of confirmadas) {
+        const participanteId = conf.participanteId;
+
+        const fimUltimoEncontro = Math.max(...encontros.map((e) => Date.parse(e.fim)));
+        const dataDesbloqueio = datasDesbloqueio.get(participanteId);
+
+        if (dataDesbloqueio && fimUltimoEncontro <= dataDesbloqueio) continue;
+
+        let faltas = 0;
+        for (const enc of encontros) {
+          const presenca = banco.prepare(
+            "SELECT id FROM presencas WHERE encontroId = ? AND participanteId = ? AND origem != 'manual'"
+          ).get(enc.id, participanteId);
+          if (!presenca) faltas += 1;
+        }
+
+        if (faltas > 0) {
+          if (!participanteFaltas[participanteId]) {
+            participanteFaltas[participanteId] = { atividades: [] };
+          }
+          participanteFaltas[participanteId].atividades.push(atv.id);
+        }
+      }
+    }
+
+    for (const [participanteId, data] of Object.entries(participanteFaltas)) {
+      if (data.atividades.length >= 2) {
+        const participante = usuarioPorId.get(participanteId);
+        const nomeParticipante = (participante && participante.nome) ? participante.nome : 'Participante';
+        const bloqueadoDesde = agora().toISOString();
+        const atividadesJson = JSON.stringify(data.atividades);
+        try {
+          banco.prepare(
+            'INSERT OR REPLACE INTO bloqueios (participanteId, nome, atividades, bloqueadoDesde) VALUES (?, ?, ?, ?)',
+          ).run(
+            participanteId,
+            nomeParticipante,
+            atividadesJson,
+            bloqueadoDesde,
+          );
+        } catch (erro) {
+          console.error('[bloqueios] erro ao gravar:', erro);
+        }
+        bloqueiosArray.push({
+          participanteId,
+          nome: nomeParticipante,
+          atividades: data.atividades,
+          bloqueadoDesde,
+        });
+      }
+    }
+
+    if (bloqueiosArray.length === 0) {
+      return res.status(204).end();
+    }
+    res.json(bloqueiosArray);
+  });
+
+  app.delete('/painel/bloqueios/:participanteId', exigirUsuario, exigirOrganizacao, (req, res) => {
+    const { participanteId } = req.params;
+    try {
+      banco.prepare('DELETE FROM bloqueios WHERE participanteId = ?').run(participanteId);
+      datasDesbloqueio.set(participanteId, agora().getTime());
+    } catch (erro) {
+      console.error(erro);
+    }
+    res.status(204).end();
+  });
+
+  app.get('/painel/atividades/:id/frequencia.csv', exigirUsuario, exigirOrganizacao, (req, res) => {
+    const csv = gerarCSVFrecuencia(req.params.id);
+    const atividade = banco.prepare('SELECT titulo FROM atividades WHERE id = ?').get(req.params.id);
+    if (!atividade) {
+      return res.status(404).json({ erro: 'NAO_ENCONTRADO', mensagem: 'Atividade inexistente.' });
+    }
+    const mimeType = 'text/csv; charset=utf-8';
+    res.set('Content-Type', mimeType);
+    res.set('Content-Disposition', `attachment; filename="frequencia-${atividade.titulo}.csv"`);
+    res.status(200).send(csv);
   });
 
   return app;
