@@ -4,7 +4,11 @@ import api, { API_URL, USUARIOS } from './api.js';
 describe('api.js', () => {
   beforeEach(() => {
     localStorage.clear();
-    globalThis.fetch = vi.fn(async () => ({ ok: true, json: async () => [] }));
+    globalThis.fetch = vi.fn(async () => ({
+      ok: true,
+      headers: { get: () => 'application/json' },
+      json: async () => [],
+    }));
   });
 
   afterEach(() => {
@@ -65,6 +69,7 @@ describe('api.js', () => {
     globalThis.fetch = vi.fn(async () => ({
       ok: true,
       status: 201,
+      headers: { get: () => 'application/json' },
       json: async () => ({ id: 'atv_a1b2c3d4', titulo: 'Flutter do zero' }),
     }));
     api.definirUsuario('org-ana');
@@ -105,6 +110,7 @@ describe('api.js', () => {
     globalThis.fetch = vi.fn(async () => ({
       ok: true,
       status: 201,
+      headers: { get: () => 'application/json' },
       json: async () => ({ id: 'ins_1', status: 'confirmada' }),
     }));
     api.definirUsuario('p-carla');
@@ -142,6 +148,7 @@ describe('api.js', () => {
   it('cancela inscrição com POST /inscricoes/:id/cancelamento', async () => {
     globalThis.fetch = vi.fn(async () => ({
       ok: true,
+      headers: { get: () => 'application/json' },
       json: async () => ({ id: 'ins_1', status: 'cancelada' }),
     }));
     api.definirUsuario('p-carla');
@@ -159,6 +166,7 @@ describe('api.js', () => {
   it('confirma convocação com POST /inscricoes/:id/confirmacao', async () => {
     globalThis.fetch = vi.fn(async () => ({
       ok: true,
+      headers: { get: () => 'application/json' },
       json: async () => ({ id: 'ins_1', status: 'confirmada' }),
     }));
     api.definirUsuario('p-carla');
@@ -189,6 +197,7 @@ describe('api.js', () => {
   it('obtém o código de um encontro com GET /encontros/:id/codigo', async () => {
     globalThis.fetch = vi.fn(async () => ({
       ok: true,
+      headers: { get: () => 'application/json' },
       json: async () => ({ encontroId: 'enc_1', codigo: 'K7M2QX', trocaEm: '…', validoAte: '…' }),
     }));
     api.definirUsuario('org-ana');
@@ -205,6 +214,7 @@ describe('api.js', () => {
     globalThis.fetch = vi.fn(async () => ({
       ok: true,
       status: 201,
+      headers: { get: () => 'application/json' },
       json: async () => ({ id: 'pre_1', origem: 'qr' }),
     }));
     api.definirUsuario('p-carla');
@@ -224,6 +234,7 @@ describe('api.js', () => {
     globalThis.fetch = vi.fn(async () => ({
       ok: true,
       status: 201,
+      headers: { get: () => 'application/json' },
       json: async () => ({ id: 'pre_2', origem: 'manual' }),
     }));
     api.definirUsuario('org-ana');
@@ -256,6 +267,7 @@ describe('api.js', () => {
     globalThis.fetch = vi.fn(async () => ({
       ok: true,
       status: 201,
+      headers: { get: () => 'application/json' },
       json: async () => ({ codigo: 'SA26-ABCD-EFGH', atividadeId: 'atv_1' }),
     }));
     api.definirUsuario('p-carla');
@@ -293,6 +305,7 @@ describe('api.js', () => {
   it('verifica certificado pela rota pública sem enviar X-Usuario', async () => {
     globalThis.fetch = vi.fn(async () => ({
       ok: true,
+      headers: { get: () => 'application/json' },
       json: async () => ({ codigo: 'SA26-ABCD-EFGH', participante: 'Carla M. S.' }),
     }));
     api.definirUsuario('p-carla');
