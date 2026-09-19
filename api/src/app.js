@@ -1,4 +1,5 @@
 import crypto from 'node:crypto';
+import cors from 'cors';
 import express from 'express';
 import { novoBanco, resetarBanco } from './banco.js';
 import { ehModoTeste, agora, resetarRelogio, definirRelogio } from './relogio.js';
@@ -20,6 +21,11 @@ export function criarServidor({ banco = novoBanco(':memory:') } = {}) {
 
   const app = express();
   app.use(express.json());
+  app.use(cors({
+    origin: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'X-Usuario'],
+  }));
   app.use((err, req, res, next) => {
     if (err && err.type === 'entity.parse.failed') {
       return res.status(422).json({
@@ -64,6 +70,7 @@ export function criarServidor({ banco = novoBanco(':memory:') } = {}) {
     app.post('/_teste/reset', (req, res) => {
       resetarBanco(banco);
       resetarRelogio();
+      datasDesbloqueio.clear();
       res.status(204).end();
     });
 
@@ -1232,6 +1239,7 @@ export function criarServidor({ banco = novoBanco(':memory:') } = {}) {
         const participanteId = conf.participanteId;
 
         const fimUltimoEncontro = Math.max(...encontros.map((e) => Date.parse(e.fim)));
+
         const dataDesbloqueio = datasDesbloqueio.get(participanteId);
 
         if (dataDesbloqueio && fimUltimoEncontro <= dataDesbloqueio) continue;
@@ -1290,21 +1298,55 @@ export function criarServidor({ banco = novoBanco(':memory:') } = {}) {
     const { participanteId } = req.params;
     try {
       banco.prepare('DELETE FROM bloqueios WHERE participanteId = ?').run(participanteId);
-      datasDesbloqueio.set(participanteId, agora().getTime());
+      // Marca com Infinity para que TODAS as atividades existentes sejam ignoradas no próximo GET
+      datasDesbloqueio.set(participanteId, Infinity);
     } catch (erro) {
       console.error(erro);
     }
     res.status(204).end();
   });
 
+  function gerarCSVFrecuencia(atividadeId) {
+    const encontros = encontrosPorAtividade.all(atividadeId);
+    const confirmados = banco.prepare(`
+      SELECT u.id, u.nome
+      FROM inscricoes i
+      JOIN usuarios u ON u.id = i.participanteId
+      WHERE i.atividadeId = ? AND i.status = 'confirmada'
+      ORDER BY u.nome COLLATE NOCASE, u.id
+    `).all(atividadeId);
+    const agoraMs = agora().getTime();
+    const colunasEncontros = encontros.map((_, i) => `E${i + 1}`);
+    const cabecalho = ['nome', ...colunasEncontros, 'frequencia', 'certificado'].join(';');
+    const linhas = confirmados.map((participante) => {
+      let presentes = 0;
+      const marcas = encontros.map((enc) => {
+        const prazoVencido = agoraMs > Date.parse(enc.fim) + 2 * 3600 * 1000;
+        const presenca = banco.prepare(
+          'SELECT id FROM presencas WHERE encontroId = ? AND participanteId = ?',
+        ).get(enc.id, participante.id);
+        if (presenca) {
+          presentes += 1;
+          return 'P';
+        }
+        if (prazoVencido) return 'F';
+        return '-';
+      });
+      const freq = encontros.length > 0 ? (presentes / encontros.length) * 100 : 0;
+      const freqStr = freq.toFixed(1).replace('.', ',');
+      const cert = certificadoPorAtividadeEParticipante.get(atividadeId, participante.id);
+      return [participante.nome, ...marcas, freqStr, cert ? 'sim' : 'nao'].join(';');
+    });
+    return `\uFEFF${[cabecalho, ...linhas].join('\r\n')}`;
+  }
+
   app.get('/painel/atividades/:id/frequencia.csv', exigirUsuario, exigirOrganizacao, (req, res) => {
-    const csv = gerarCSVFrecuencia(req.params.id);
     const atividade = banco.prepare('SELECT titulo FROM atividades WHERE id = ?').get(req.params.id);
     if (!atividade) {
       return res.status(404).json({ erro: 'NAO_ENCONTRADO', mensagem: 'Atividade inexistente.' });
     }
-    const mimeType = 'text/csv; charset=utf-8';
-    res.set('Content-Type', mimeType);
+    const csv = gerarCSVFrecuencia(req.params.id);
+    res.set('Content-Type', 'text/csv; charset=utf-8');
     res.set('Content-Disposition', `attachment; filename="frequencia-${atividade.titulo}.csv"`);
     res.status(200).send(csv);
   });

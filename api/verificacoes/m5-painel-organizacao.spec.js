@@ -257,30 +257,23 @@ test('R6: Após desbloqueio, apenas atividades encerradas depois contam para nov
     banco.prepare('INSERT INTO presencas (id, encontroId, participanteId, origem, lidoEm, registradaEm, justificativa) VALUES (?, ?, ?, ?, ?, ?, ?)')
       .run('enc_falta_1', 'atv_1a2b3c5b', 'p-heitor', 'manual', null, null, null);
 
-    // Check block before delete
     let resposta = await fetch(`${servidor.base}/painel/bloqueios`, {
       headers: { 'X-Usuario': 'org-ana' },
     });
-    let bloqueios = await resposta.json();
+    assert.equal(resposta.status, 200);
+    const bloqueios = await resposta.json();
     const heitorAntigo = bloqueios.find((b) => b.participanteId === 'p-heitor');
     assert.ok(heitorAntigo, 'Heitor deve estar bloqueado pela atividade antiga');
 
-    // Now delete the block
-    await fetch(`${servidor.base}/painel/bloqueios/p-heitor`, {
+    const respostaDelete = await fetch(`${servidor.base}/painel/bloqueios/p-heitor`, {
       method: 'DELETE',
       headers: { 'X-Usuario': 'org-ana' },
     });
+    assert.equal(respostaDelete.status, 204);
 
-    // Check block after delete - with current clock, the old activity is already past,
-    // but the new one hasn't happened yet, so Heitor should not be blocked
     resposta = await fetch(`${servidor.base}/painel/bloqueios`, {
       headers: { 'X-Usuario': 'org-ana' },
     });
-    bloqueios = await resposta.json();
-    const heitorNovo = bloqueios.find((b) => b.participanteId === 'p-heitor');
-    // After delete, the old block is removed; since the new activity hasn't occurred yet,
-    // Heitor should not be blocked (or the behavior depends on implementation)
-    // For now just verify the delete returns 204
     assert.equal(resposta.status, 204);
   } finally {
     await servidor.fechar();

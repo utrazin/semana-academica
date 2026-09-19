@@ -57,6 +57,15 @@ async function chamar(caminho, { metodo = 'GET', corpo, publica = false } = {}) 
     });
   }
 
+  if (resposta.status === 204) {
+    return null;
+  }
+
+  const tipo = resposta.headers.get('content-type') || '';
+  if (tipo.includes('text/csv')) {
+    return resposta.text();
+  }
+
   return resposta.json();
 }
 
@@ -150,15 +159,42 @@ export function listarSemChance(atividadeId) {
 }
 
 export function listarBloqueios() {
-  return chamar('/painel/bloqueios');
+  return chamar('/painel/bloqueios').then((dados) => dados ?? []);
 }
 
 export function desbloquearParticipante(participanteId) {
   return chamar(`/painel/bloqueios/${encodeURIComponent(participanteId)}`, { metodo: 'DELETE' });
 }
 
-export function baixarFrequenciaCSV(atividadeId) {
-  return chamar(`/painel/atividades/${encodeURIComponent(atividadeId)}/frequencia.csv`, { publica: true });
+export async function baixarFrequenciaCSV(atividadeId) {
+  const cabecalhos = {};
+  const usuario = obterUsuarioAtual();
+  if (usuario) cabecalhos['X-Usuario'] = usuario;
+  const resposta = await fetch(
+    `${API_URL}/painel/atividades/${encodeURIComponent(atividadeId)}/frequencia.csv`,
+    { headers: cabecalhos },
+  );
+  if (!resposta.ok) {
+    let corpo = {};
+    try {
+      corpo = await resposta.json();
+    } catch {
+      corpo = {};
+    }
+    throw Object.assign(new Error(corpo.mensagem || 'Erro da API.'), {
+      erro: corpo.erro || 'ERRO_DESCONHECIDO',
+      status: resposta.status,
+    });
+  }
+  const blob = await resposta.blob();
+  const url = URL.createObjectURL(blob);
+  const ancora = document.createElement('a');
+  ancora.href = url;
+  ancora.download = `frequencia-${atividadeId}.csv`;
+  document.body.appendChild(ancora);
+  ancora.click();
+  ancora.remove();
+  URL.revokeObjectURL(url);
 }
 
 export default {

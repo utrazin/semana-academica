@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
-import api from '../api.js';
 
-export default function PainelOrganizacao() {
+export default function PainelOrganizacao({ api }) {
   const [atividades, setAtividades] = useState(null);
   const [atividadeSelecionada, setAtividadeSelecionada] = useState(null);
   const [semChance, setSemChance] = useState(null);
@@ -23,13 +22,21 @@ export default function PainelOrganizacao() {
     setErro(null);
     setSemChance(null);
     Promise.all([
-      api.listarSemChance(atividadeSelecionada.id).then(setSemChance).catch((e) => setErro(e)),
+      api.listarSemChance(atividadeSelecionada.atividadeId).then(setSemChance).catch((e) => setErro(e)),
       api.listarBloqueios().then(setBloqueios).catch((e) => setErro(e)),
     ]);
   }, [api, atividadeSelecionada]);
 
   function handleBaixarCSV(atividadeId) {
-    window.location.href = `/painel/atividades/${atividadeId}/frequencia.csv`;
+    api.baixarFrequenciaCSV(atividadeId).catch((erroDaApi) => setErro(erroDaApi));
+  }
+
+  function handleDesbloquear(participanteId) {
+    api
+      .desbloquearParticipante(participanteId)
+      .then(() => api.listarBloqueios())
+      .then(setBloqueios)
+      .catch((erroDaApi) => setErro(erroDaApi));
   }
 
   if (erro) {
@@ -69,17 +76,17 @@ export default function PainelOrganizacao() {
           <h3>Atividade: {atividadeSelecionada.titulo}</h3>
           <p>
             Ocupação: {atividadeSelecionada.ocupacaoPercentual}% |
-            Frequência: {atividadeSelecionada.frequenciaPercentual}%
+            Frequência: {atividadeSelecionada.frequenciaPercentual !== null ? `${atividadeSelecionada.frequenciaPercentual}%` : 'N/A'}
           </p>
         </div>
       ) : (
         <ul>
           {atividades && atividades.length > 0 ? (
-            activities.map((atividade) => (
-              <li key={atividade.id} style={{ marginBottom: '0.5rem' }}>
+            atividades.map((atividade) => (
+              <li key={atividade.atividadeId} style={{ marginBottom: '0.5rem' }}>
                 <strong>{atividade.titulo}</strong> ({atividade.tipo})
                 <br />
-                Ocupação: {atividade.ocupacaoPercentual}% | Frequência: {atividade.frequenciaPercentual}%
+                Ocupação: {atividade.ocupacaoPercentual}% | Frequência: {atividade.frequenciaPercentual !== null ? `${atividade.frequenciaPercentual}%` : 'N/A'}
                 <br />
                 <button
                   onClick={() => setAtividadeSelecionada(atividade)}
@@ -105,8 +112,8 @@ export default function PainelOrganizacao() {
           {semChance.length > 0 ? (
             <ul>
               {semChance.map((participante) => (
-                <li key={participante.id} aria-label={participante.nome}>
-                  {participante.nome}
+                <li key={participante.participanteId} aria-label={participante.nome}>
+                  {participante.nome || participante.participanteId}
                 </li>
               ))}
             </ul>
@@ -125,10 +132,10 @@ export default function PainelOrganizacao() {
           {bloqueios.length > 0 ? (
             <ul>
               {bloqueios.map((bloqueio) => (
-                <li key={bloqueio.id} aria-label={bloqueio.nome}>
+                <li key={bloqueio.participanteId} aria-label={bloqueio.nome}>
                   {bloqueio.nome}
                   <button
-                    onClick={() => api.desbloquearParticipante(bloqueio.id)}
+                    onClick={() => handleDesbloquear(bloqueio.participanteId)}
                     style={{
                       marginLeft: '0.5rem',
                       background: '#f87171',
@@ -155,7 +162,7 @@ export default function PainelOrganizacao() {
       {atividadeSelecionada && (
         <div style={{ marginTop: '1.5rem' }}>
           <button
-            onClick={() => handleBaixarCSV(atividadeSelecionada.id)}
+            onClick={() => handleBaixarCSV(atividadeSelecionada.atividadeId)}
             style={{
               marginTop: '0.5rem',
               background: '#3b82f6',
