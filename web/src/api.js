@@ -141,6 +141,26 @@ export function obterExtrato() {
   return chamar('/extrato');
 }
 
+export function listarPainelAtividades() {
+  return chamar('/painel/atividades');
+}
+
+export function listarSemChance(atividadeId) {
+  return chamar(`/painel/atividades/${encodeURIComponent(atividadeId)}/sem-chance`);
+}
+
+export function listarBloqueios() {
+  return chamar('/painel/bloqueios');
+}
+
+export function desbloquearParticipante(participanteId) {
+  return chamar(`/painel/bloqueios/${encodeURIComponent(participanteId)}`, { metodo: 'DELETE' });
+}
+
+export function baixarFrequenciaCSV(atividadeId) {
+  return chamar(`/painel/atividades/${encodeURIComponent(atividadeId)}/frequencia.csv`, { publica: true });
+}
+
 export default {
   API_URL,
   USUARIOS,
@@ -163,4 +183,9 @@ export default {
   listarCertificados,
   verificarCertificado,
   obterExtrato,
+  listarPainelAtividades,
+  listarSemChance,
+  listarBloqueios,
+  desbloquearParticipante,
+  baixarFrequenciaCSV,
 };

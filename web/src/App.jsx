@@ -10,6 +10,7 @@ import Extrato from './paginas/extrato/Extrato.jsx';
 import VerificarCertificado from './paginas/verificar-certificado/VerificarCertificado.jsx';
 import PresencaOrganizacao from './paginas/presenca-organizacao/PresencaOrganizacao.jsx';
 import PresencaParticipante from './paginas/presenca-participante/PresencaParticipante.jsx';
+import PainelOrganizacao from './paginas/painel/PainelOrganizacao.jsx';
 
 export default function App() {
   const [usuarioId, setUsuarioId] = useState(() => api.obterUsuarioAtual() || USUARIOS[0].id);
@@ -62,6 +63,11 @@ export default function App() {
         <button type="button" onClick={() => setVista('verificar-certificado')} aria-pressed={vista === 'verificar-certificado'}>
           Verificar Certificado
         </button>
+        {usuario.papel === 'organizacao' && (
+          <button type="button" onClick={() => setVista('painel-organizacao')} aria-pressed={vista === 'painel-organizacao'}>
+            Painel Organização
+          </button>
+        )}
       </nav>
 
       {usuario.papel === 'organizacao' && <CriarAtividade api={api} />}
@@ -95,6 +101,12 @@ export default function App() {
         <div>
           <button type="button" onClick={() => setVista('atividade')}>Voltar para Atividade</button>
           <PresencaOrganizacao api={api} encontroId={encontroIdSelecionado} />
+        </div>
+      )}
+      {usuario.papel === 'organizacao' && vista === 'painel-organizacao' && (
+        <div>
+          <button type="button" onClick={() => setVista('atividade')}>Voltar para Atividade</button>
+          <PainelOrganizacao api={api} />
         </div>
       )}
       {usuario.papel === 'participante' && vista === 'presenca-participante' && (
